@@ -1,0 +1,91 @@
+#version 330
+in vec4 g3d_Vertex;
+in vec3 g3d_Normal;
+in vec2 g3d_TexCoord0;
+in vec3 uColor;
+
+in float SHValue0;
+in float SHValue1;
+in float SHValue2;
+in float SHValue3;
+in float SHValue4;
+in float SHValue5;
+in float SHValue6;
+in float SHValue7;
+in float SHValue8;
+in float SHValue9;
+
+uniform vec3 extrusionDistance;
+uniform mat4 MVP;
+uniform sampler2D uSampler;
+
+uniform float r;
+
+uniform vec3 coeff0;
+uniform vec3 coeff1;
+uniform vec3 coeff2;
+uniform vec3 coeff3;
+uniform vec3 coeff4;
+uniform vec3 coeff5;
+uniform vec3 coeff6;
+uniform vec3 coeff7;
+uniform vec3 coeff8;
+
+out vec3 normal;
+out vec3 vColor;
+out vec2 texCoord;
+
+out vec3 outCoeff0;
+out vec3 outCoeff1;
+out vec3 outCoeff2;
+out vec3 outCoeff3;
+out vec3 outCoeff4;
+out vec3 outCoeff5;
+out vec3 outCoeff6;
+out vec3 outCoeff7;
+out vec3 outCoeff8;
+
+out float outSHValue0;
+out float outSHValue1;
+out float outSHValue2;
+out float outSHValue3;
+out float outSHValue4;
+out float outSHValue5;
+out float outSHValue6;
+out float outSHValue7;
+out float outSHValue8;
+
+out float vPhongExponent;
+
+out vec4 vertex; 
+
+void main() {
+    // Leave vertices in object space
+    gl_Position = MVP * g3d_Vertex;
+    vColor = uColor;
+    texCoord = g3d_TexCoord0;
+    normal = g3d_Normal;
+    vertex = g3d_Vertex;
+
+    outCoeff0 = coeff0;
+	outCoeff1 = coeff1;
+	outCoeff2 = coeff2;
+	outCoeff3 = coeff3;
+	outCoeff4 = coeff4;
+	outCoeff5 = coeff5;
+	outCoeff6 = coeff6;
+	outCoeff7 = coeff7;
+	outCoeff8 = coeff8;
+
+	outSHValue0 = SHValue0;
+	outSHValue1 = SHValue1;
+	outSHValue2 = SHValue2;
+	outSHValue3 = SHValue3;
+	outSHValue4 = SHValue4;
+	outSHValue5 = SHValue5;
+	outSHValue6 = SHValue6;
+	outSHValue7 = SHValue7;
+	outSHValue8 = SHValue8;
+
+	vPhongExponent = r;
+}

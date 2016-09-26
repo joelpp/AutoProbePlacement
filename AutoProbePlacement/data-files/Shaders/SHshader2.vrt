@@ -1,0 +1,60 @@
+#version 430
+#include "ProbeFunctions.pix"
+
+#define VERTEX_SHADING 0
+
+/**
+ * Input variables
+ */
+in vec4 g3d_Vertex;
+in vec3 g3d_Normal;
+in vec2 g3d_TexCoord0;
+in vec3 uColor;
+
+uniform vec3 actorCentroidPosition;
+uniform vec3 coeff0;
+uniform vec3 extrusionDistance;
+uniform mat4 MVP;
+uniform vec3 albedo;
+
+uniform float multiplier;
+uniform float r;
+uniform int k;
+
+/**
+ * Output variables
+ */
+out vec3 tNormal;
+out vec3 vColor;
+out vec2 texCoord;
+out vec3 wsPos;
+out vec3 translationVector;
+
+void main() {
+    // Leave vertices in object space
+    gl_Position = MVP * g3d_Vertex;
+    texCoord = g3d_TexCoord0;
+    tNormal = normalize(g3d_ObjectToWorldNormalMatrix * g3d_Normal);
+    wsPos = g3d_ObjectToWorldMatrix * g3d_Vertex;
+
+	float pi = 3.14159;
+	vec3 normal = tNormal;
+
+#if VERTEX_SHADING
+	uint interpolatingProbeIndices[1];
+	vec3 interpolatingWeights;
+
+	findInterpolatingProbes(actorCentroidPosition, normal, probeStructure.step, interpolatingProbeIndices, interpolatingWeights);
+	//vColor = vec3(interpolatingProbeIndices[0]);
+	//return;
+	vec3 interpolatingProbePos = findProbePosition(interpolatingProbeIndices[0], probeStructure.firstProbePosition, probeStructure.dimensions, probeStructure.step);
+
+	vec3 translationVector = -(wsPos - interpolatingProbePos);
+
+	vColor = fullSHInterpolation(interpolatingProbeIndices, interpolatingWeights, normal
+#if USE_SH_GRADIENTS
+		, translationVector
+#endif
+		);
+#endif
+}

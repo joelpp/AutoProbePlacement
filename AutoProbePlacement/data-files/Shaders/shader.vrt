@@ -1,0 +1,20 @@
+#version 330
+in vec4 g3d_Vertex;
+in vec3 g3d_Normal;
+in vec2 g3d_TexCoord0;
+in vec3 uColor;
+
+uniform vec3 extrusionDistance;
+uniform mat4 MVP;
+uniform sampler2D uSampler;
+
+out vec3 normal;
+out vec3 vColor;
+out vec2 texCoord;
+
+void main() {
+    // Leave vertices in object space
+    gl_Position = MVP * g3d_Vertex;
+    vColor = uColor;
+    texCoord = g3d_TexCoord0;
+}

@@ -1,0 +1,18 @@
+//      attribute vec3 vertex;
+//      varying vec2 texCoord;
+//      void main() {
+//        texCoord = vertex.xy * 0.5 + 0.5;
+//        gl_Position = vec4(vertex, 1.0);
+//      }
+
+//#version 330
+//in vec4 g3d_Vertex;
+//in vec3 g3d_Normal;
+//in vec2 g3d_TexCoord0;
+//in vec3 uColor;
+//uniform mat4 MVP;
+//
+//void main() {
+//    // Leave vertices in object space
+//    gl_Position = MVP * g3d_Vertex;
+//}

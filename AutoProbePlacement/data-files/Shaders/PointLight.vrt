@@ -1,0 +1,34 @@
+    in vec4 g3d_Vertex;
+    in vec3 g3d_Normal;
+	in vec2 g3d_TexCoord0;
+
+	uniform mat4 MVP;
+    uniform vec3 lightPosition;
+    uniform vec3 lightColor;
+    uniform float lightIntensity;
+    
+    uniform vec3 uColor;
+
+	out vec3 tNormal;
+	out vec3 vColor;
+	out vec2 texCoord;
+	out vec3 wsPos;
+    out vec3 vLightWeighting;
+
+    void main(void) {
+		gl_Position = MVP * g3d_Vertex;
+		texCoord = g3d_TexCoord0;
+		tNormal = normalize(g3d_ObjectToWorldNormalMatrix * g3d_Normal);
+		wsPos = g3d_ObjectToWorldMatrix * g3d_Vertex;
+
+        vColor = uColor;
+
+        vec3 lightDirection = lightPosition - wsPos.xyz;
+        float distance = length(lightDirection);
+        lightDirection = normalize(lightDirection);
+        // transformedNormal = aVertexNormal;
+
+        float directionalLightWeighting = max(dot(tNormal, lightDirection), 0.0) / (distance * distance);
+        vLightWeighting = (lightColor * directionalLightWeighting);
+
+    }

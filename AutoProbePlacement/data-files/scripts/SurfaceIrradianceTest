@@ -1,0 +1,161 @@
+import mitsuba
+import multiprocessing
+import sys
+import os.path
+
+from mitsuba.core import *
+from mitsuba.render import SceneHandler, RenderQueue, RenderJob
+
+from string import maketrans
+
+
+	
+	pmgr = PluginManager.getInstance();
+	fileResolver = Thread.getThread().getFileResolver()
+
+	# Link to scene folder
+	# fileResolver.appendPath('/Users/joelpp/Documents/Maitrise/Scenes/RedGreenScene/')
+	# fileResolver.appendPath('/Users/joelpp/Documents/Maitrise/Scenes/BetterScene/')
+	fileResolver.appendPath('/Users/joelpp/Documents/Maitrise/Scenes/ZScene/')
+	# fileResolver.appendPath('/Users/joelpp/Documents/Maitrise/Scenes/BoxTest/')
+	# fileResolver.appendPath('/Users/joelpp/Documents/Maitrise/Scenes/BoxPillar/')
+
+	paramMap = StringMap()
+
+	#Start scheduler
+
+	print(sys.argv[0]);
+
+
+	queue = RenderQueue()
+	total = 9;
+
+	# scene = SceneHandler.loadScene(fileResolver.resolve("RedGreen.xml"), paramMap)
+	# scene = SceneHandler.loadScene(fileResolver.resolve("betterScene.xml"), paramMap)
+	# scene = SceneHandler.loadScene(fileResolver.resolve("Z.Scene.00001.xml"), paramMap)
+	scene = SceneHandler.loadScene(fileResolver.resolve("box.Scene.00001.xml"), paramMap)
+
+
+	# Integrator properties
+	# integratorType = 'ao'
+	# integratorType = 'path'
+	integratorType = 'direct'
+
+	# Sampler properties
+	sampleCount = 64
+
+	#Create integrator
+	integrator = pmgr.create({
+		'type' : integratorType,
+		})
+
+	#Create sampler
+	sampler = pmgr.create({
+		'type' : 'ldsampler',
+		'sampleCount' : sampleCount
+		})
+
+	#Create film
+	filmProps = Properties('ldrfilm')
+	filmProps['width'] = 256
+	filmProps['height'] = 128
+	filmProps['banner'] = False
+	filmProps['pixelFormat'] = "rgb"
+	film = pmgr.createObject(filmProps)
+
+	offset = 4;
+	#Create sensor and transform for sensor
+	toWorld = Transform.lookAt(
+
+	    # Point(i-offset, 1+k, j-offset),
+	    Point(x, y, z),
+	    Point(x+1, y, z),
+
+	    # Point(i-offset, 0, j-offset),
+	    # Vector(1, 0, 0)) #up direction before I had to fix stuff
+	    Vector(0, 1, 0)) #up direction after I fixed stuff
+	sensorProps = Properties('spherical')
+	# sensorProps = Properties('perspective')
+	sensorProps['toWorld'] = toWorld
+	sensorProps['fov'] = 45.0
+	sensor = pmgr.createObject(sensorProps)
+	#format of a lookat transform: lookAt(origin, target, updirection)
+
+	#Make it all come together
+	film.configure() 
+	sensor.addChild('film', film)
+	sensor.addChild('sampler', sampler)
+
+
+	# Now, the sensor can be configured
+	sensor.configure();
+	# sampler.configure();
+	scene.setIntegrator(integrator)
+	# scene.setSampler(sampler);
+	scene.setSensor(sensor);
+
+	scene.configure()
+	print(scene);
+
+	# Your custom destination goes here.
+	destination = '../experiments/'+repr(experimentID)+'/probes/Probe_'
+	destination += repr(probeCount)+'.png'
+	probeList.write(repr(x)+" "+repr(y)+" "+repr(z)+"\n");
+	scene.setDestinationFile(destination)
+
+	#Render!
+	job = RenderJob('myRenderJob', scene, queue)
+	job.start()
+	print(Statistics.getInstance().getStats())
+
+	queue.waitLeft(0)
+	queue.join()
+
+def makeProbeGrid(experimentID, _offset, _step, _numIterations):
+	#Initialise Mitsuba stuff
+	scheduler = Scheduler.getInstance()
+
+	#Assign workers to available threads
+	for i in range(0, multiprocessing.cpu_count()):
+		scheduler.registerWorker(LocalWorker( i, 'wrk%i' % i))
+	scheduler.start()
+	renderList = [];
+
+	for i in xrange(_numIterations[0]):
+		for j in xrange(_numIterations[1]):
+			for k in xrange(_numIterations[2]):
+				renderList.append([i*_step[0]+_offset[0], j*_step[1]+_offset[1], k*_step[2]+_offset[2]]);
+
+	for probeCount in xrange(len(renderList)):
+	# 	savePath = '/Users/joelpp/Documents/Maitrise/Images/test/BetterScene_'+repr(probeCount)+'.png';
+	# 	if (os.path.isfile(savePath)):
+	# 		print("Probe #"+repr(probeCount)+" already rendered! continuing...");
+	# 		continue;
+
+		x = renderList[probeCount][0];
+		y = renderList[probeCount][1];
+		z = renderList[probeCount][2];
+		makeProbe(x,y,z,probeCount, experimentID);
+
+
+def makeProbeList(experimentID, renderList):
+	#Initialise Mitsuba stuff
+	scheduler = Scheduler.getInstance()
+
+	#Assign workers to available threads
+	for i in range(0, multiprocessing.cpu_count()):
+		scheduler.registerWorker(LocalWorker( i, 'wrk%i' % i))
+	scheduler.start()
+	myDir = "../experiments/"+repr(experimentID)+"/probes";
+	for probeCount in xrange(len(renderList)):
+		index = probeCount;
+		if (os.path.isdir(myDir)):
+			index = len(os.walk(myDir).next()[2]);
+		x = renderList[probeCount][0];
+		y = renderList[probeCount][1];
+		z = renderList[probeCount][2];
+		makeProbe(x,y,z,index, experimentID);
+
+
+
+# exit();

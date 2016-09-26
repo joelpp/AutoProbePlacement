@@ -1,0 +1,10 @@
+    in vec3 vColor;
+    in vec3 tNormal;
+    in vec3 vLightWeighting;
+    uniform float lightIntensity;
+
+    out vec4 result;
+
+    void main(void) {
+        result = vec4(vColor.rgb * vLightWeighting * lightIntensity, 1.0);
+    }

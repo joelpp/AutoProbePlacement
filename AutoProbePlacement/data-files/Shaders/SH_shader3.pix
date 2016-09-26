@@ -1,0 +1,86 @@
+#version 430
+
+#include "SH.pix"
+
+uniform float intensity;
+
+out vec4 result;
+in vec3 vColor;
+in vec3 tNormal;
+in vec2 texCoord;
+
+
+uniform vec3 coeff0;
+uniform vec3 coeff1;
+uniform vec3 coeff2;
+uniform vec3 coeff3;
+uniform vec3 coeff4;
+uniform vec3 coeff5;
+uniform vec3 coeff6;
+uniform vec3 coeff7;
+uniform vec3 coeff8;
+
+uniform float r;
+uniform float multiplier;
+
+float phongCoeffs(int l, float r){
+    float pi = 3.14159;
+    if (l == 0){
+        return pi;
+    }
+    else if (l == 1){
+        return pi * (1.0+r)/(2.0+r);
+    }
+    else if (l == 2){
+        return pi * r / (3.0+r);
+    }
+    else if (l == 3){
+        return pi * (r-1.0)*(r+1.0) / (8.0 + 6.0*r + r*r);
+    }
+    else if (l == 4){
+        return (r-2.0)*r / ((r+3.0)*(r+5.0));
+    }
+    else if (l == 5){
+        return (r-3) * (r-1) * (r+1) / ((2+r)*(4+r)*(6+r));
+    }
+    else if (l == 6){
+        return (r-4) * (r-2) * (r) / ((3+r)*(5+r)*(7+r));
+    }
+    else if (l == 7){
+        return (r-5) * (r-3) * (r-1) * (r+1) / ((2+r)*(4+r)*(6+r)*(8+r));
+    }
+    else if (l == 8){
+        return (r-6) * (r-4) * (r-2) * r / ((3+r)*(5+r)*(7+r)*(9+r));
+    }
+    else if (l == 9){
+        return (r-7) * (r-5) * (r-3) * (r-1) * (r+1) / ((2+r)*(4+r)*(6+r)*(8+r)*(10+r));
+    }
+}
+
+
+void main() {
+    float pi = 3.14159;
+    vec3 normal = normalize(tNormal);
+
+    float x = -normal.x;
+    float y = normal.y;
+    float z = normal.z;
+
+    float u = (1-(atan(z,x) / (2*pi)));
+    float v = (acos(y) / pi);
+
+    vec3 E = vec3(0.0);
+
+	E += coeff0 * SHFunctionValue(0, normal) * phongCoeffs(0, r);
+	E += coeff1 * SHFunctionValue(1, normal) * phongCoeffs(1, r);
+	E += coeff2 * SHFunctionValue(2, normal) * phongCoeffs(1, r);
+	E += coeff3 * SHFunctionValue(3, normal) * phongCoeffs(1, r);
+	E += coeff4 * SHFunctionValue(4, normal) * phongCoeffs(2, r);
+	E += coeff5 * SHFunctionValue(5, normal) * phongCoeffs(2, r);
+	E += coeff6 * SHFunctionValue(6, normal) * phongCoeffs(2, r);
+	E += coeff7 * SHFunctionValue(7, normal) * phongCoeffs(2, r);
+	E += coeff8 * SHFunctionValue(8, normal) * phongCoeffs(2, r);
+	
+    result = vec4(E*multiplier/3.14159, 1.0);
+
+}

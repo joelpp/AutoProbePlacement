@@ -1,0 +1,13 @@
+#version 330
+uniform float intensity;
+//in vec3 faceColor;
+
+out vec4 result;
+in vec3 vColor;
+in vec2 texCoord;
+uniform sampler2D uSampler;
+void main() {
+    //result = vec4(texCoord[0], texCoord[1], 0.0, 1.0);
+    //result = vec4(vColor, 1.0);
+    result = texture(uSampler, texCoord);
+}

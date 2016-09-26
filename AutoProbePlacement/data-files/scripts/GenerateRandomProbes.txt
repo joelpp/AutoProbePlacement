@@ -1,0 +1,5 @@
+NumberOfProbes = 4851;
+NumberOfCoefficientsPerProbe = 1;
+NumberOfElements = NumberOfProbes * NumberOfCoefficientsPerProbe;
+NumberOfReadSamples = 1;
+NumberOfLinesPerSample = 7;

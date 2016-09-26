@@ -1,0 +1,12 @@
+#version 330
+uniform float intensity;
+
+out vec4 result;
+
+uniform vec3 uColor;
+uniform float multiplier;
+
+void main() 
+{
+	result = vec4(uColor, 1.f);
+}

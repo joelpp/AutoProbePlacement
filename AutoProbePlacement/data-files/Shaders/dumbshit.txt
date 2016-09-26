@@ -1,0 +1,17 @@
+
+	//im so sorry :(
+	int i0, i1, i2;
+	if (tet->indexes[0] == -1){ i0 = tet->indexes[1]; i0 = tet->indexes[2]; i2 = tet->indexes[3]; }
+	else if (tet->indexes[1] == -1){ i0 = tet->indexes[0]; i0 = tet->indexes[2]; i2 = tet->indexes[3]; }
+	else if (tet->indexes[2] == -1){ i0 = tet->indexes[0]; i0 = tet->indexes[1]; i2 = tet->indexes[3]; }
+	else{ i0 = tet->indexes[0]; i0 = tet->indexes[1]; i2 = tet->indexes[2]; }
+
+
+    Vector3 V0 = probeStructure->getProbe(tet->indexes[0]).position - probeStructure->getProbe(tet->indexes[2]).position;
+    Vector3 V1 = probeStructure->getProbe(tet->indexes[1]).position - probeStructure->getProbe(tet->indexes[2]).position;
+    Vector3 V2 = probeStructure->getProbe(tet->indexes[2]).position - actors[0].getPosition();
+												   
+    Vector3 N0 = probeStructure->getProbe(tet->indexes[0]).normal - probeStructure->getProbe(tet->indexes[2]).normal;
+	debugPrintf(" probeStructure->getProbe(tet->indexes[0]).normal: %s\n",  probeStructure->getProbe(tet->indexes[2]).normal.toString().c_str());
+    Vector3 N1 = probeStructure->getProbe(tet->indexes[1]).normal - probeStructure->getProbe(tet->indexes[2]).normal;
+    Vector3 N2 = probeStructure->getProbe(tet->indexes[2]).normal;

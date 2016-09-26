@@ -1,0 +1,1 @@
+python CoefficientOptimization3.py fitI && python CoefficientOptimization3.py cost

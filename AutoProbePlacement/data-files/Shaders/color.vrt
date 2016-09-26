@@ -1,0 +1,10 @@
+#version 330
+in vec4 g3d_Vertex;
+in vec3 g3d_Normal;
+
+uniform mat4 MVP;
+
+void main() 
+{
+    gl_Position = MVP * g3d_Vertex;
+}

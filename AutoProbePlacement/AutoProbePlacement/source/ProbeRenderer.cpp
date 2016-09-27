@@ -1,4 +1,7 @@
 #include "ProbeRenderer.h"
+#include "App.h"
+#include "ProbeStructure.h"
+
 
 void ProbeRenderer::render
 (RenderDevice*                       rd,
@@ -7,6 +10,7 @@ void ProbeRenderer::render
 	LightingEnvironment&                lightingEnvironment,
 	const shared_ptr<GBuffer>&          gbuffer,
 	const Array<shared_ptr<Surface>>&   allSurfaces) {
+
 
 	alwaysAssertM(!lightingEnvironment.ambientOcclusionSettings.enabled || notNull(lightingEnvironment.ambientOcclusion),
 		"Ambient occlusion is enabled but no ambient occlusion object is bound to the lighting environment");
@@ -59,6 +63,39 @@ void ProbeRenderer::render
 	} rd->popState();
 }
 
+void ProbeRenderer::computeShadowing
+(RenderDevice*                       rd,
+	const Array<shared_ptr<Surface>>&   allSurfaces,
+	const shared_ptr<GBuffer>&          gbuffer,
+	const shared_ptr<Framebuffer>&      depthPeelFramebuffer,
+	LightingEnvironment&                lightingEnvironment) {
+
+	BEGIN_PROFILER_EVENT("Renderer::computeShadowing");
+	App* app = App::instance;
+	if (app->bRenderShadowMaps)
+	{
+		Light::renderShadowMaps(rd, lightingEnvironment.lightArray, allSurfaces);
+	}
+
+	if (!gbuffer->colorGuardBandThickness().isZero()) {
+		rd->setGuardBandClip2D(gbuffer->colorGuardBandThickness());
+	}
+
+	// Compute AO
+	if (notNull(lightingEnvironment.ambientOcclusion) && app->bRenderAO) {
+		lightingEnvironment.ambientOcclusion->update
+		(rd,
+			lightingEnvironment.ambientOcclusionSettings,
+			gbuffer->camera(), gbuffer->texture(GBuffer::Field::DEPTH_AND_STENCIL),
+			notNull(depthPeelFramebuffer) ? depthPeelFramebuffer->texture(Framebuffer::DEPTH) : shared_ptr<Texture>(),
+			gbuffer->texture(GBuffer::Field::CS_NORMAL),
+			gbuffer->texture(GBuffer::Field::SS_POSITION_CHANGE),
+			gbuffer->depthGuardBandThickness() - gbuffer->colorGuardBandThickness());
+	}
+	END_PROFILER_EVENT();
+}
+
+
 void ProbeRenderer::renderProbeShading(RenderDevice* rd, const shared_ptr<GBuffer>& gbuffer, const LightingEnvironment& environment) {
 	// Make a pass over the screen, performing shading
 	rd->push2D(); {
@@ -72,7 +109,20 @@ void ProbeRenderer::renderProbeShading(RenderDevice* rd, const shared_ptr<GBuffe
 		gbuffer->setShaderArgsRead(args, "gbuffer_");
 
 		args.setRect(rd->viewport());
-		args.setMacro("myLolMacro", true);
+		
+		App* app = App::instance;
+
+		bool probeStructureLoaded = app->probeStructure != NULL;
+
+		args.setMacro("Render_DIRECT", app->bRenderDirect);
+		if (probeStructureLoaded)
+		{
+			args.setMacro("Render_INDIRECT", app->bRenderIndirect);
+			args.setMacro("Render_INDIRECTBRDF", app->bRenderMultiplyIndirectByBRDF);
+
+			args.setMacro("WEIGHTS_WNN", app->probeStructure->m_type == EProbeStructureType::WeightedNearestNeighbour);
+			args.setMacro("WEIGHTS_TRILERP", app->probeStructure->m_type == EProbeStructureType::Trilinear);
+		}
 
 		LAUNCH_SHADER("ProbeRenderer_deferredShade.pix", args);
 	} rd->pop2D();

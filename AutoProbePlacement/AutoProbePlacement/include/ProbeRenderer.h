@@ -17,6 +17,17 @@ public:
 		const shared_ptr<GBuffer>&          gbuffer,
 		const Array<shared_ptr<Surface>>&   allSurfaces) override;
 
+
+	virtual void computeShadowing
+	(RenderDevice*                       rd,
+		const Array<shared_ptr<Surface>>&   allSurfaces,
+		const shared_ptr<GBuffer>&          gbuffer,
+		const shared_ptr<Framebuffer>&      depthPeelFramebuffer,
+		LightingEnvironment&                lightingEnvironment) override;
+
 	void renderProbeShading(RenderDevice* rd, const shared_ptr<GBuffer>& gbuffer, const LightingEnvironment& environment);
+
+	bool bRenderDirect;
+	bool bRenderIndirect;
 };
 

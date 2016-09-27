@@ -60,8 +60,8 @@ def makeProbe(x, y, z, probeCount, rootPath, pRenderType):
 	sampleCount = 1
 	if (pRenderType == "Probes"):
 		sampleCount = 128;
-		integratorType = "path";
-		# integratorType = "custom_path";
+		# integratorType = "path";
+		integratorType = "path_samples";
 
 	#Create integrator
 	integrator = pmgr.create({
@@ -88,7 +88,7 @@ def makeProbe(x, y, z, probeCount, rootPath, pRenderType):
 	filmProps['height'] = 64	
 	filmProps['banner'] = False
 	filmProps['pixelFormat'] = "rgb"
-	# filmProps['gamma'] = 0.0
+	filmProps['gamma'] = 2.2
 	filmProps['rfilter'] = "box"
 	filmProps['componentFormat'] = "float32"
 	

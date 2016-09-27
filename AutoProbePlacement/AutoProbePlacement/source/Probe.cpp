@@ -62,7 +62,8 @@ shared_ptr<Texture> Probe::getTexture(int texID)
 					{
 						shared_ptr<Image> img = Image::fromFile(filename);
 						img->flipHorizontal();
-						texture = Texture::fromImage(G3D::String(filename), img);
+						const G3D::ImageFormat* format = G3D::ImageFormat::SRGB8();;
+						texture = Texture::fromImage(G3D::String(filename), img, format);
 					}
 					catch(...)
 					{

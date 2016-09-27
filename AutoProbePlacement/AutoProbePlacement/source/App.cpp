@@ -123,10 +123,10 @@ void App::onInit() {
 	bManipulateProbesEnabled = false;
 	hideActors = false;
 	useMatlabOptimization = true;
+	bRenderDirect = true;
+	bRenderIndirect = true;
+	bRenderMultiplyIndirectByBRDF = false;
 	sampleSet = NULL;
-    m_debugCamera->filmSettings().setBloomStrength(0);
-    m_debugCamera->filmSettings().setSensitivity(1);
-    m_debugCamera->filmSettings().setGamma(0);
     timer = 0;
 	m_activeCamera->setPosition(Point3(0,3,3));
 	sampleDropDownIndex = 0;
@@ -169,7 +169,6 @@ void App::onInit() {
     //Load the textures containing the SH coefficient values
     //loadSHTextures();
 	GApp::loadScene((String)"C:\\git\\AutoProbePlacement\\AutoProbePlacement\\data-files\\Scenes\\zcbox\\cbox.Scene.Any");
-	setActiveCamera(m_debugCamera);
 
 }//end of onInit 
 
@@ -465,8 +464,6 @@ void App::drawProbeLineSegments(RenderDevice* rd)
 void App::onGraphics3D(RenderDevice* rd, Array<shared_ptr<Surface> >& surface3D) {
 
 
-
-
 	GBuffer::Specification gbufferSpec = m_gbufferSpecification;
 	gbufferSpec.encoding[GBuffer::Field::WS_POSITION].format = ImageFormat::RGBA16F();
 	extendGBufferSpecification(gbufferSpec);
@@ -695,18 +692,9 @@ void App::makeGui() {
 	GuiPane* tab = tabPane->addTab("General Controls");
 
     tab->beginRow();
-    tab->addCheckBox("Show Interp Probes", &showInterpolationProbes);
-    tab->addCheckBox("Show ALL Probes", &showAllProbes);
-    tab->addCheckBox("CPUInterpolation", &CPUInterpolation);
-    tab->addCheckBox("highlight probes", &highlightProbes);
-    tab->addCheckBox("Hide Ceiling", &hideCeiling);
-    tab->addCheckBox("Hide Scene", &hideRoom);
-    tab->addCheckBox("Hide Actors", &hideActors);
-    tab->addCheckBox("Baked Textures", &useBakedSceneTextures);
 	tab->addCheckBox("Interpolate Coefficients", &interpolateCoefficients);
-	tab->addCheckBox("SHGradients", &useSHGradients);
 	tab->addButton("displace", GuiControl::Callback(this, &App::displaceProbes), GuiTheme::TOOL_BUTTON_STYLE);
-	tab->addButton("OfflineRender", GuiControl::Callback(this, &App::offlineRender), GuiTheme::TOOL_BUTTON_STYLE);
+
     tab->endRow();
 
     tab->beginRow();
@@ -733,8 +721,24 @@ void App::makeGui() {
 	tab->addTextBox("NumProbes", &m_sNumICProbes);
 	tab->endRow();
 
+	tab = tabPane->addTab("Rendering");
+	tab->beginRow();
+	tab->addCheckBox("Direct", &(bRenderDirect));
+	tab->addCheckBox("Indirect (probes)", &(bRenderIndirect));
+	tab->addCheckBox("* BRDF", &(bRenderMultiplyIndirectByBRDF));
+	tab->addCheckBox("AOF", &(bRenderAO));
+	tab->addCheckBox("Shadow Maps", &(bRenderShadowMaps));
+	tab->endRow();
+
+	tab->beginRow();
+	tab->addCheckBox("Show Interp Probes", &showInterpolationProbes);
+	tab->addCheckBox("Show ALL Probes", &showAllProbes);
+	tab->addCheckBox("CPUInterpolation", &CPUInterpolation);
+	tab->addCheckBox("highlight probes", &highlightProbes);
+	tab->addButton("OfflineRender", GuiControl::Callback(this, &App::offlineRender), GuiTheme::TOOL_BUTTON_STYLE);
+	tab->endRow();
+
 	tab = tabPane->addTab("Actors");
-	//
 	tab->beginRow();
 	tab->addButton("Add sphere", GuiControl::Callback(this, &App::addOneActor), GuiTheme::TOOL_BUTTON_STYLE);
 	tab->addButton("Add sceneActor", GuiControl::Callback(this, &App::addOneActorSq), GuiTheme::TOOL_BUTTON_STYLE);

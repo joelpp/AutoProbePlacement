@@ -10,5 +10,5 @@ void main() {
     //result = vec4(texCoord[0], texCoord[1], 0, 1.0);
     //result = vec4(vColor, 1.0);
     //result = vec4(vec3(1.0), 1.0);
-    result = texture(uSampler, texCoord)*multiplier;
+    result = texture(uSampler, texCoord);
 }

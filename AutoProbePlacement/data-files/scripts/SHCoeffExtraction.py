@@ -87,74 +87,72 @@ def extractCoefficients(irradianceImage, normalImage, positionImage, depthImage,
 			domegasum += domega;
 			# logfile.write(repr((h,w,u,v,phi,theta,domega)) + "\n");
 
-			radiance = [x / 255.0 for x in irradianceImage[h][w]];
+			radiance = [helper.sRGBToRGBVal(x /255.0) for x in irradianceImage[h][w]];
 			# print(radiance)
 			if ((radiance[0] == 0) and (radiance[1] == 0) and (radiance[2] == 0)):
 				continue;
-			normal = loadNormal(normalImage[h][w]);
+			# normal = loadNormal(normalImage[h][w]);
+			# position = loadPosition(positionImage[h][w]);
 
-			position = loadPosition(positionImage[h][w]);
-			# depth = loadDepth(depthImage[i][j][0]);
-			# print((i,j,radiance,position,normal));
-			# exit();
-			lol += 1;
-			s = [a - b for a, b in zip(position, probePosition)];
-			sNorm = vectorNorm(s);
+			# lol += 1;
+			# s = [a - b for a, b in zip(position, probePosition)];
+			# sNorm = vectorNorm(s);
 			
-			directionVector = normalizeVector(s);
+			# directionVector = normalizeVector(s);
 			
-			normalDotDirectionVector = dot(normal, directionVector);
+			# normalDotDirectionVector = dot(normal, directionVector);
 			
-			dA = domega * sNorm * sNorm / normalDotDirectionVector;
-			g = normalDotDirectionVector / (sNorm ** 2);
+			# dA = domega * sNorm * sNorm / normalDotDirectionVector;
+			# g = normalDotDirectionVector / (sNorm ** 2);
 			
-			gGradTerm0 = [(x / (sNorm ** 3)) for x in normal];
-			gGradTerm1Factor = 3 * dot(normal, s) / (sNorm ** 5);
-			gGradTerm1 = [x * gGradTerm1Factor for x in s];
+			# gGradTerm0 = [(x / (sNorm ** 3)) for x in normal];
+			# gGradTerm1Factor = 3 * dot(normal, s) / (sNorm ** 5);
+			# gGradTerm1 = [x * gGradTerm1Factor for x in s];
 			
-			gGrad = [a - b for a, b in zip(gGradTerm0, gGradTerm1)];
-			(dYdx, dYdy, dYdz) = computeSHGradients(normal);
-			# dYdx = computedYdx(normal);
-			# dYdy = computedYdy(normal);
-			# dYdz = computedYdz(normal);
+			# gGrad = [a - b for a, b in zip(gGradTerm0, gGradTerm1)];
+			# (dYdx, dYdy, dYdz) = computeSHGradients(normal);
+
+			# # dYdx = computedYdx(normal);
+			# # dYdy = computedYdy(normal);
+			# # dYdz = computedYdz(normal);
 			# # # Step up in the integral for the 9 coefficients * 3 colors.
 			for k in range(numCoeffs):
-				shFunctionEvaluation = SHxyz_yup(kToLM(k), tuple(directionVector));
+				# shFunctionEvaluation = SHxyz_yup(kToLM(k), tuple(directionVector));
 
-				shFunctionEvaluationGrad = [dYdx[k], dYdy[k], dYdz[k]];
+				# shFunctionEvaluationGrad = [dYdx[k], dYdy[k], dYdz[k]];
 				
-				integralFactor0Term0 = [x * g for x in shFunctionEvaluationGrad]
-				integralFactor0Term1 = [x * shFunctionEvaluation for x in gGrad]
+				# integralFactor0Term0 = [x * g for x in shFunctionEvaluationGrad]
+				# integralFactor0Term1 = [x * shFunctionEvaluation for x in gGrad]
 				
-				integralFactor0 = [a + b for a, b in zip(integralFactor0Term0, integralFactor0Term1)]
+				# integralFactor0 = [a + b for a, b in zip(integralFactor0Term0, integralFactor0Term1)]
 				
-				integralTerm = [[0, 0, 0], [0, 0, 0], [0, 0, 0]];
-				integralTerm[0] = [x * radiance[0] * dA for x in integralFactor0];
-				integralTerm[1] = [x * radiance[1] * dA for x in integralFactor0];
-				integralTerm[2] = [x * radiance[2] * dA for x in integralFactor0];
+				# integralTerm = [[0, 0, 0], [0, 0, 0], [0, 0, 0]];
+				# integralTerm[0] = [x * radiance[0] * dA for x in integralFactor0];
+				# integralTerm[1] = [x * radiance[1] * dA for x in integralFactor0];
+				# integralTerm[2] = [x * radiance[2] * dA for x in integralFactor0];
 				
-				for channel in xrange(3):
-					coeffGrad[k][channel] = [(a + b) * 1 for a,b in zip(coeffGrad[k][channel], integralTerm[channel])]
+				# for channel in xrange(3):
+				# 	coeffGrad[k][channel] = [(a + b) * 1 for a,b in zip(coeffGrad[k][channel], integralTerm[channel])]
 				
-				if ((k == 0) and (h == 15) and (w == 0)):
-					ss = "";
-					ss += "DEBUG INFO ";
-					ss += repr(position) + "\n";
-					ss += repr(normal) + "\n";
-					ss += repr(s) + "\n";
-					ss += repr(normalDotDirectionVector) + "\n";
-					ss += repr(gGrad) + "\n";
-					ss += repr(dYdx[0]) + "\n";
-					ss += repr(shFunctionEvaluationGrad) + "\n";
-					ss += repr(integralFactor0) + "\n";
-					ss += repr(integralTerm[0]) + "\n";
-					ss += "END DEBUG INFO \n";
-					print(ss)
+				# if ((k == 0) and (h == 15) and (w == 0)):
+				# 	ss = "";
+				# 	ss += "DEBUG INFO ";
+				# 	ss += repr(position) + "\n";
+				# 	ss += repr(normal) + "\n";
+				# 	ss += repr(s) + "\n";
+				# 	ss += repr(normalDotDirectionVector) + "\n";
+				# 	ss += repr(gGrad) + "\n";
+				# 	ss += repr(dYdx[0]) + "\n";
+				# 	ss += repr(shFunctionEvaluationGrad) + "\n";
+				# 	ss += repr(integralFactor0) + "\n";
+				# 	ss += repr(integralTerm[0]) + "\n";
+				# 	ss += "END DEBUG INFO \n";
+				# 	print(ss)
 				
 				shFunctionEvaluationForTexel = SHxyz_yup(kToLM(k), texelWSVector);
 				(l,m) = helper.kToLM(k);
-				if ((h ==5 ) and (w == 5)):
-					print((radiance, texelWSVector, domega, k, shFunctionEvaluationForTexel));
+				# if ((h ==5 ) and (w == 5)):
+				# 	print((radiance, texelWSVector, domega, k, shFunctionEvaluationForTexel));
 				LSloan[k][0] += domega * radiance[0] * helper.NDotOmegaCoeff(l) * shFunctionEvaluationForTexel;
 				LSloan[k][1] += domega * radiance[1] * helper.NDotOmegaCoeff(l) * shFunctionEvaluationForTexel;
 				LSloan[k][2] += domega * radiance[2] * helper.NDotOmegaCoeff(l) * shFunctionEvaluationForTexel;
@@ -198,15 +196,16 @@ for line in lines:
 	probePosition = [float(x) / globalInfo["scale"] for x in splitLine];
 
 	path = "/probes/Probe_"+repr(probeCount)+".png";
+	# path = "/probes/Probe_"+repr(probeCount)+".exr";
 	normalPath = "/Normals/Normal_"+repr(probeCount)+".exr";
 	depthPath = "/Depths/Depth_"+repr(probeCount)+".exr";
 	positionPath = "/Positions/Position_"+repr(probeCount)+".exr";
 
 	irradianceImage = imageio.imread(rootPath + path)
-	normalImage = imageio.imread(rootPath + normalPath)
-	depthImage = 0;#imageio.imread(rootPath + depthPath)
-	# positionImage = misc.imread(rootPath + positionPath)
-	positionImage = imageio.imread(rootPath + positionPath)
+	# normalImage = imageio.imread(rootPath + normalPath)
+	# depthImage = 0;#imageio.imread(rootPath + depthPath)
+	# #positionImage = misc.imread(rootPath + positionPath)
+	# positionImage = imageio.imread(rootPath + positionPath)
 
 	#------------------------------
 	#|	QUADRATURES INTEGRATION  |	  	
@@ -221,7 +220,8 @@ for line in lines:
 	
 	print("Beginning Quadratures Integration for probe "+repr(probeCount));
 
-	(LSloan, coeffGrad) = extractCoefficients(irradianceImage, normalImage, positionImage, depthImage, probePosition);
+	# (LSloan, coeffGrad) = extractCoefficients(irradianceImage, normalImage, positionImage, depthImage, probePosition);
+	(LSloan, coeffGrad) = extractCoefficients(irradianceImage, 0, 0, 0, probePosition);
 
 	#Dump resulting coefficients in their own file and the console
 	cPickle.dump(LSloan, open(savePath+'.p', 'wb')) 

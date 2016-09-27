@@ -81,9 +81,9 @@ def makeProbe(x, y, z, probeCount, rootPath, pRenderType):
 	sampleCount = 1
 	if (pRenderType == "Probes"):
 		sampleCount = numSamplesOption;
-		integratorType = "path";
+		# integratorType = "path";
 		# integratorType = "direct";
-		# integratorType = "path_samples";
+		integratorType = "path_samples";
 
 	#Create integrator
 	integrator = pmgr.create({
@@ -106,8 +106,8 @@ def makeProbe(x, y, z, probeCount, rootPath, pRenderType):
 	filmProps = Properties('hdrfilm')
 	if (pRenderType == "Probes"):
 		filmProps = Properties('ldrfilm')
-	filmProps['width'] = 1024 #widthOption
-	filmProps['height'] = 768 #heightOption	
+	filmProps['width'] = 512 #widthOption
+	filmProps['height'] = 384 #heightOption	
 	filmProps['banner'] = False
 	filmProps['pixelFormat'] = "rgb"
 	# filmProps['gamma'] = 0.0

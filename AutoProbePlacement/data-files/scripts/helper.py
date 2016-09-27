@@ -264,4 +264,30 @@ def readSceneAndProbeStructureInfo(sceneName, probeStructureName):
 				returnInfo[info] = getParamFromLine(line);
 
 	return returnInfo;
+
+def sRGBToRGBVal(val):
+	if (val < 0.04045):
+		return val / 12.92;
+	else:
+		return ((val + 0.055) / 1.055)**2.4; 
 	
+def sRGBToRGB(srgbColor):
+	rgb = [];
+	for x in srgbColor:
+		rgb.push(sRGBToRGBVal(x))
+
+	return rgb;
+
+def writeVector(file, vector): 
+	toWrite = "";
+	for i in xrange(len(vector)):
+		toWrite += str(vector[i]);
+		toWrite += " ";
+	toWrite += "\n";
+	file.write(toWrite);
+
+def add(v1, v2):
+	return [a+b for a,b in zip(v1, v2)];
+
+def intVector(v):
+	return [int(x) for x in v];

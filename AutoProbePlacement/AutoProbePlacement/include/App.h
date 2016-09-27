@@ -242,7 +242,6 @@ private:
 	Array<AttributeArray> colorsAtt;
 	Array<Vector3> coeffValues;
 
-	ProbeStructure *probeStructure;
 	ProbeStructure *OGprobeStructure;
 	ProbeStructure *anotherProbeStructure;
 	Array<Probe*> probesToRender;
@@ -303,6 +302,8 @@ private:
 	bool saveSample;
 	bool useBakedSceneTextures;
 	bool interpolateCoefficients;
+
+
 	Vector3 offset;
 	Vector3 step;
 
@@ -337,7 +338,15 @@ private:
 	TriTree triTree;
 	//Index* trisIndex;
 
-	public:
+public:
+	ProbeStructure *probeStructure;
+
+	bool bRenderDirect;
+	bool bRenderIndirect;
+	bool bRenderMultiplyIndirectByBRDF;
+	bool bRenderShadowMaps;
+	bool bRenderAO;
+
 	static App* instance;
 	App(const GApp::Settings& settings = GApp::Settings());
 	virtual void onAI() override;

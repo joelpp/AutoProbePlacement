@@ -37,4 +37,5 @@ public:
 	bool probeOptimizationPass(WeightMatrixType& A, Eigen::VectorXd& b, Eigen::VectorXd* result);
 	void createbVector(Eigen::VectorXd* bVector, const Eigen::VectorXd* rgbColumn);
 
+	void clear();
 };

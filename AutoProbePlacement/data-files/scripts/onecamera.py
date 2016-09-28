@@ -7,20 +7,14 @@ import os, sys
 
 # Ensure that Python will be able to find the Mitsuba core libraries
 
-if (True):
-	sys.path.append('C:/git/mitsuba/dist/python/2.7/')
-	# Ensure that Python will be able to find the Mitsuba core libraries
-	os.environ['PATH'] = 'C:/git/mitsuba/dist/' + os.pathsep + os.environ['PATH']
-else:
-	sys.path.append('C:/Users/Joel/Downloads/mitsuba-c7aac473729a/mitsuba-c7aac473729a/dist/python/2.7/')
-	os.environ['PATH'] = 'C:/Users/Joel/Downloads/mitsuba-c7aac473729a/mitsuba-c7aac473729a/dist/' + os.pathsep + os.environ['PATH']
-
 
 from mitsuba.core import *
 from mitsuba.render import SceneHandler, RenderQueue, RenderJob
 
 from string import maketrans
 import helper
+
+helper.importMitsuba();
 
 # def readProbeStructureInfo():
 (sceneName, structureName) = helper.getSceneAndStructureFromCommandLineArguments(sys.argv);
@@ -60,8 +54,8 @@ def makeProbe(x, y, z, probeCount, rootPath, pRenderType):
 	sampleCount = 1
 	if (pRenderType == "Probes"):
 		sampleCount = 128;
-		# integratorType = "path";
-		integratorType = "path_samples";
+		integratorType = "path";
+		# integratorType = "path_samples";
 
 	#Create integrator
 	integrator = pmgr.create({

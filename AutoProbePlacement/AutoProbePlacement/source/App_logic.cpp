@@ -5,9 +5,9 @@
 
 
 Vector3 App::getRandomPointInScene(){
-	double x = r.uniform(-5,5);
-	double y = r.uniform(0,5);
-	double z = r.uniform(-5,5);
+	float x = r.uniform(-5,5);
+	float y = r.uniform(0,5);
+	float z = r.uniform(-5,5);
 
 	return Vector3(x,y,z);
 }
@@ -118,8 +118,8 @@ float App::computeError(std::string logFilePath)
 	while (std::getline(currentFile, currentLine))
 	{
 		std::getline(referenceFile, referenceLine);
-		float currentValue = std::atof(currentLine.c_str());
-		float referenceValue = std::atof(referenceLine.c_str());
+		float currentValue = std::stof(currentLine.c_str());
+		float referenceValue = std::stof(referenceLine.c_str());
 	
 		error += pow(currentValue - referenceValue, 2);
 	}
@@ -271,7 +271,7 @@ void App::tryOptimization()
 		std::string line;
 		while(std::getline(file, line))
 		{
-			displacements.push_back(std::atof(line.c_str()));
+			displacements.push_back(std::stof(line.c_str()));
 		}
 	}
 	else
@@ -319,7 +319,6 @@ void App::computeTriplets()
 void App::computeSceneSamples(){
     // generate n random points and store their colors, compare to the color in the corresponding texture , add to a cost function
 	int n = atoi(samplesToSave->c_str());
-    Color4* sampled;
     Vector2 UV, IJ;
     Vector3 N, P;
     int selectedModel;
@@ -338,7 +337,7 @@ void App::computeSceneSamples(){
 void App::addOneActor()
 {
 	addActor("bunny", bunnyModel /*sceneModel*/, 
-			 Vector3( atof(actorSpawnX.c_str()), atof(actorSpawnY.c_str()), atof(actorSpawnZ.c_str()) ), 
+			 Vector3( std::stof(actorSpawnX.c_str()), std::stof(actorSpawnY.c_str()), std::stof(actorSpawnZ.c_str()) ),
 			 0.1f, shared_ptr<Texture>(), true, Vector3(1,1,1));
 }
 
@@ -347,11 +346,11 @@ void App::addOneActorSq()
 	for (int i = 0; i < m_scene.m_models.size(); ++i)
 	{
 		addActor("square", m_scene.m_models[i], 
-				 Vector3(atof(actorSpawnX.c_str()),atof(actorSpawnY.c_str()),atof(actorSpawnZ.c_str())), 
+				 Vector3(std::stof(actorSpawnX.c_str()), std::stof(actorSpawnY.c_str()), std::stof(actorSpawnZ.c_str())),
 				 1.0f, shared_ptr<Texture>(), false, m_scene.m_colors[i]);
 	}
 	//addActor("square", sceneModel, 
-	//		 Vector3(atof(actorSpawnX.c_str()),atof(actorSpawnY.c_str()),atof(actorSpawnZ.c_str())), 
+	//		 Vector3(stof(actorSpawnX.c_str()),stof(actorSpawnY.c_str()),stof(actorSpawnZ.c_str())), 
 	//		 1.0f, shared_ptr<Texture>());
 }
 
@@ -380,9 +379,9 @@ void App::displaceProbes()
 		G3D::Vector3 displacementV = Vector3(1,1,1).unit();
 
 		std::vector<float> displacement;
-		displacement.push_back((float)i * 0.001 * displacementV.x);
-		displacement.push_back((float)i * 0.001 * displacementV.y);
-		displacement.push_back((float)i * 0.001 * displacementV.z);
+		displacement.push_back((float)i * 0.001f * displacementV.x);
+		displacement.push_back((float)i * 0.001f * displacementV.y);
+		displacement.push_back((float)i * 0.001f * displacementV.z);
 
 		Array<G3D::Vector3> renderedCoeffs, optimCoeffs;
 

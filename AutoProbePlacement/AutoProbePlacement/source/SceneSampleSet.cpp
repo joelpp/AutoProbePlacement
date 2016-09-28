@@ -27,7 +27,7 @@
 #define GENERATE_POSITION_FITTING_MATRIX 1
 #define GENERATE_COEFFICIENTS_FITTING_MATRIX 0
 
-#define PI 3.141592653589793238462643383279
+#define PI 3.141592653589793238462643383279f
 
 
 bool invertNormal = true;
@@ -44,18 +44,18 @@ void SceneSampleSet::load()
 {
 	m_samples.clear();
 	std::fstream samplesFile, irradianceFile;
-	std::string samplesPath = "C:/libraries/g3d/samples/aTest/data-files/Scenes/" + m_sceneName + "/SampleSets/" + m_sampleSetName + "/SamplePositions.txt";
+	std::string samplesPath = "../data-files/Scenes/" + m_sceneName + "/SampleSets/" + m_sampleSetName + "/SamplePositions.txt";
 
 	bool loadIrradianceResults2 = true;
 	std::string irradiancePath;
 
 	if (loadIrradianceResults2)
 	{
-		irradiancePath = "C:/libraries/g3d/samples/aTest/data-files/Scenes/" + m_sceneName + "/SampleSets/" + m_sampleSetName + "/IrradianceResults2.txt";
+		irradiancePath = "../data-files/Scenes/" + m_sceneName + "/SampleSets/" + m_sampleSetName + "/IrradianceResults2.txt";
 	}
 	else
 	{
-		irradiancePath = "C:/libraries/g3d/samples/aTest/data-files/Scenes/" + m_sceneName + "/SampleSets/" + m_sampleSetName + "/IrradianceResults.txt";
+		irradiancePath = "../data-files/Scenes/" + m_sceneName + "/SampleSets/" + m_sampleSetName + "/IrradianceResults.txt";
 
 	}
 
@@ -96,32 +96,33 @@ void SceneSampleSet::load()
 
 			//if (loadIrradianceResults2)
 			//{
-			//	ss.irradiance = Color3(std::atof(splitLine[0].c_str()),
-			//						   std::atof(splitLine[1].c_str()),
-			//						   std::atof(splitLine[2].c_str()));
+			//	ss.irradiance = Color3(std::stof(splitLine[0].c_str()),
+			//						   std::stof(splitLine[1].c_str()),
+			//						   std::stof(splitLine[2].c_str()));
 			//	//ss.irradiance *= 10;
 			//}
 			//else
 			//{
-				ss.irradiance = Color3(std::atof(splitLine[0].c_str()) / 255.f,
-					std::atof(splitLine[1].c_str()) / 255.f,
-					std::atof(splitLine[2].c_str()) / 255.f);
+			float divider = 1.f;
+			ss.irradiance = Color3(std::stof(splitLine[0].c_str()) / divider,
+								   std::stof(splitLine[1].c_str()) / divider,
+								   std::stof(splitLine[2].c_str()) / divider);
 			//}
 
 		}
 
 		if (currentLine == 2)
 		{ // Samples Positions
-			ss.position = Vector3(std::atof(splitLine[0].c_str()) * m_scale,
-								  std::atof(splitLine[1].c_str()) * m_scale,
-								  std::atof(splitLine[2].c_str()) * m_scale);
+			ss.position = Vector3(std::stof(splitLine[0].c_str()) * m_scale,
+								  std::stof(splitLine[1].c_str()) * m_scale,
+								  std::stof(splitLine[2].c_str()) * m_scale);
 		}
 
 		if (currentLine == 4)
 		{ // Normals
-			ss.normal = Vector3(std::atof(splitLine[0].c_str()),
-				std::atof(splitLine[1].c_str()),
-				std::atof(splitLine[2].c_str()));
+			ss.normal = Vector3(std::stof(splitLine[0].c_str()),
+				std::stof(splitLine[1].c_str()),
+				std::stof(splitLine[2].c_str()));
 		}
 
 		currentLine++;
@@ -146,7 +147,7 @@ void SceneSampleSet::addSample(SceneSample sample)
 }
 void SceneSampleSet::save()
 {
-	std::string savePath = "C:/libraries/G3D/samples/aTest/data-files/Scenes/" + m_sceneName + "/SampleSets/" + m_sampleSetName + "/SamplePositions.txt";
+	std::string savePath = "../data-files/Scenes/" + m_sceneName + "/SampleSets/" + m_sampleSetName + "/SamplePositions.txt";
 	std::fstream saveFile;
 	saveFile.open(savePath.c_str(), std::fstream::out);
 
@@ -157,7 +158,7 @@ void SceneSampleSet::save()
 	saveFile.close();
 }
 
-double phongCoeffs(int l, double r = 1.0f)
+float phongCoeffs(int l, float r = 1.0f)
 {
 	if (l == 0)
 	{
@@ -165,11 +166,11 @@ double phongCoeffs(int l, double r = 1.0f)
 	}
 	else if (l == 1)
 	{
-		return PI * (1.0 + r) / (2.0 + r);
+		return PI * (1.0f + r) / (2.0f + r);
 	}
 	else if (l == 2)
 	{
-		return PI * r / (3.0 + r);
+		return PI * r / (3.0f + r);
 	}
 	return 0;
 }
@@ -182,9 +183,9 @@ double NDotOmegaCoeff(int l)
 	}
 	else if (l % 2 == 0)
 	{
-		int a = pow(-1, l / 2.f - 1);
+		int a = (int) pow(-1, l / 2.f - 1);
 		int b = SH::factorial(l);
-		return (2 * PI * a * b) / ((l + 2) * (l + 1) * pow(2, l) * SH::factorial(pow(l / 2.f, 2)));
+		return (double) ( (2 * PI * a * b) / ((l + 2) * (l + 1) * ((int) pow(2, l)) * SH::factorial( (int)pow( ((float)l) / 2.f, 2) ) ) );
 	}
 	else
 	{
@@ -228,7 +229,7 @@ void SceneSampleSet::generateTriplets(int NumberOfSamples, std::vector<Eigen::Tr
 
 	//	// Scene (probe structure) Parameters
 	const G3D::Vector3 firstProbePosition = G3D::Vector3(probeStructure->m_firstProbePosition[0], probeStructure->m_firstProbePosition[1], probeStructure->m_firstProbePosition[2]);
-	const G3D::Vector3 dimensions = G3D::Vector3(probeStructure->m_dimensions[0], probeStructure->m_dimensions[1], probeStructure->m_dimensions[2]);
+	const G3D::Vector3 dimensions = G3D::Vector3( (float) probeStructure->m_dimensions[0], (float) probeStructure->m_dimensions[1], (float) probeStructure->m_dimensions[2]);
 	float step = probeStructure->m_step;
 	int counter = 0;
 	int elementCounter = 0;
@@ -348,7 +349,7 @@ void SceneSampleSet::generateRGBValuesFromProbes(int NumberOfSamples, bool ref =
 
 	//	// Scene (probe structure) Parameters
 	const G3D::Vector3 firstProbePosition = G3D::Vector3(probeStructure->m_firstProbePosition[0], probeStructure->m_firstProbePosition[1], probeStructure->m_firstProbePosition[2]);
-	const G3D::Vector3 dimensions = G3D::Vector3(probeStructure->m_dimensions[0], probeStructure->m_dimensions[1], probeStructure->m_dimensions[2]);
+	const G3D::Vector3 dimensions = G3D::Vector3( (float) probeStructure->m_dimensions[0], (float) probeStructure->m_dimensions[1], (float) probeStructure->m_dimensions[2]);
 	float step = probeStructure->m_step;
 
 
@@ -407,7 +408,7 @@ void SceneSampleSet::generateRGBValuesFromProbes(int NumberOfSamples, bool ref =
 				// We multiply the inter weight by the geometric term and the SH function value in this direction
 				float phong = phongCoeffs(lm.first);
 				float sh = SH::SHxyz_yup(lm.first, lm.second, SampleNormal);
-				double factors = weight *
+				float factors = weight *
 					//NDotOmegaCoeff(lm(0)) *
 					phong *
 					sh;
@@ -428,7 +429,7 @@ void SceneSampleSet::generateRGBValuesFromProbes(int NumberOfSamples, bool ref =
 
 			}
 		}
-		rgb /= 3.141592654;
+		rgb /= 3.141592654f;
 		samplesRGB << rgb.x << std::endl;
 		samplesRGB << rgb.y << std::endl;
 		samplesRGB << rgb.z << std::endl;
@@ -456,11 +457,25 @@ void SceneSampleSet::createbVector(Eigen::VectorXd* bVector, const Eigen::Vector
 	int counter = 0;
 	while (std::getline(refFile, line))
 	{
-		float value = std::atof(line.c_str());
+		float value = std::stof(line.c_str());
 		(*bVector)(counter) = value - (*rgbColumn)(counter);
 		counter++;
 	}
 	refFile.close();
+}
+
+void SceneSampleSet::clear()
+{
+	std::fstream samplesFile, irradianceFile;
+	std::string samplesPath = "../data-files/Scenes/" + m_sceneName + "/SampleSets/" + m_sampleSetName + "/SamplePositions.txt";
+
+	std::string irradiancePath = "../data-files/Scenes/" + m_sceneName + "/SampleSets/" + m_sampleSetName + "/IrradianceResults2.txt";
+
+	samplesFile.open(samplesPath.c_str(), std::fstream::out);
+	irradianceFile.open(irradiancePath.c_str(), std::fstream::out);
+	samplesFile.close();
+	irradianceFile.close();
+	m_samples.clear();
 }
 
 std::vector<float> SceneSampleSet::tryOptimizationPass(int NumberOfSamples, bool ref)
@@ -502,7 +517,7 @@ std::vector<float> SceneSampleSet::tryOptimizationPass(int NumberOfSamples, bool
 	{
 		for (int i = 0; i < NumberOfProbes * 3; ++i)
 		{
-			toReturn.push_back(optimizationResult(i));
+			toReturn.push_back((float)optimizationResult(i));
 		}
 		
 		std::fstream outputFile;

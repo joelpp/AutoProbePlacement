@@ -4,13 +4,23 @@ from PIL import Image
 import imageio
 import helper
 
+
 if (True):
-	sys.path.append('C:/Users/polardpj.artichaut/Downloads/mitsuba-eaff1cd989f3/mitsuba-eaff1cd989f3/dist/python/2.7/')
+	sys.path.append('C:/git/mitsuba/dist/python/2.7/')
 	# Ensure that Python will be able to find the Mitsuba core libraries
-	os.environ['PATH'] = 'C:/Users/polardpj.artichaut/Downloads/mitsuba-eaff1cd989f3/mitsuba-eaff1cd989f3/dist/' + os.pathsep + os.environ['PATH']
+	os.environ['PATH'] = 'C:/git/mitsuba/dist/' + os.pathsep + os.environ['PATH']
 else:
 	sys.path.append('C:/Users/Joel/Downloads/mitsuba-c7aac473729a/mitsuba-c7aac473729a/dist/python/2.7/')
 	os.environ['PATH'] = 'C:/Users/Joel/Downloads/mitsuba-c7aac473729a/mitsuba-c7aac473729a/dist/' + os.pathsep + os.environ['PATH']
+
+
+# if (True):
+# 	sys.path.append('C:/Users/polardpj.artichaut/Downloads/mitsuba-eaff1cd989f3/mitsuba-eaff1cd989f3/dist/python/2.7/')
+# 	# Ensure that Python will be able to find the Mitsuba core libraries
+# 	os.environ['PATH'] = 'C:/Users/polardpj.artichaut/Downloads/mitsuba-eaff1cd989f3/mitsuba-eaff1cd989f3/dist/' + os.pathsep + os.environ['PATH']
+# else:
+# 	sys.path.append('C:/Users/Joel/Downloads/mitsuba-c7aac473729a/mitsuba-c7aac473729a/dist/python/2.7/')
+# 	os.environ['PATH'] = 'C:/Users/Joel/Downloads/mitsuba-c7aac473729a/mitsuba-c7aac473729a/dist/' + os.pathsep + os.environ['PATH']
 
 from mitsuba.core import *
 from mitsuba.render import SceneHandler, RenderQueue, RenderJob, Scene, Integrator
@@ -44,7 +54,7 @@ originalScene = SceneHandler.loadScene(fileResolver.resolve("MitsubaScene.xml"),
 originalScene.initialize();
 
 # Integrator properties
-integratorType = 'custom_path'
+integratorType = 'path_samples'
 # integratorType = 'path'
 # integratorType = 'direct'
 
@@ -103,12 +113,12 @@ def render(sampleNumber):
 	})
 
 	#Create film
-	filmProps = Properties('ldrfilm')
+	filmProps = Properties('hdrfilm')
 	filmProps['width'] = 1
 	filmProps['height'] = 1	
 	filmProps['banner'] = False
 	filmProps['pixelFormat'] = "rgb"
-	# filmProps['gamma'] = 0.0
+	# filmProps['gamma'] = 1.0
 	filmProps['rfilter'] = "box"
 	filmProps['componentFormat'] = "float32"
 	film = pmgr.createObject(filmProps)
@@ -126,7 +136,7 @@ def render(sampleNumber):
 	sceneCopy.addSensor(sensor);
 	sceneCopy.setSensor(sensor);
 	
-	sceneCopy.setDestinationFile(sampleSetPath + '/irradiance/irr_' + repr(sampleNumber) + '.png');
+	sceneCopy.setDestinationFile(sampleSetPath + '/irradiance/irr_' + repr(sampleNumber) + '.exr');
 	
 	sceneCopy.configure()
 	# print(sceneCopy);
@@ -149,7 +159,7 @@ for sampleNumber in xrange(numberOfSamples):
 	pass;
 	
 for sampleNumber in xrange(numberOfSamples):
-	renderResult = imageio.imread(sampleSetPath + '/irradiance/irr_' + repr(sampleNumber) + '.png');
+	renderResult = imageio.imread(sampleSetPath + '/irradiance/irr_' + repr(sampleNumber) + '.exr');
 	resultsFile = open(sampleSetPath + '/IrradianceResults2.txt', 'a');
 	result = renderResult[0][0];
 	print result;

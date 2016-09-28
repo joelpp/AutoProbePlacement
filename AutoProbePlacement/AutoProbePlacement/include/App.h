@@ -14,7 +14,6 @@ classes and use G3D::Sky to handle the skybox.
 #include "Actor.h"
 #include "Tetrahedron.h"
 #include "Transform.h"
-#include "spline.h"
 #include "tetgen.h"
 #include "ProbeStructure.h"
 #include "SceneSample.h"

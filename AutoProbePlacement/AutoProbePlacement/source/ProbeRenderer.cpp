@@ -45,7 +45,7 @@ void ProbeRenderer::render
 		}
 
 		// Main forward pass
-		renderOpaqueSamples(rd, deferredShading() ? forwardOpaqueSurfaces : sortedVisibleSurfaces, gbuffer, lightingEnvironment);
+		//renderOpaqueSamples(rd, deferredShading() ? forwardOpaqueSurfaces : sortedVisibleSurfaces, gbuffer, lightingEnvironment);
 
 		// Prepare screen-space lighting for the *next* frame
 		lightingEnvironment.copyScreenSpaceBuffers(framebuffer, gbuffer->colorGuardBandThickness(), gbuffer->depthGuardBandThickness());

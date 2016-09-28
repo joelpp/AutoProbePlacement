@@ -31,7 +31,7 @@ namespace std {
         public :
             size_t operator()(const Vector3 &vec ) const
             {
-                return hash<int>()(vec.x) ^ hash<int>()(vec.y) ^ hash<int>()(vec.z);
+                return hash<int>()( (int) vec.x ) ^ hash<int>()( (int)vec.y ) ^ hash<int>()( (int)vec.z );
             }
     };
 };

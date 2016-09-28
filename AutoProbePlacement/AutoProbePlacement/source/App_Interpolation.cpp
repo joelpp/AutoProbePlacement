@@ -131,7 +131,7 @@ bool App::tetrahedralInterpolation(Actor& actor, Array<int> *_probeIndices, Arra
 			{
 				throw std::invalid_argument("you suck!");
 			}
-            d = 1.0 - weights.sum();
+            d = 1.0f - weights.sum();
 
 			// If any of the weights are negative we are out of the current tetrahedron
             if (badWeights(weights, d))
@@ -148,7 +148,7 @@ bool App::tetrahedralInterpolation(Actor& actor, Array<int> *_probeIndices, Arra
 				{
 					throw std::invalid_argument("you suck!");
 				}
-				d = 1.0 - weights.sum();
+				d = 1.0f - weights.sum();
             }
 			if (weights == Vector3(-1,-1,-1)) return false;
         }
@@ -165,7 +165,7 @@ bool App::tetrahedralInterpolation(Actor& actor, Array<int> *_probeIndices, Arra
 
 			// get the barycentric weights for our testpoint on the triangle face
             weights = findTriangleBarycentricCoordinates(testPoint, triangleVertices[0], triangleVertices[1], triangleVertices[2]);
-			d = 1.0 - weights.x - weights.y - weights.z;
+			d = 1.0f - weights.x - weights.y - weights.z;
             screenPrintf("weights = %s.\n", weights.toString().c_str());
             // debugPrintf("Barycentric coords something like = %s.\n", barycentricCoordinates.toString().c_str());
             // debugPrintf("their sum = %f.\n", barycentricCoordinates.sum());
@@ -392,14 +392,14 @@ Vector3 App::findTriangleBarycentricCoordinates(Vector3 P, Vector3 T0, Vector3 T
 
     Vector3 n = u.cross(v);
 
-    double oneOver4ASquared = 1.0 / n.dot(n);
+    float oneOver4ASquared = 1.0f / n.dot(n);
 
     Vector3 w = P - T0;
 
-    double b2 = u.cross(w).dot(n) * oneOver4ASquared;
-    double b1 = w.cross(v).dot(n) * oneOver4ASquared;
+	float b2 = u.cross(w).dot(n) * oneOver4ASquared;
+	float b1 = w.cross(v).dot(n) * oneOver4ASquared;
 
-    return Vector3(1. - b2 - b1, b1, b2);
+    return Vector3(1.f - b2 - b1, b1, b2);
 }
 
 

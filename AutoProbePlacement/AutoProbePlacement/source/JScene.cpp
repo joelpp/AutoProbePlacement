@@ -95,11 +95,11 @@ void JScene::load()
 					}
 					else if (tokens[0] == "position")
 					{
-						position = Point3(atof(tokens[1].c_str()), atof(tokens[2].c_str()), atof(tokens[3].c_str()));
+						position = Point3( std::stof(tokens[1].c_str()), std::stof(tokens[2].c_str()), std::stof(tokens[3].c_str()));
 					}
 					else if (tokens[0] == "color")
 					{
-						color = Color3(atof(tokens[1].c_str()), atof(tokens[2].c_str()), atof(tokens[3].c_str()));
+						color = Color3(std::stof(tokens[1].c_str()), std::stof(tokens[2].c_str()), std::stof(tokens[3].c_str()));
 					}
 					else
 					{
@@ -128,7 +128,7 @@ void JScene::load()
 					}
 					else if (tokens[0] == "color")
 					{
-						color = Color3(atof(tokens[1].c_str()), atof(tokens[2].c_str()), atof(tokens[3].c_str()));
+						color = Color3(std::stof(tokens[1].c_str()), std::stof(tokens[2].c_str()), std::stof(tokens[3].c_str()));
 					}
 					else
 					{
@@ -145,17 +145,17 @@ void JScene::load()
 					tokens = stringSplit(String(line.c_str()), ' ');
 					if (tokens[0] == "scale")
 					{
-						m_scale = atof(tokens[1].c_str());
+						m_scale = std::stof(tokens[1].c_str());
 						debugPrintf("set scale at %f\n", m_scale);
 					}
 					else if (tokens[0] == "minBound")
 					{
-						m_minBound = G3D::Vector3(atof(tokens[1].c_str()), atof(tokens[2].c_str()), atof(tokens[3].c_str()));
+						m_minBound = G3D::Vector3(std::stof(tokens[1].c_str()), std::stof(tokens[2].c_str()), std::stof(tokens[3].c_str()));
 						debugPrintf("set minbound at %s\n", m_minBound.toString().c_str());
 					}
 					else if (tokens[0] == "maxBound")
 					{
-						m_maxBound = G3D::Vector3(atof(tokens[1].c_str()), atof(tokens[2].c_str()), atof(tokens[3].c_str()));
+						m_maxBound = G3D::Vector3(std::stof(tokens[1].c_str()), std::stof(tokens[2].c_str()), std::stof(tokens[3].c_str()));
 						debugPrintf("set m_maxBound at %s\n", m_maxBound.toString().c_str());
 					}
 					else

@@ -13,11 +13,11 @@ protected:
 		
 public:
 	static int factorial(int n);
-	static double S(int m, double x, double y);
-	static double C(int m, double x, double y);
-	static double K(int l, int m);
-	static double legendreP(int lMax, int mMax, double z);
-	static double SHxyz_yup(int l, int m, const G3D::Vector3& normal);
+	static float S(int m, float x, float y);
+	static float C(int m, float x, float y);
+	static float K(int l, int m);
+	static float legendreP(int lMax, int mMax, float z);
+	static float SHxyz_yup(int l, int m, const G3D::Vector3& normal);
 	static std::pair<int, int> kToLM(int k);
 	static SHGradient gradients(Vector3 dir);
 };

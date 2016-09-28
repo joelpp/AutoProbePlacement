@@ -5,7 +5,7 @@
 #include <fstream>
 #include <sstream>
 
-#define PI 3.141592654
+#define PI 3.141592654f
 #define AXIS_X 0
 #define AXIS_Y 1
 #define AXIS_Z 2
@@ -75,6 +75,9 @@ shared_ptr<Texture> Probe::getTexture(int texID)
 			
 		case 1: return irr_texture;
 				break;
+		default:
+				return NULL;
+				break;
 	}
 }
 
@@ -136,13 +139,13 @@ void Probe::computeCoefficientsFromTexture(bool alsoSet)
 	{
 		for (int w = 0; w < probeTextureWidth; ++w)
 		{
-			Vector2 UV = Transform::ijToUV(Vector2(w,h), probeTextureWidth, probeTextureHeight);
+			Vector2 UV = Transform::ijToUV(Vector2( (float) w, (float) h ), probeTextureWidth, probeTextureHeight);
 
 			Vector2 PT = Transform::UVtoPT(UV);
 
 			Vector3 texelWSVector = Transform::sphericalToCartesian(PT, 1.0f);
 
-			float domega = (pi() / probeTextureHeight) * (2 * pi() / probeTextureWidth) * sin(PT.y);
+			float domega = (PI / (float)probeTextureHeight) * (2.f * PI / (float)probeTextureWidth) * sin(PT.y);
 			
 			Color3 radiance;
 			probeTexture->get(Point2int32(w, h), radiance);

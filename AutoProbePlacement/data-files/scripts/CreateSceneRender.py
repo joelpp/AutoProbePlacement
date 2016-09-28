@@ -81,9 +81,9 @@ def makeProbe(x, y, z, probeCount, rootPath, pRenderType):
 	sampleCount = 1
 	if (pRenderType == "Probes"):
 		sampleCount = numSamplesOption;
-		# integratorType = "path";
+		integratorType = "path";
 		# integratorType = "direct";
-		integratorType = "path_samples";
+		# integratorType = "path_samples";
 
 	#Create integrator
 	integrator = pmgr.create({

@@ -1,9 +1,10 @@
 /** \file App.cpp */
+#include <fstream>
+
 #include "App.h"
 #include "SceneSampleSet.h"
 #include "ProbeRenderer.h"
-#include <fstream>
-
+#include "Helpers.h"
 
 /*
     Debugging Helpers
@@ -135,7 +136,6 @@ void App::onInit() {
 
 	samplesToSave = new String("1");
 	SampleSetOutputName = new String("SampleSetOutputName");
-	int numberOfSurfaceSamplesToLoad = 999;
     //Decide how many bands we want to use for the interpolation
     numBands = 2;
     totalNumberOfCoeffs = 0;
@@ -199,7 +199,7 @@ void App::loadScene(String sceneName)
 void App::initializeProbeStructure(String sceneName, String probeStructureName)
 {
 	//Load the probes from the currently active experiment
-	String probeStructurePath = "C:/git/AutoProbePlacement/AutoProbePlacement/data-files/Scenes/" + sceneName + "/ProbeStructures/" + probeStructureName;
+	String probeStructurePath = "../data-files/Scenes/" + sceneName + "/ProbeStructures/" + probeStructureName;
 
 	if (previousProbeStructure != "")
 	{
@@ -486,7 +486,7 @@ void App::onGraphics3D(RenderDevice* rd, Array<shared_ptr<Surface> >& surface3D)
  //   Args args;
  //   CFrame cframe;
 
-    rd->setColorClearValue(Color3(0.3, 0.3, 0.3));
+    rd->setColorClearValue(Color3(0.3f, 0.3f, 0.3f));
     rd->setRenderMode(RenderDevice::RENDER_SOLID);
  //   
  //   //Set the framebuffer for drawing
@@ -494,10 +494,10 @@ void App::onGraphics3D(RenderDevice* rd, Array<shared_ptr<Surface> >& surface3D)
 
  //   //Clear the renderdevice
     //rd->clear();
-	//if (showSamples)
-	//{
-	//	drawSurfaceSamples(rd);
-	//}
+	if (showSamples)
+	{
+		drawSurfaceSamples(rd);
+	}
 
 	//if (!hideActors)
 	//{
@@ -796,6 +796,7 @@ void App::addScenePane(GuiTabPane* tabPane)
 	G3D::Array<G3D::String> sampleSetList;
 	FileSystem::list("../data-files/Scenes/" + selectedScene + "/SampleSets/*", sampleSetList, ls);
 	scenePane.sampleSetList = tab->addDropDownList("SampleSet", sampleSetList, NULL, GuiControl::Callback(this, &App::updateSampleSet));
+	tab->addButton(GuiText("Clear"), GuiControl::Callback(this->sampleSet, &SceneSampleSet::clear), GuiTheme::TOOL_BUTTON_STYLE);
 }
 
 void App::saveProbeStructureUpdate()
@@ -920,13 +921,13 @@ void App::loadSampleCoeffs()
 	{
 		std::string line;
 		std::getline(coeffFile, line);
-		float cr = atof(line.c_str());
+		float cr = std::stof(line.c_str());
 
 		std::getline(coeffFile, line);
-		float cg = atof(line.c_str());
+		float cg = std::stof(line.c_str());
 
 		std::getline(coeffFile, line);
-		float cb = atof(line.c_str());
+		float cb = std::stof(line.c_str());
 
 		Vector3 v = Vector3(cr, cg, cb);
 
@@ -1117,37 +1118,6 @@ void App::makeZTextures(){
 
 
 
-bool runCommand2(std::string command)
-{
-	//std::stringstream args;
-	//args << "cmd /c \"" << command <<" \"";
-
-	STARTUPINFOA si;
-	PROCESS_INFORMATION pi;
-
-	ZeroMemory(&si, sizeof(si));
-	si.cb = sizeof(si);
-	ZeroMemory(&pi, sizeof(pi));
-	//std::string comm = "C:\\Windows\\winsxs\\amd64_microsoft-windows-commandprompt_31bf3856ad364e35_6.1.7600.16385_none_e701b864340d9016\\cmd.exe";
-	std::string comm = "C:\\Windows\\winsxs\\wow64_microsoft-windows-commandprompt_31bf3856ad364e35_6.1.7601.17514_none_f387767e655cd5ab\\cmd.exe";
-	LPCSTR sw = comm.c_str();
-	LPSTR arg2 = const_cast<char *>(command.c_str());
-	bool result = CreateProcessA(sw, arg2, NULL, NULL, FALSE, 0, NULL, NULL, &si, &pi);
-	//""
-	if (result == false)
-	{
-		DWORD err = GetLastError();
-		debugPrintf("ERROR: %lu \n", err);
-	}
-	if (result == true)
-	{
-		WaitForSingleObject(pi.hProcess, INFINITE);
-		CloseHandle(pi.hProcess);
-		CloseHandle(pi.hThread);
-	}
-
-	return result;
-}
 void App::offlineRender()
 {
 	SOfflineRenderingOptions offlineRenderingOptions;
@@ -1173,5 +1143,5 @@ void App::offlineRender()
 	command << "\"";
 
 	debugPrintf("%s\n", command.str().c_str());
-	runCommand2(command.str());
+	runCommand(command.str());
 }

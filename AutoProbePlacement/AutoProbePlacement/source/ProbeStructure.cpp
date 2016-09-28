@@ -2,6 +2,7 @@
 
 #include "ProbeStructure.h"
 #include "App.h"
+#include "Helpers.h"
 
 #define DEAV3(x) debugPrintf(#x); for(int num = 0; num < x.size(); num++){ debugPrintf(", [num]: (%s)\n",x[num].toString().c_str()); debugPrintf("\n");}
 
@@ -34,7 +35,7 @@ ProbeStructure::ProbeStructure(String sceneName, String probeStructureName, int 
 
 	this->m_sceneName = sceneName;
 	this->m_name = probeStructureName;
-	this->probeStructurePath = "C:/git/AutoProbePlacement/AutoProbePlacement/data-files/Scenes/" + sceneName + "/ProbeStructures/" + probeStructureName;;
+	this->probeStructurePath = "../data-files/Scenes/" + sceneName + "/ProbeStructures/" + probeStructureName;;
 	this->m_dimensions.push_back(numProbes);
 
 	for (int i = 0; i < numProbes; ++i)
@@ -57,7 +58,7 @@ ProbeStructure::ProbeStructure(String sceneName, String probeStructureName)
 
 	this->m_sceneName = sceneName;
 	this->m_name = probeStructureName;
-	this->probeStructurePath = "C:/git/AutoProbePlacement/AutoProbePlacement/data-files/Scenes/" + sceneName + "/ProbeStructures/" + probeStructureName;;
+	this->probeStructurePath = "../data-files/Scenes/" + sceneName + "/ProbeStructures/" + probeStructureName;;
 
 	loadProbeInfo();
 	makeProbeList();
@@ -93,7 +94,7 @@ void ProbeStructure::loadProbeInfo()
 		}
 		if (param == "step")
 		{
-			this->m_step = std::atof(splitLine[0].c_str());
+			this->m_step = std::stof(splitLine[0].c_str());
 		}
 		else if (param == "dimensions")
 		{
@@ -104,9 +105,9 @@ void ProbeStructure::loadProbeInfo()
 		}
 		else if (param == "firstProbePosition")
 		{
-			this->m_firstProbePosition[0] = std::atof(splitLine[0].c_str());
-			this->m_firstProbePosition[1] = std::atof(splitLine[1].c_str());
-			this->m_firstProbePosition[2] = std::atof(splitLine[2].c_str());
+			this->m_firstProbePosition[0] = std::stof(splitLine[0].c_str());
+			this->m_firstProbePosition[1] = std::stof(splitLine[1].c_str());
+			this->m_firstProbePosition[2] = std::stof(splitLine[2].c_str());
 		}
 	}
 }
@@ -143,7 +144,7 @@ void ProbeStructure::makeProbeList()
 		{
 			continue;
 		}
-        positions.append(Point3(atof(coords[0].c_str()), atof(coords[1].c_str()), atof(coords[2].c_str())));
+        positions.append(Point3(std::stof(coords[0].c_str()), std::stof(coords[1].c_str()), std::stof(coords[2].c_str())));
 
         probeCount++;
     }
@@ -184,7 +185,7 @@ void ProbeStructure::makeProbeList()
 			{
                 std::getline(coeffFile, line2);
                 std::getline(coeffFile, line3);
-                Vector3 toAdd = Vector3(std::atof(line.c_str()), std::atof(line2.c_str()), std::atof(line3.c_str()));
+                Vector3 toAdd = Vector3(std::stof(line.c_str()), std::stof(line2.c_str()), std::stof(line3.c_str()));
                 aTestProbe->coeffs.append(toAdd);
             }
             coeffFile.close();
@@ -224,7 +225,7 @@ void ProbeStructure::makeProbeList()
 
 					std::getline(coeffFile, line2);
 					std::getline(coeffFile, line3);
-					//temporaryArray.push_back(Vector3(std::atof(line.c_str()), std::atof(line2.c_str()), std::atof(line3.c_str())));
+					//temporaryArray.push_back(Vector3(std::stof(line.c_str()), std::stof(line2.c_str()), std::stof(line3.c_str())));
 					temporaryArray.push_back(Vector3(Random::common().uniform(1.f,5.f), Random::common().uniform(1.f,5.f), Random::common().uniform(1.f,5.f)));
 
 					if (++counter == 3)
@@ -239,7 +240,7 @@ void ProbeStructure::makeProbeList()
 			}
         }
 
-		aTestProbe->m_sphere = Sphere(positions[i], 0.1);
+		aTestProbe->m_sphere = Sphere(positions[i], 0.1f);
 
 		
 		aTestProbe->frame = CFrame::fromXYZYPRDegrees(aTestProbe->position.x, aTestProbe->position.y, aTestProbe->position.z, 0, 0, 0);
@@ -653,13 +654,13 @@ int ProbeStructure::getProbeIndex(const G3D::Vector3& testPos)
 	return -1;
 }
 
-G3D::Vector3 findProbe000(const G3D::Vector3& pos, double step)
+G3D::Vector3 findProbe000(const G3D::Vector3& pos, float step)
 {
 	G3D::Vector3 toReturn;
 
-	toReturn[0] = floor((pos[0]) / step) * step;
-	toReturn[1] = floor((pos[1]) / step) * step;
-	toReturn[2] = floor((pos[2]) / step) * step;
+	toReturn[0] = std::floorf((pos[0]) / step) * step;
+	toReturn[1] = std::floorf((pos[1]) / step) * step;
+	toReturn[2] = std::floorf((pos[2]) / step) * step;
 
 	return toReturn;
 }
@@ -667,19 +668,20 @@ G3D::Vector3 findProbe000(const G3D::Vector3& pos, double step)
 G3D::Array<G3D::Vector3> ProbeStructure::getInterpolatingProbesCoords(const G3D::Vector3& pos, int step)
 {
 	G3D::Array<G3D::Vector3> toReturn;
-	G3D::Vector3 probe000Pos = findProbe000(pos, step);
+	G3D::Vector3 probe000Pos = findProbe000(pos, (float) step);
 
+	float fstep = (float)step;
 	if (m_type == EProbeStructureType::Trilinear)
 	{
 		toReturn.push_back(probe000Pos);
 
-		toReturn.push_back(probe000Pos + G3D::Vector3(step, 0, 0));
-		toReturn.push_back(probe000Pos + G3D::Vector3(0, step, 0));
-		toReturn.push_back(probe000Pos + G3D::Vector3(0, 0, step));
-		toReturn.push_back(probe000Pos + G3D::Vector3(step, 0, step));
-		toReturn.push_back(probe000Pos + G3D::Vector3(0, step, step));
-		toReturn.push_back(probe000Pos + G3D::Vector3(step, step, 0));
-		toReturn.push_back(probe000Pos + G3D::Vector3(step, step, step));
+		toReturn.push_back(probe000Pos + G3D::Vector3(fstep, 0, 0));
+		toReturn.push_back(probe000Pos + G3D::Vector3(0, fstep, 0));
+		toReturn.push_back(probe000Pos + G3D::Vector3(0, 0, fstep));
+		toReturn.push_back(probe000Pos + G3D::Vector3(fstep, 0, fstep));
+		toReturn.push_back(probe000Pos + G3D::Vector3(0, fstep, fstep));
+		toReturn.push_back(probe000Pos + G3D::Vector3(fstep, fstep, 0));
+		toReturn.push_back(probe000Pos + G3D::Vector3(fstep, fstep, fstep));
 	}
 	else if (m_type == EProbeStructureType::Trilinear)
 	{
@@ -821,42 +823,13 @@ ProbeInterpolationRecord ProbeStructure::getInterpolationProbeIndicesAndWeights(
 // Lifted from Stack overflow http://stackoverflow.com/questions/5207550/in-c-is-there-a-way-to-go-to-a-specific-line-in-a-text-file
 std::fstream& GotoLine(std::fstream& file, unsigned int num) {
 	file.seekg(std::ios::beg);
-	for (int i = 0; i < num - 1; ++i) {
+	for (unsigned int i = 0; i < num - 1; ++i) {
 		file.ignore(std::numeric_limits<std::streamsize>::max(), '\n');
 	}
 	return file;
 }
 
-bool runCommand(std::string command)
-{
-	//std::stringstream args;
-	//args << "cmd /c \"" << command <<" \"";
 
-	STARTUPINFOA si;
-	PROCESS_INFORMATION pi;
-
-	ZeroMemory(&si, sizeof(si));
-	si.cb = sizeof(si);
-	ZeroMemory(&pi, sizeof(pi));
-	std::string comm = "C:\\Windows\\winsxs\\amd64_microsoft-windows-commandprompt_31bf3856ad364e35_6.1.7600.16385_none_e701b864340d9016\\cmd.exe";
-	LPCSTR sw = comm.c_str();
-	LPSTR arg2 = const_cast<char *>(command.c_str());
-	bool result = CreateProcessA(sw, arg2, NULL, NULL, FALSE, CREATE_NO_WINDOW, NULL, NULL, &si, &pi);
-
-	if (result == false)
-	{
-		DWORD err = GetLastError();
-		debugPrintf("ERROR: %lu \n", err);
-	}
-	if (result == true)
-	{
-		WaitForSingleObject(pi.hProcess, INFINITE);
-		CloseHandle(pi.hProcess);
-		CloseHandle(pi.hThread);
-	}
-
-	return result;
-}
 void ProbeStructure::updateProbes(bool updateAll)
 {
 	std::fstream probeListFile;

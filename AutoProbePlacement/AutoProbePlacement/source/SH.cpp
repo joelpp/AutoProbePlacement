@@ -1,6 +1,6 @@
 #include "SH.h"
 
-#define PI 3.141592654
+#define PI 3.141592654f
 
 #define AXIS_X 0
 #define AXIS_Y 1
@@ -21,11 +21,11 @@ int SH::factorial(int n)
 	return fact;
 }
 
-double SH::S(int m, double x, double y)
+float SH::S(int m, float x, float y)
 {
-	double** M = new double*[m + 1];
+	float** M = new float*[m + 1];
 	for (int i = 0; i < m + 1; i++)
-		M[i] = new double[2];
+		M[i] = new float[2];
 
 	//float M[m + 1][2];
 	M[0][0] = 0;
@@ -36,7 +36,7 @@ double SH::S(int m, double x, double y)
 		M[i][0] = x * M[i - 1][0] + y * M[i - 1][1];
 		M[i][1] = x * M[i - 1][1] - y * M[i - 1][0];
 	}
-	double toReturn = M[m][0];
+	float toReturn = M[m][0];
 
 	for (int i = 0; i < m + 1; i++)
 	{
@@ -47,11 +47,11 @@ double SH::S(int m, double x, double y)
 	return toReturn;
 }
 
-double SH::C(int m, double x, double y)
+float SH::C(int m, float x, float y)
 {
-	double** M = new double*[m + 1];
+	float** M = new float*[m + 1];
 	for (int i = 0; i < m + 1; i++)
-		M[i] = new double[2];
+		M[i] = new float[2];
 
 	//float M[m + 1][2];
 	M[0][0] = 0;
@@ -62,7 +62,7 @@ double SH::C(int m, double x, double y)
 		M[i][0] = x * M[i - 1][0] + y * M[i - 1][1];
 		M[i][1] = x * M[i - 1][1] - y * M[i - 1][0];
 	}
-	double toReturn = M[m][1];
+	float toReturn = M[m][1];
 
 	for (int i = 0; i < m + 1; i++)
 	{
@@ -73,16 +73,16 @@ double SH::C(int m, double x, double y)
 	return toReturn;
 }
 
-double SH::K(int l, int m)
+float SH::K(int l, int m)
 {
 	return sqrt((2 * l + 1) * factorial(l - abs(m)) / (4 * PI * factorial(l + abs(m))));
 }
 
-double SH::legendreP(int lMax, int mMax, double z)
+float SH::legendreP(int lMax, int mMax, float z)
 {
-	double** P = new double*[lMax + 1];
+	float** P = new float*[lMax + 1];
 	for (int i = 0; i < lMax + 1; i++)
-		P[i] = new double[mMax + 1];
+		P[i] = new float[mMax + 1];
 	P[0][0] = 1;
 
 	for (int m = 0; m < mMax + 1; ++m)
@@ -108,7 +108,7 @@ double SH::legendreP(int lMax, int mMax, double z)
 			}
 		}
 	}
-	double toReturn = P[lMax][mMax];
+	float toReturn = P[lMax][mMax];
 
 	for (int i = 0; i < lMax + 1; i++)
 	{
@@ -119,11 +119,11 @@ double SH::legendreP(int lMax, int mMax, double z)
 	return toReturn;
 }
 
-double SH::SHxyz_yup(int l, int m, const G3D::Vector3& normal)
+float SH::SHxyz_yup(int l, int m, const G3D::Vector3& normal)
 {
-	const double& x = normal[0];
-	const double& y = normal[1];
-	const double& z = normal[2];
+	const float& x = normal[0];
+	const float& y = normal[1];
+	const float& z = normal[2];
 
 	if (m == 0)
 	{
@@ -131,11 +131,11 @@ double SH::SHxyz_yup(int l, int m, const G3D::Vector3& normal)
 	}
 	else if (m < 0)
 	{
-		return sqrt(2) * K(l, m) * S(-m, x, z) * legendreP(l, -m, y);
+		return sqrtf(2.f) * K(l, m) * S(-m, x, z) * legendreP(l, -m, y);
 	}
 	else
 	{
-		return sqrt(2) * K(l, m) * C(m, x, z) * legendreP(l, m, y);
+		return sqrtf(2.f) * K(l, m) * C(m, x, z) * legendreP(l, m, y);
 	}
 }
 
@@ -144,8 +144,8 @@ std::pair<int, int> SH::kToLM(int k)
 {
 	std::pair<int, int> lm;
 
-	lm.first = floor(sqrt(k));
-	int offset = k - pow(lm.first, 2);
+	lm.first = (int) floor(sqrtf((float) k));
+	int offset = k - (int) powf((float) lm.first, 2.f);
 	lm.second = -lm.first + offset;
 
 	return lm;
@@ -185,14 +185,13 @@ SHGradient SH::gradients(Vector3 dir)
 		std::pair<int, int> lm = kToLM(i);
 		int l = lm.first;
 		int m = lm.second;
-		float sqrt1Plus2l = sqrt(1 + 2 * l);
-		float pi = G3D::pi();
-		float sqrtPi = sqrt(pi);
-		float sqrt2Pi = sqrt(2 * pi);
+		float sqrt1Plus2l = sqrtf(1 + 2 * l);
+		float sqrtPi = sqrt(PI);
+		float sqrt2Pi = sqrt(2 * PI);
 		float cosMaXZ = cos( m * atan2(x, z) );
 		float sinMaXZ = sin( m * atan2(x, z) );
-		float factLminusAbsM = factorial(l - abs(m));
-		float factLplusAbsM = factorial(l + abs(m));
+		float factLminusAbsM = (float) factorial(l - abs(m));
+		float factLplusAbsM = (float) factorial(l + abs(m));
 		
 		if (m == 0)
 		{
@@ -202,8 +201,8 @@ SHGradient SH::gradients(Vector3 dir)
 
 			if (x2pz2 != 0)
 			{
-				grad[AXIS_X][i] = -( (1 + l) * sqrt1Plus2l * x * y * (y * legendrePLy - legendreP1Ly) ) / (2. * sqrtPi * x2pz2);
-				grad[AXIS_Z][i] = -( (1 + l) * sqrt1Plus2l * y * z * (y * legendrePLy - legendreP1Ly) ) / (2. * sqrtPi * x2pz2);
+				grad[AXIS_X][i] = -( (1 + l) * sqrt1Plus2l * x * y * (y * legendrePLy - legendreP1Ly) ) / (2.f * sqrtPi * x2pz2);
+				grad[AXIS_Z][i] = -( (1 + l) * sqrt1Plus2l * y * z * (y * legendrePLy - legendreP1Ly) ) / (2.f * sqrtPi * x2pz2);
 			}
 			else
 			{
@@ -211,7 +210,7 @@ SHGradient SH::gradients(Vector3 dir)
 				grad[AXIS_Z][i] = 0;
 			}
 			
-			grad[AXIS_Y][i] = ( (1 + l) * sqrt1Plus2l * (y * legendrePLy - legendreP1Ly) ) / (2. * sqrtPi);
+			grad[AXIS_Y][i] = ( (1 + l) * sqrt1Plus2l * (y * legendrePLy - legendreP1Ly) ) / (2.f * sqrtPi);
 		}
 		else if (m > 0)
 		{

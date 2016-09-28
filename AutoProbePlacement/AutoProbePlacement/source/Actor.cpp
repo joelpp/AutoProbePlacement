@@ -111,6 +111,6 @@ bool Actor::getVisibility(){
 	return this->isVisible;
 }
 void Actor::setVisibility(bool b){
-	updateVisibility = true;
+	updateVisibility = b;
 }
 

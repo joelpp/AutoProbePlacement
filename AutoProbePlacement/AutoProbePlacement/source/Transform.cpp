@@ -30,7 +30,7 @@ Vector2 Transform::cartesianToUV(Vector3 xyz)
 
 Vector2 Transform::sphericalToUV(Vector2 PT)
 {
-	float pi = 3.141592654;
+	float pi = 3.141592654f;
 	return Vector2(PT.x / pi, 2.0f*PT.y/pi - 1.0f);
 }
 
@@ -40,21 +40,21 @@ Vector2 Transform::uvToIJ(Vector2 UV, int width, int height)
 {
     Vector2 toReturn = Vector2();
 
-    toReturn.y = height * (UV.y + 1.0) / 2.0;
-    toReturn.x = width * (UV.x + 1.0) / 2.0;
+    toReturn.y = height * (UV.y + 1.0f) / 2.0f;
+    toReturn.x = width * (UV.x + 1.0f) / 2.0f;
 
     return toReturn;
 }
 
 Vector2 Transform::ijToUV(Vector2 IJ, int width, int height)
 {
-	return Vector2(2.0 * IJ.x / width - 1,  2.0 * IJ.y / height - 1);
+	return Vector2(2.0f * IJ.x / width - 1.f,  2.0f * IJ.y / height - 1.f);
 }
 
 Vector2 Transform::UVtoPT(Vector2 UV)
 {
-	float pi = 3.141592654;
-	return Vector2(pi*UV.x, pi*(UV.y + 1) / 2.0);
+	float pi = 3.141592654f;
+	return Vector2(pi*UV.x, pi*(UV.y + 1.f) / 2.0f);
 }
 
 Vector3 Transform::PTtoXYZ(float r, Vector2 PT)
@@ -100,11 +100,11 @@ Vector3 Transform::Vector3FromString(String toTransform){
 	
 	Array<String> stringArray = stringSplit(toTransform, ' ');
 
-	return Vector3(atof(stringArray[0].c_str()), atof(stringArray[1].c_str()), atof(stringArray[2].c_str()));
+	return Vector3(std::stof(stringArray[0].c_str()), std::stof(stringArray[1].c_str()), std::stof(stringArray[2].c_str()));
 }
 Color3 Transform::Color3FromString(String toTransform){
 	
 	Array<String> stringArray = stringSplit(toTransform, ' ');
 
-	return Color3(atof(stringArray[0].c_str()), atof(stringArray[1].c_str()), atof(stringArray[2].c_str()));
+	return Color3(std::stof(stringArray[0].c_str()), std::stof(stringArray[1].c_str()), std::stof(stringArray[2].c_str()));
 }

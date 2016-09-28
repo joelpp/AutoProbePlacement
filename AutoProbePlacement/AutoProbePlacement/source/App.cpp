@@ -726,6 +726,7 @@ void App::makeGui() {
 	tab->addCheckBox("Direct", &(bRenderDirect));
 	tab->addCheckBox("Indirect (probes)", &(bRenderIndirect));
 	tab->addCheckBox("* BRDF", &(bRenderMultiplyIndirectByBRDF));
+	tab->addSlider("Mutiplier", &shadingMultiplier, 0.0f, 5.0f);
 	tab->addCheckBox("AOF", &(bRenderAO));
 	tab->addCheckBox("Shadow Maps", &(bRenderShadowMaps));
 	tab->endRow();
@@ -743,7 +744,6 @@ void App::makeGui() {
 	tab->addButton("Add sphere", GuiControl::Callback(this, &App::addOneActor), GuiTheme::TOOL_BUTTON_STYLE);
 	tab->addButton("Add sceneActor", GuiControl::Callback(this, &App::addOneActorSq), GuiTheme::TOOL_BUTTON_STYLE);
 	tab->addButton("Clear actors", GuiControl::Callback(this, &App::clearAllActors), GuiTheme::TOOL_BUTTON_STYLE);
-	tab->addSlider("Mutiplier", &shadingMultiplier, 0.0f, 2.0f);
 	tab->addTextBox("X", &actorSpawnX);
 	tab->addTextBox("Y", &actorSpawnY);
 	tab->addTextBox("Z", &actorSpawnZ);

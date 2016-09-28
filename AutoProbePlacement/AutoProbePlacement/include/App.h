@@ -276,7 +276,6 @@ private:
 	int maxDrawBand;
 	int drawBand;
 
-	float shadingMultiplier;
 	float sampleMultiplier;
 	float phongExponent;
 	float yaw;
@@ -339,6 +338,7 @@ private:
 	//Index* trisIndex;
 
 public:
+	float shadingMultiplier;
 	ProbeStructure *probeStructure;
 
 	bool bRenderDirect;

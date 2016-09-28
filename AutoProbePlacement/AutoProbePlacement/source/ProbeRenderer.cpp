@@ -122,6 +122,8 @@ void ProbeRenderer::renderProbeShading(RenderDevice* rd, const shared_ptr<GBuffe
 
 			args.setMacro("WEIGHTS_WNN", app->probeStructure->m_type == EProbeStructureType::WeightedNearestNeighbour);
 			args.setMacro("WEIGHTS_TRILERP", app->probeStructure->m_type == EProbeStructureType::Trilinear);
+
+			args.setUniform("SHMultiplier", app->shadingMultiplier);
 		}
 
 		LAUNCH_SHADER("ProbeRenderer_deferredShade.pix", args);

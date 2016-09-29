@@ -33,14 +33,15 @@
 bool invertNormal = true;
 void probeOptimizationPass(std::vector<int> matrixRows, std::vector<int> matrixColumns, std::vector<float> matrixElements, std::vector<float> rgb);
 
-SceneSampleSet::SceneSampleSet(std::string sceneName, std::string sampleSetName, float scale)
+
+SceneSampleSet::SceneSampleSet(std::string sceneName, std::string sampleSetName, float scale, int numSamplesToLoad)
 {
 	m_sceneName = sceneName;
 	m_sampleSetName = sampleSetName;
 	m_scale = scale;
-	load();
+	load(numSamplesToLoad);
 }
-void SceneSampleSet::load()
+void SceneSampleSet::load(int maxSamples)
 {
 	m_samples.clear();
 	std::fstream samplesFile, irradianceFile;
@@ -78,7 +79,7 @@ void SceneSampleSet::load()
 	int currentLine = 0;
 	std::string sampleLine, irradianceLine;
 	SceneSample ss;
-
+	int numLoaded = 0;
 	while (std::getline(samplesFile, sampleLine))
 	{
 		Array<String> splitLine = stringSplit(String(sampleLine.c_str()), ' ');
@@ -130,6 +131,11 @@ void SceneSampleSet::load()
 		if (currentLine == NumberOfLinesPerSample)
 		{
 			m_samples.push_back(ss);
+			numLoaded++;
+			if (numLoaded == maxSamples)
+			{
+				break;
+			}
 			currentLine = 0;
 		}
 
@@ -138,6 +144,13 @@ void SceneSampleSet::load()
 	samplesFile.close();
 	irradianceFile.close();
 
+	m_points.clear();
+	m_colors.clear();
+	for (SceneSample& ss : m_samples)
+	{
+		m_points.push_back(ss.position);
+		m_colors.push_back(ss.irradiance);
+	}
 }
 
 
@@ -464,19 +477,30 @@ void SceneSampleSet::createbVector(Eigen::VectorXd* bVector, const Eigen::Vector
 	refFile.close();
 }
 
-void SceneSampleSet::clear()
+void SceneSampleSet::clearValues()
 {
-	std::fstream samplesFile, irradianceFile;
-	std::string samplesPath = "../data-files/Scenes/" + m_sceneName + "/SampleSets/" + m_sampleSetName + "/SamplePositions.txt";
-
+	std::fstream irradianceFile;
+	
 	std::string irradiancePath = "../data-files/Scenes/" + m_sceneName + "/SampleSets/" + m_sampleSetName + "/IrradianceResults2.txt";
 
-	samplesFile.open(samplesPath.c_str(), std::fstream::out);
 	irradianceFile.open(irradiancePath.c_str(), std::fstream::out);
-	samplesFile.close();
 	irradianceFile.close();
-	m_samples.clear();
+	m_colors.clear();
 }
+
+void SceneSampleSet::clearPositions()
+{
+	std::fstream samplesFile;
+	std::string samplesPath = "../data-files/Scenes/" + m_sceneName + "/SampleSets/" + m_sampleSetName + "/SamplePositions.txt";
+
+
+	samplesFile.open(samplesPath.c_str(), std::fstream::out);
+	samplesFile.close();
+	m_points.clear();
+}
+
+
+
 
 std::vector<float> SceneSampleSet::tryOptimizationPass(int NumberOfSamples, bool ref)
 {

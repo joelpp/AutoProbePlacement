@@ -53,11 +53,28 @@ struct SOfflineRenderingOptions
 	G3D::String numSamples;
 	G3D::String width;
 	G3D::String height;
+	G3D::String gamma;
+	int filmTypeIndex;
+	int integratorIndex;
 	bool showWindow;
 	bool requireToCloseWindow;
 };
 
+enum EIntegrator
+{
+	Path = 0,
+	Indirect,
+	Direct,
+	NUM_INTEGRATORS = Direct + 1
+};
 
+
+enum EFilmType
+{
+	HDR = 0,
+	LDR,
+	NUM_FILM_TYPES = LDR + 1
+};
 
 class App : public GApp {
 private:
@@ -71,6 +88,7 @@ private:
 	void drawModel(RenderDevice* rd, String shaderName, shared_ptr<ArticulatedModel> model, CFrame frame,Args args);
 	void makeScene();
 	virtual void makeGui();
+	void generateSampleSetList();
 	void addScenePane(GuiTabPane* tabPane);
 	void updateSelectedScenePane();
 	void updateProbeStructure();
@@ -133,7 +151,6 @@ private:
 
 	void setToCorrectTetrahedron(int actorID);
 
-	Array<Vector3> triLinearInterpolation(int actorID, Array<int> *_probeIndices, Array<float> *_coeffs, bool keepProbes);
 	Vector3 triangleInterpolateVector3(Vector3 weights, Vector3 v0, Vector3 v1, Vector3 v2);
 	/**
 	* Logic Stuff
@@ -144,7 +161,7 @@ private:
 	Vector3 SHDotProductWithCosineLobe(Array<Vector3> coefficients);
 	Vector3 shCoeffsToRGB(Vector3 normal, Array<Vector3> coeffs);
 
-	void sampleScenePoint(int* _selectedModel, Vector3 *_P, Vector2* _IJ, Vector3* _N, int sampleID);
+	SceneSample generateSceneSample(int* _selectedModel, Vector3 *_P, Vector2* _IJ, Vector3* _N, int sampleID);
 
 	void computeSceneSamples();
 	void computeSamplesRGB();
@@ -302,9 +319,6 @@ private:
 	bool interpolateCoefficients;
 
 
-	Vector3 offset;
-	Vector3 step;
-
 	std::string tetgenString;
 
 	Array<Vector3> randomPoints;
@@ -314,7 +328,7 @@ private:
 	String *samplesToSave;
 	String* SampleSetOutputName;
 
-	Random r;
+	Random m_random;
 
 	float prevCost;
 
@@ -370,6 +384,21 @@ public:
 	String m_sNumICProbes;
 
 	void offlineRender();
+
+	void createSampleSet();
+	void clearSampleSetValues();
+	void clearSampleSetPositions();
+	void reloadSampleSet();
+	void generateSampleSetPositions();
+	void generateSampleSetValues();
+
+	// There CERTAINLY has to be a better way to handle this stuff than keeping the new sample set window and nmae as globals
+	G3D::String sNewSampleSetName;
+	shared_ptr<GuiWindow> windowNewSampleSet;
+	SOfflineRenderingOptions offlineRenderingOptions;
+
+	G3D::Array<G3D::String> integratorList;
+	G3D::Array<G3D::String> filmTypeList;
 
 };
 

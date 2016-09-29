@@ -72,6 +72,38 @@ void App::onInit() {
 	instance = this;
     renderDevice->setSwapBuffersAutomatically(true);
     
+	windowNewSampleSet = GuiWindow::create("New sample set");
+	GuiPane* pane = windowNewSampleSet->pane();
+	pane->addTextBox("Name: ", &sNewSampleSetName);
+	pane->addButton("Ok", [this]() 
+	{ 
+		G3D::String newSSPath = "../data-files/Scenes/" + m_scene.m_name + "/SampleSets/" + sNewSampleSetName;
+		createFolder(newSSPath.c_str());
+		createFolder((newSSPath + "/irradiance").c_str());
+		createEmptyFile((newSSPath + "/SamplePositions.txt").c_str());
+		createEmptyFile((newSSPath + "/IrradianceResults2.txt").c_str());
+		windowNewSampleSet->setVisible(false);
+		generateSampleSetList();
+	});
+	pane->addButton("Cancel", [this]() 
+	{
+		sNewSampleSetName = ""; 
+		windowNewSampleSet->setVisible(false);
+	});
+	windowNewSampleSet->pack();
+	addWidget(windowNewSampleSet);
+	windowNewSampleSet->moveTo(Point2(500, 500));
+	windowNewSampleSet->setVisible(false);
+
+	integratorList.resize(EIntegrator::NUM_INTEGRATORS);
+	integratorList[EIntegrator::Path] = "path";
+	integratorList[EIntegrator::Indirect] = "path_samples";
+	integratorList[EIntegrator::Direct] = "direct";
+
+	filmTypeList.resize(EFilmType::NUM_FILM_TYPES);
+	filmTypeList[EFilmType::HDR] = "hdrfilm";
+	filmTypeList[EFilmType::LDR] = "ldrfilm";
+
     actors = Array<Actor>();
 
     //Load sphere model    
@@ -110,7 +142,7 @@ void App::onInit() {
     showParticles = false;
 	useIrradianceTexture = false;
 	highlightTetrahedron = false;
-	saveSample = false;
+	saveSample = true;
 	useBakedSceneTextures = true;
 	interpolateCoefficients = false;
 	logSampleSet = false;
@@ -119,7 +151,7 @@ void App::onInit() {
 	maxSamplesPointsToDraw = "0";
 	showSampleNormals = false;
 	showDarkSamples = true;
-	showSamples = true;
+	showSamples = false;
 	useSHGradients = false;
 	bManipulateProbesEnabled = false;
 	hideActors = false;
@@ -134,7 +166,7 @@ void App::onInit() {
 	tetgenString = "../data-files/tetgen/44/";
 	previousProbeStructure = "";
 
-	samplesToSave = new String("1");
+	samplesToSave = new String("0");
 	SampleSetOutputName = new String("SampleSetOutputName");
     //Decide how many bands we want to use for the interpolation
     numBands = 2;
@@ -169,6 +201,11 @@ void App::onInit() {
     //Load the textures containing the SH coefficient values
     //loadSHTextures();
 	GApp::loadScene((String)"C:\\git\\AutoProbePlacement\\AutoProbePlacement\\data-files\\Scenes\\zcbox\\cbox.Scene.Any");
+
+	offlineRenderingOptions.numSamples = "256";
+	offlineRenderingOptions.height = "256";
+	offlineRenderingOptions.width = "512";
+	offlineRenderingOptions.gamma = "2.2";
 
 }//end of onInit 
 
@@ -403,22 +440,22 @@ void App::drawSurfaceSamples(RenderDevice* rd)
 
 	int numOfsamplesToShow = atoi(maxSamplesPointsToDraw.c_str());
 
-	for (int i =0; i < numOfsamplesToShow; i++){
-		SceneSample& ss = sampleSet->m_samples[i];
-		Color3 color = ss.irradiance;
-		if (color == Color3(0, 0, 0))
-		{
-			if (!showDarkSamples) continue;
-			color = Color3(1, 0, 0);
-		}
+	Draw::points(sampleSet->m_points, rd, sampleSet->m_colors, 4.0f);
+	//for (int i =0; i < numOfsamplesToShow; i++){
+	//	SceneSample& ss = sampleSet->m_samples[i];
+	//	Color3 color = ss.irradiance;
+	//	if (color == Color3(0, 0, 0))
+	//	{
+	//		if (!showDarkSamples) continue;
+	//		color = Color3(1, 0, 0);
+	//	}
 
-		Draw::point(ss.position, rd, color * sampleMultiplier, 4.0f);
-
-		if (showSampleNormals)
-		{
-			Draw::arrow(ss.position + (0.01 * ss.normal), ss.normal, rd, ss.irradiance, 0.1f); 
-		}
-	}
+	//	Draw::point(ss.position, rd, color * sampleMultiplier, 4.0f);
+	//	if (showSampleNormals)
+	//	{
+	//		Draw::arrow(ss.position + (0.01 * ss.normal), ss.normal, rd, ss.irradiance, 0.1f); 
+	//	}
+	//}
 
 }
 
@@ -698,12 +735,9 @@ void App::makeGui() {
     tab->endRow();
 
     tab->beginRow();
-	tab->addButton("Sample Scene", GuiControl::Callback(this, &App::computeSceneSamples),GuiTheme::TOOL_BUTTON_STYLE);
 	tab->addButton("Compute samplesRGB", GuiControl::Callback(this, &App::computeSamplesRGB), GuiTheme::TOOL_BUTTON_STYLE);
 	tab->addButton("Compute samplesRGB_ref", GuiControl::Callback(this, &App::computeSamplesRGBRef), GuiTheme::TOOL_BUTTON_STYLE);
 	tab->addButton("Compute triplets", GuiControl::Callback(this, &App::computeTriplets), GuiTheme::TOOL_BUTTON_STYLE);
-	tab->addTextBox("samplesToSave", samplesToSave);
-    tab->addCheckBox("write samples", &saveSample);
     tab->addCheckBox("MATLAB", &useMatlabOptimization);
     tab->addButton("Optimization pass", GuiControl::Callback(this, &App::startOptimizationPasses),GuiTheme::TOOL_BUTTON_STYLE);
 	tab->addTextBox("Num", &tbNumPassesLeft);
@@ -711,11 +745,6 @@ void App::makeGui() {
     tab->endRow();
 
     tab->beginRow();
-	tab->addTextBox("NumSamples", &maxSamplesPointsToDraw);
-	tab->addCheckBox("Show", &showSamples);
-	tab->addCheckBox("Show normals", &showSampleNormals);
-	tab->addCheckBox("Show dark samples", &showDarkSamples);
-	tab->addSlider("F", &sampleMultiplier, 1.0f, 5.f);
     tab->addButton("Find Initial Conditions", GuiControl::Callback(this, &App::findBestInitialConditions),GuiTheme::TOOL_BUTTON_STYLE);
 	tab->addTextBox("NumTries", &m_sNumICTries);
 	tab->addTextBox("NumProbes", &m_sNumICProbes);
@@ -729,6 +758,11 @@ void App::makeGui() {
 	tab->addSlider("Mutiplier", &shadingMultiplier, 0.0f, 5.0f);
 	tab->addCheckBox("AOF", &(bRenderAO));
 	tab->addCheckBox("Shadow Maps", &(bRenderShadowMaps));
+	tab->addTextBox("NumSamples", &maxSamplesPointsToDraw);
+	tab->addCheckBox("Show", &showSamples);
+	tab->addCheckBox("Show normals", &showSampleNormals);
+	tab->addCheckBox("Show dark samples", &showDarkSamples);
+	tab->addSlider("F", &sampleMultiplier, 1.0f, 5.f);
 	tab->endRow();
 
 	tab->beginRow();
@@ -759,10 +793,38 @@ void App::makeGui() {
 		tab->endRow();
     }
 
+	tab = tabPane->addTab("Render");
+
+	tab->beginRow();
+	tab->addDropDownList("Integrator", integratorList, &(offlineRenderingOptions.integratorIndex), [this]() {});
+	tab->addDropDownList("Film Type", filmTypeList, &(offlineRenderingOptions.filmTypeIndex), [this]() {} );
+	tab->addTextBox("Gamma", &(offlineRenderingOptions.gamma));
+	tab->addTextBox("NumSamples", &(offlineRenderingOptions.numSamples));
+	tab->addTextBox("Width", &(offlineRenderingOptions.width));
+	tab->addTextBox("Height", &(offlineRenderingOptions.height));
+	tab->endRow();
+
+	tab->beginRow();
+	tab->addCheckBox("Show CMD", &(offlineRenderingOptions.showWindow));
+	tab->addCheckBox("Requireclose CMD", &(offlineRenderingOptions.requireToCloseWindow));
+	tab->addButton("OfflineRender", GuiControl::Callback(this, &App::offlineRender), GuiTheme::TOOL_BUTTON_STYLE);
+	tab->endRow();
+
 	addScenePane(tabPane);
     gui->pack();
     addWidget(gui);
     gui->moveTo(Point2(10, 50));
+}
+
+void App::generateSampleSetList()
+{
+	G3D::String selectedScene = scenePane.selectedSceneList->selectedValue();
+	G3D::Array<G3D::String> sampleSetList;
+	FileSystem::ListSettings ls;
+	ls.includeParentPath = false;
+	ls.recursive = false;
+	FileSystem::list("../data-files/Scenes/" + selectedScene + "/SampleSets/*", sampleSetList, ls);
+	scenePane.sampleSetList->setList(sampleSetList);
 }
 
 void App::addScenePane(GuiTabPane* tabPane)
@@ -792,12 +854,71 @@ void App::addScenePane(GuiTabPane* tabPane)
 	
 	tab->endRow();
 
-
+	tab->beginRow();
 	G3D::Array<G3D::String> sampleSetList;
 	FileSystem::list("../data-files/Scenes/" + selectedScene + "/SampleSets/*", sampleSetList, ls);
 	scenePane.sampleSetList = tab->addDropDownList("SampleSet", sampleSetList, NULL, GuiControl::Callback(this, &App::updateSampleSet));
-	tab->addButton(GuiText("Clear"), GuiControl::Callback(this->sampleSet, &SceneSampleSet::clear), GuiTheme::TOOL_BUTTON_STYLE);
+	tab->addButton(GuiText("New"), [this]() { windowNewSampleSet->setVisible(true); } , GuiTheme::TOOL_BUTTON_STYLE);
+	tab->addButton(GuiText("Clear values"), GuiControl::Callback(this, &App::clearSampleSetValues), GuiTheme::TOOL_BUTTON_STYLE);
+	tab->addButton(GuiText("Clear positions"), GuiControl::Callback(this, &App::clearSampleSetPositions), GuiTheme::TOOL_BUTTON_STYLE);
+	tab->addButton(GuiText("Reload"), GuiControl::Callback(this, &App::reloadSampleSet), GuiTheme::TOOL_BUTTON_STYLE);
+	tab->addTextBox("samplesToSave", samplesToSave);
+	tab->addButton("Generate Positions", GuiControl::Callback(this, &App::generateSampleSetPositions), GuiTheme::TOOL_BUTTON_STYLE);
+	tab->addButton("Generate Values", GuiControl::Callback(this, &App::generateSampleSetValues), GuiTheme::TOOL_BUTTON_STYLE);
+	tab->addCheckBox("write samples", &saveSample);
+	tab->beginRow();
 }
+
+void App::clearSampleSetValues()
+{
+	if (sampleSet != NULL)
+	{
+		sampleSet->clearValues();
+	}
+}
+
+void App::clearSampleSetPositions()
+{
+	if (sampleSet != NULL)
+	{
+		sampleSet->clearPositions();
+	}
+}
+
+void App::reloadSampleSet()
+{
+	if (sampleSet != NULL)
+	{
+		sampleSet->load(std::stoi((*samplesToSave).c_str()));
+	}
+}
+
+void App::generateSampleSetPositions()
+{
+	// generate n random points and store their colors, compare to the color in the corresponding texture , add to a cost function
+	int n = atoi(samplesToSave->c_str());
+	Vector2 UV, IJ;
+	Vector3 N, P;
+	int selectedModel;
+
+	for (int i = 0; i < n; i++)
+	{
+		clearAllActors();
+		SceneSample ss = generateSceneSample(&selectedModel, &P, &UV, &N, i);
+		sampleSet->addSample(ss);
+
+	}
+	sampleSet->save();
+}
+
+void App::generateSampleSetValues()
+{
+	std::stringstream args;
+	runPythonScriptFromDataFiles("IrradianceSensorRender.py", std::string(m_scene.m_name.c_str()) + " " + sampleSet->m_sampleSetName + " " + std::string((*samplesToSave).c_str()));
+	sampleSet->load(std::stoi((*samplesToSave).c_str()));
+
+}
+
 
 void App::saveProbeStructureUpdate()
 {
@@ -878,7 +999,8 @@ void App::updateSampleSet()
 	G3D::String sampleSetName = scenePane.sampleSetList->selectedValue();
 	
 	//loadSurfaceSamples(selectedScene, sampleSetName);
-	sampleSet = new SceneSampleSet(std::string(selectedScene.c_str()), std::string(sampleSetName.c_str()), m_scene.m_scale);
+	int numSamples = std::stoi((*samplesToSave).c_str());
+	sampleSet = new SceneSampleSet(std::string(selectedScene.c_str()), std::string(sampleSetName.c_str()), m_scene.m_scale, numSamples);
 	if (probeStructure)
 	{
 		sampleSet->probeStructure = probeStructure;
@@ -1120,26 +1242,27 @@ void App::makeZTextures(){
 
 void App::offlineRender()
 {
-	SOfflineRenderingOptions offlineRenderingOptions;
-	offlineRenderingOptions.numSamples = "256";
-	offlineRenderingOptions.height = "256";
-	offlineRenderingOptions.width = "512";
+
 	std::stringstream command;
 	command << "cmd /c \"cd C:\\git\\AutoProbePlacement\\AutoProbePlacement\\data-files\\scripts";
 	command << " && C:\\Users\\Joel\\Anaconda2\\python.exe CreateSceneRender.py zcbox 1Probe Probes ";
 
-	command << m_debugCamera->frame().translation.x << " ";
-	command << m_debugCamera->frame().translation.y << " ";
-	command << m_debugCamera->frame().translation.z << " ";
-	command << m_debugCamera->frame().lookVector().x << " ";
-	command << m_debugCamera->frame().lookVector().y << " ";
-	command << m_debugCamera->frame().lookVector().z << " ";
+	command << m_activeCamera->frame().translation.x << " ";
+	command << m_activeCamera->frame().translation.y << " ";
+	command << m_activeCamera->frame().translation.z << " ";
+	command << m_activeCamera->frame().lookVector().x << " ";
+	command << m_activeCamera->frame().lookVector().y << " ";
+	command << m_activeCamera->frame().lookVector().z << " ";
 	command << actors[0].getPosition().x << " ";
 	command << actors[0].getPosition().y << " ";
 	command << actors[0].getPosition().z << " ";
 	command << offlineRenderingOptions.numSamples.c_str() << " ";
 	command << offlineRenderingOptions.width.c_str() << " ";
 	command << offlineRenderingOptions.height.c_str() << " ";
+	command << integratorList[offlineRenderingOptions.integratorIndex].c_str() << " ";
+	command << offlineRenderingOptions.gamma.c_str() << " ";
+	command << filmTypeList[offlineRenderingOptions.filmTypeIndex].c_str() << " ";
+
 	command << "\"";
 
 	debugPrintf("%s\n", command.str().c_str());

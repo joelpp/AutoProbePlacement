@@ -77,9 +77,6 @@
     <ClCompile Include="source\App_logic.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
-    <ClCompile Include="source\helper.cpp">
-      <Filter>Source Files</Filter>
-    </ClCompile>
     <ClCompile Include="source\JScene.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>

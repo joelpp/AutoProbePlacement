@@ -5,9 +5,9 @@
 
 
 Vector3 App::getRandomPointInScene(){
-	float x = r.uniform(-5,5);
-	float y = r.uniform(0,5);
-	float z = r.uniform(-5,5);
+	float x = Random::common().uniform(-5,5);
+	float y = Random::common().uniform(0,5);
+	float z = Random::common().uniform(-5,5);
 
 	return Vector3(x,y,z);
 }
@@ -35,13 +35,13 @@ Array<Vector3> App::getRandomPoint(int modelNumber, Vector3* P, Vector3* N, Vect
     return toReturn;
 }
 
-void App::sampleScenePoint(int* _selectedModel, Vector3 *_P, Vector2* _UV, Vector3* _N, int sampleID){
+SceneSample App::generateSceneSample(int* _selectedModel, Vector3 *_P, Vector2* _UV, Vector3* _N, int sampleID){
 
     Vector3* baryWeights = new Vector3();
     Vector3* P = new Vector3();
     Vector3* N = new Vector3();
     startingIndex = new int(0);
-    selectedModel = (int)(m_scene.numModels() * r.uniform());
+    selectedModel = (int)(m_scene.numModels() * Random::common().uniform());
     //selectedModel = 3;
     Array<Vector3> vertices = getRandomPoint(selectedModel, P, N, baryWeights, startingIndex);
 
@@ -59,7 +59,6 @@ void App::sampleScenePoint(int* _selectedModel, Vector3 *_P, Vector2* _UV, Vecto
 
 
 	SceneSample ss = SceneSample(*P, *N);
-	sampleSet->addSample(ss);
 	//if (saveSample) ss->writeToFile("C:/libraries/g3d/samples/aTest/data-files/Scenes/" + 
 	//								scenePane.selectedSceneList->selectedValue() + "/SampleSets/" + 
 	//								*SampleSetOutputName + "/SamplePositions.txt");
@@ -68,6 +67,8 @@ void App::sampleScenePoint(int* _selectedModel, Vector3 *_P, Vector2* _UV, Vecto
 	delete P;
 	delete N;
 	delete startingIndex;
+
+	return ss;
 }
 
 void App::clearAllActors(){
@@ -163,8 +164,8 @@ G3D::Array<G3D::Vector3> App::generateRandomPositions(int NumberOfPositions)
 	G3D::Array<G3D::Vector3> toReturn;
 	float maxDistance = 4;
 	float offset = 0.5;
-	G3D::Vector3& min = m_scene.m_minBound + Vector3(offset, offset, offset);
-	G3D::Vector3& max = m_scene.m_maxBound - Vector3(offset, offset, offset);
+	G3D::Vector3 min = m_scene.m_minBound + Vector3(offset, offset, offset);
+	G3D::Vector3 max = m_scene.m_maxBound - Vector3(offset, offset, offset);
 
 	for (int i = 0; i < NumberOfPositions; ++i)
 	{
@@ -315,25 +316,6 @@ void App::computeTriplets()
 	sampleSet->generateTriplets(numSamples, 0);
 }
 
-
-void App::computeSceneSamples(){
-    // generate n random points and store their colors, compare to the color in the corresponding texture , add to a cost function
-	int n = atoi(samplesToSave->c_str());
-    Vector2 UV, IJ;
-    Vector3 N, P;
-    int selectedModel;
-
-    for (int i = 0; i < n; i++)
-	{
-		clearAllActors();
-        sampleScenePoint(&selectedModel, &P, &UV, &N, i);
-    }
-	sampleSet->save();
-}
-
-
-
-
 void App::addOneActor()
 {
 	addActor("bunny", bunnyModel /*sceneModel*/, 
@@ -369,9 +351,9 @@ void App::displaceProbes()
 	for (int i = 1; i <= numTries; ++i)
 	{
 
-		for (int i = 0 ; i < probeStructure->probeCount(); ++i)
+		for (int j = 0 ; j < probeStructure->probeCount(); ++j)
 		{
-			probeStructure->getProbe(i)->frame.translation = originalPositions[i];
+			probeStructure->getProbe(j)->frame.translation = originalPositions[j];
 		}
 		probeStructure->updateProbes(true);
 		updateProbeStructure();
@@ -397,9 +379,9 @@ void App::displaceProbes()
 		renderedCoeffs = probeStructure->getProbe(0)->coeffs;
 
 		float err = 0;
-		for (int i = 0; i < optimCoeffs.size(); ++i)
+		for (int j = 0; j < optimCoeffs.size(); ++j)
 		{
-			G3D::Vector3 diff = optimCoeffs[i] - renderedCoeffs[i];
+			G3D::Vector3 diff = optimCoeffs[j] - renderedCoeffs[j];
 
 			err += diff.dot(diff);
 

@@ -99,9 +99,6 @@ Vector3 App::getBarycentricCoordinates(Point3 testPoint, Tetrahedron* t){
     return abc;
 }
 
-void App::setToCorrectTetrahedron(int actorID){
-
-}
 
 bool App::tetrahedralInterpolation(Actor& actor, Array<int> *_probeIndices, Array<float> *_coeffs){
 
@@ -178,7 +175,7 @@ bool App::tetrahedralInterpolation(Actor& actor, Array<int> *_probeIndices, Arra
                 t = updateNeighbor(weights, 1.0, actor, t);
 
 				// and find the T again for THAT triangle face
-                double T = findTforCurrentTriangleFace(testPoint, t);
+                T = findTforCurrentTriangleFace(testPoint, t);
 
 				// and find the triangle vertex locations again
                 triangleVertices = getTriangleVertices(T, t);
@@ -400,89 +397,4 @@ Vector3 App::findTriangleBarycentricCoordinates(Vector3 P, Vector3 T0, Vector3 T
 	float b1 = w.cross(v).dot(n) * oneOver4ASquared;
 
     return Vector3(1.f - b2 - b1, b1, b2);
-}
-
-
-Array<Vector3> App::triLinearInterpolation(int actorID, Array<int> *_probeIndices, Array<float> *_weights, bool keepProbes){
-
-	float step = probeStructure->m_step;
-
-	Array<Vector3> toReturn;
-	for (int i =0; i < 9; i++){
-		toReturn.append(Vector3(0,0,0));
-	}
-	Vector3 pos = actors[actorID].getPosition();
-	Vector3 firstProbePos;
-
-	// Find position of probe 000
-	float x = floor(pos.x / step) * step;
-	float y = floor(pos.y / step) * step;
-	float z = floor(pos.z / step) * step;
-	Probe* selected = NULL;
-
-	debugPrintf("actorpos: x=%f, y=%f, z=%f \n", pos.x, pos.y, pos.z); 
-	debugPrintf("probe000pos: x=%f, y=%f, z=%d \n", x, y, z); 
-
-	try
-	{
-		selected = probeStructure->probeMap.at(Vector3(x,y,z));
-	}
-	catch(...)
-	{
-		return toReturn;
-	}
-
-	// Find the other probes
-	Probe *p000, *p001, *p010, *p011, *p100, *p101, *p110, *p111;
-	try
-{
-		p000 = selected;
-		p001 = probeStructure->probeMap.at(Vector3(x,y,z+step));
-		p010 = probeStructure->probeMap.at(Vector3(x,y+step,z));
-		p011 = probeStructure->probeMap.at(Vector3(x,y+step,z+step));
-		p100 = probeStructure->probeMap.at(Vector3(x+step,y,z));
-		p101 = probeStructure->probeMap.at(Vector3(x+step,y,z+step));
-		p110 = probeStructure->probeMap.at(Vector3(x+step,y+step,z));
-		p111 = probeStructure->probeMap.at(Vector3(x+step,y+step,z+step));
-	}
-
-	catch(...){
-		return toReturn;
-	}
-
-	// Compute blending weights
-	float xd = (pos.x - x) / (step);
-	float yd = (pos.y - y) / (step);
-	float zd = (pos.z - z) / (step);
-	//for each SH band...
-	for (int i = 0 ; i < 9; i++){
-		Vector3 c00 = p000->coeffs[i] * (1-xd) + p001->coeffs[i]*xd;
-		Vector3 c10 = p010->coeffs[i] * (1-xd) + p110->coeffs[i]*xd;
-		Vector3 c01 = p001->coeffs[i] * (1-xd) + p101->coeffs[i]*xd;
-		Vector3 c11 = p011->coeffs[i] * (1-xd) + p111->coeffs[i]*xd;
-
-		Vector3 c0 = c00 * (1-yd) + c10 * yd;
-		Vector3 c1 = c01 * (1-yd) + c11 * yd;
-
-		// Interpolate this band's coefficients
-
-		Vector3 result = c0 * (1-zd) + c1 * zd;
-		toReturn[i] = result;
-		
-		//debugPrintf("%f, %f, %f \n",xd,yd,zd);
-	}
-
-	if (keepProbes)
-	{
-		probesToRender.clear();
-		probesToRender.append(p000);
-		probesToRender.append(p001);
-		probesToRender.append(p010);
-		probesToRender.append(p011);
-		probesToRender.append(p100);
-		probesToRender.append(p101);
-		probesToRender.append(p110);
-		probesToRender.append(p111);
-	}
-	return toReturn;
 }

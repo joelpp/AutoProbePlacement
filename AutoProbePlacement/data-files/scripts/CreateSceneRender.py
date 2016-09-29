@@ -43,6 +43,10 @@ actorPos = [float(sys.argv[10]) / globalInfo["scale"], float(sys.argv[11]) / glo
 numSamplesOption = int(sys.argv[13]);
 widthOption = int(sys.argv[14]);
 heightOption = int(sys.argv[15]);
+integratorOption = sys.argv[16];
+gammaOption = float(sys.argv[17]);
+filmTypeOption = sys.argv[18]
+
 print(origin);
 print(direction);
 scene = SceneHandler.loadScene("../Scenes/zcbox/MitsubaScene2.xml", paramMap)
@@ -58,36 +62,24 @@ scheduler.start()
 
 def makeProbe(x, y, z, probeCount, rootPath, pRenderType):
 
-	t = Transform.translate(Vector(actorPos[0], actorPos[1], actorPos[2]));
-	s = Transform.scale(Vector(10,10,10));
-	actorProps = Properties('obj');
-	actorProps['filename'] = "../objs/sphere.obj"
-	actorProps['toWorld'] = t*s;
+	# t = Transform.translate(Vector(actorPos[0], actorPos[1], actorPos[2]));
+	# s = Transform.scale(Vector(10,10,10));
+	# actorProps = Properties('obj');
+	# actorProps['filename'] = "../objs/sphere.obj"
+	# actorProps['toWorld'] = t*s;
 
-	# diffusebsdf = pmgr.create({
-		# 'type' : 'diffuse',
-		# 'reflectance' : Spectrum(1.0)});
-	# actorProps['bsdf'] = diffusebsdf;
-	actor = pmgr.createObject(actorProps);
-	actor.configure();
+	# actor = pmgr.createObject(actorProps);
+	# actor.configure();
 	# scene.addChild(actor)
 	scene.configure();
-	total = 9;
-
-	# Integrator properties
-	integratorType = pRenderType[:-1].lower();
 
 	# Sampler properties
-	sampleCount = 1
-	if (pRenderType == "Probes"):
-		sampleCount = numSamplesOption;
-		integratorType = "path";
-		# integratorType = "direct";
-		# integratorType = "path_samples";
+
+	sampleCount = numSamplesOption;
 
 	#Create integrator
 	integrator = pmgr.create({
-		'type' : integratorType,
+		'type' : integratorOption,
 		'maxDist': 900.0,
 		'samplePosition': Point(0,0,0),
 		'sampleNormal': Normal(0,0,0),
@@ -99,28 +91,21 @@ def makeProbe(x, y, z, probeCount, rootPath, pRenderType):
 	#Create sampler
 	sampler = pmgr.create({
 		'type' : 'ldsampler',
-		'sampleCount' : 512 # sampleCount
+		'sampleCount' : sampleCount
 		})
 
 	#Create film
-	filmProps = Properties('hdrfilm')
-	if (pRenderType == "Probes"):
-		filmProps = Properties('ldrfilm')
-	filmProps['width'] = 512 #widthOption
-	filmProps['height'] = 384 #heightOption	
+	filmProps = Properties(filmTypeOption)
+	filmProps['width'] = widthOption
+	filmProps['height'] = heightOption	
 	filmProps['banner'] = False
 	filmProps['pixelFormat'] = "rgb"
-	# filmProps['gamma'] = 0.0
+	filmProps['gamma'] = gammaOption
 	# filmProps['rfilter'] = "box"
 	filmProps['componentFormat'] = "float32"
 	
 	film = pmgr.createObject(filmProps)
 	
-	# boxProps = Properties('box');
-	# boxProps['radius'] = 0;
-	# film.setFilter(pmgr.createObject(boxProps));
-
-	# offset = 4;
 	scale = globalInfo["scale"];
 	x /= scale;
 	y /= scale;
@@ -160,8 +145,7 @@ def makeProbe(x, y, z, probeCount, rootPath, pRenderType):
 	# print(scene);
 	
 	# Your custom destination goes here.
-	destination = rootPath + "/" + pRenderType + "/" + pRenderType[:-1] + "_"
-	destination += repr(probeCount)+'.png'
+	destination = rootPath + "/" + integratorOption + "gamma_" + repr(gammaOption).translate(None, '.') + "_numSamples_" + repr(numSamplesOption);
 	scene.setDestinationFile(destination)
 	print(destination)
 	#Render!

@@ -1,13 +1,13 @@
 Application Log
-Start: Wed Sep 28 16:13:15 2016
+Start: Thu Sep 29 17:21:21 2016
 
-Initializing System::findDataFile took 0.004191s
+Initializing System::findDataFile took 0.005486s
 WARNING: AudioDevice is not enabled. Set G3DSpecification::audio = true before invoking initGLG3D() to enable audio.
 
 Entering GApp::GApp()
 cwd = C:\git\AutoProbePlacement\AutoProbePlacement\AutoProbePlacement
 System::setAppDataDir("C:\git\AutoProbePlacement\data-files")
-Initializing System::findDataFile took 0.003160s
+Initializing System::findDataFile took 0.002444s
 Setting video mode
 wglSwapIntervalEXT(0);
 Setting initial rendering state.
@@ -741,17 +741,6 @@ Vertex info
 Fragment info
 -------------
 0(7) : warning C7547: extension GL_EXT_shader_image_load_formatted not supported in profile gp5fp
-
-G3D Inserted Code(7) : warning C7547: extension GL_EXT_shader_image_load_formatted not supported in profile gp5vp
-G3D Inserted Code(7) : warning C7547: extension GL_EXT_shader_image_load_formatted not supported in profile gp5fp
-Vertex info
------------
-0(7) : warning C7547: extension GL_EXT_shader_image_load_formatted not supported in profile gp5vp
-
-Fragment info
--------------
-0(7) : warning C7547: extension GL_EXT_shader_image_load_formatted not supported in profile gp5fp
-1(32) : warning C7050: "wsN" might be used before being initialized
 
 G3D Inserted Code(7) : warning C7547: extension GL_EXT_shader_image_load_formatted not supported in profile gp5vp
 G3D Inserted Code(7) : warning C7547: extension GL_EXT_shader_image_load_formatted not supported in profile gp5fp

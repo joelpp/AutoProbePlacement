@@ -866,42 +866,40 @@ void ProbeStructure::updateProbes(bool updateAll)
 
 	if (updateAll)
 	{
-
 		bool useNew = true;
 
 		// system call to mitsuba
 		std::stringstream args;
-		args << "cmd /c \"cd C:\\libraries\\g3d\\samples\\aTest\\data-files\\scripts";
-		args << " && python onecamera.py " << m_sceneName.c_str() << " " << m_name.c_str() << " all\"";
+		args << m_sceneName.c_str() << " " << m_name.c_str() << " Probes";
 
-		result = runCommand(args.str());
+		runPythonScriptFromDataFiles("onecamera.py", args.str());
 	}
 
-	for (int i = 0; i < probeList.size(); ++i)
-	{
-		Probe* p = probeList[i];
+	//for (int i = 0; i < probeList.size(); ++i)
+	//{
+	//	Probe* p = probeList[i];
 
-		if (updateAll || p->bNeedsUpdate)
-		{
-			if (!updateAll)
-			{
-				// system call to mitsuba
-				std::stringstream command;
-				command << "cmd /c \"cd C:\\libraries\\g3d\\samples\\aTest\\data-files\\scripts";
-				command << " && renderoneprobe.bat " << m_sceneName.c_str() << " " << m_name.c_str() << " " << i << "\"";
+	//	if (updateAll || p->bNeedsUpdate)
+	//	{
+	//		if (!updateAll)
+	//		{
+	//			// system call to mitsuba
+	//			std::stringstream command;
+	//			command << "cmd /c \"cd C:\\libraries\\g3d\\samples\\aTest\\data-files\\scripts";
+	//			command << " && renderoneprobe.bat " << m_sceneName.c_str() << " " << m_name.c_str() << " " << i << "\"";
 
-				result = runCommand(command.str());
-			}
+	//			result = runCommand(command.str());
+	//		}
 
-			// reload new probes textures and coefficients
-			if (result == true)
-			{
-				p->computeCoefficientsFromTexture(false);
-				p->bNeedsUpdate = false;
-			}
+	//		// reload new probes textures and coefficients
+	//		if (result == true)
+	//		{
+	//			p->computeCoefficientsFromTexture(false);
+	//			p->bNeedsUpdate = false;
+	//		}
 
-		}
-	}
+	//	}
+	//}
 }
 
 bool ProbeStructure::isOutsideSceneBounds(G3D::Vector3 pos, float tolerance)

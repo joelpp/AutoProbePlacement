@@ -60,6 +60,15 @@ struct SOfflineRenderingOptions
 	bool requireToCloseWindow;
 };
 
+struct SProbeStructureCreationOptions
+{
+	String name;
+	String type;
+	float step;
+	Vector3 firstProbePosition;
+	Vector3 dimensions;
+};
+
 enum EIntegrator
 {
 	Path = 0,
@@ -86,8 +95,12 @@ private:
 	*/
   
 	void drawModel(RenderDevice* rd, String shaderName, shared_ptr<ArticulatedModel> model, CFrame frame,Args args);
-	void makeScene();
+
 	virtual void makeGui();
+	void createNewSampleSetWindow();
+	void createNewSampleSet(String& sceneName, String& sNewSampleSetName);
+	void createNewProbeStructureWindow();
+
 	void generateSampleSetList();
 	void addScenePane(GuiTabPane* tabPane);
 	void updateSelectedScenePane();
@@ -97,33 +110,15 @@ private:
 	void addLight(SceneLight light);
 	void addModel(String filename, Color3 color);
 	
-	void makeZTextures();
-	void loadSponza();
-	void loadZScene();
-	void loadSimpleTriangle();
-	void makeBoxTextures();
-	void makeSponzaTextures();
-	void loadCornell();
-	void loadBoxScene();
-    void loadCornellColors();
-
-	void loadSHTextures();
-	void saveCoeffs(String path);
 	void addActor(String name, String filename, Point3 position, float scale, shared_ptr<Texture> texture);
 	void addActor(String name, shared_ptr<ArticulatedModel> model, Point3 position, float scale, shared_ptr<Texture> texture, bool useManipulator, Vector3 albedo);
-	void addParticle(float x, float y, float z);
-	void addParticle();
-	void resetParticles();
+	
 	void debugFloatArray(Array<float> myArray);
 	void debugStringArray(Array<String> myArray);
 	void debugIntArray(Array<int> myArray);
-	//bool loadOBJ(String filename);
-	//bool loadOBJ(String filename, float scale);
+
 	void clearAllActors();
-	void pythonTest();
-	void updateSelectedSceneTextures();
 	String printVector3Array(Array<Vector3> arr);
-	void logPrintSurfaceSamples();
 	void initializeProbeStructure(String sceneName, String probeStructurePath);
 	void loadPreviousProbeStructure();
 	void loadScene(String sceneName);
@@ -149,7 +144,6 @@ private:
 
 	int minCoord(Vector3 weights);
 
-	void setToCorrectTetrahedron(int actorID);
 
 	Vector3 triangleInterpolateVector3(Vector3 weights, Vector3 v0, Vector3 v1, Vector3 v2);
 	/**
@@ -158,12 +152,8 @@ private:
 
 	Array<Vector3> getRandomPoint(int modelNumber, Vector3* P, Vector3* N, Vector3* barycentricWeights, int* startingIndex);
   
-	Vector3 SHDotProductWithCosineLobe(Array<Vector3> coefficients);
-	Vector3 shCoeffsToRGB(Vector3 normal, Array<Vector3> coeffs);
-
 	SceneSample generateSceneSample(int* _selectedModel, Vector3 *_P, Vector2* _IJ, Vector3* _N, int sampleID);
 
-	void computeSceneSamples();
 	void computeSamplesRGB();
 	void computeSamplesRGBRef();
 	void computeTriplets();
@@ -175,35 +165,12 @@ private:
 	void findBestInitialConditions();
 	void displaceProbes();
 
-	void reloadProbeStructure();
-	void logicFunWithCoeffs();
-	void logicFunWithPositions();
-	void callLogicFunNTimes();
 	void addOneActor();
 	void addOneActorSq();
-	void extractProbeCoeffs();
-	void probePositionTesting();
-	void probeStructureTesting();
-	void callLogicFunNTimesPos();
 
-	float clampedCosLobeCoefficient(int l);
-	float phongCoeffs(int l, float r);
-
-	Array<int> kToLM(int k);
-	bool atLeast2DifferentCoordinates(Point3 p0, Point3 p1);
-	Array<Vector3> findOppositeCornersOnRectangle(Array<Point3> vertexCoords);
-	Array<Vector3> getModelCorners(int selectedModel);
-	Array<Vector3> findModelOppositeCorners(int i);
-	void discretizeModel(int selectedModel);
 	Vector3 getRandomPointInScene();
-	void loadSurfaceSamples(String& sceneName, String& sampleSetName);
-	void loadSampleCoeffs();
-	Point3 findMinimalestCorner(Array<Point3> vertexCoords);
 	bool isUVInsideTriangle(Tri &t, Vector2 testUV, Vector3& barycentric);
 	Vector3 getUVBarycentricCoordinates(Point2 testUV, Vector3 u, Vector3 v);
-	void discretizeScene();
-	bool isUVInsideModel(Vector2 UV, Tri &tri, Vector3 &barycentric);
-	void testTriangleFunctions();
 	bool pointInTriangleBB(Point2 UV, Vector3 u, Vector3 v);
 
 	////////////////////////////////
@@ -385,7 +352,6 @@ public:
 
 	void offlineRender();
 
-	void createSampleSet();
 	void clearSampleSetValues();
 	void clearSampleSetPositions();
 	void reloadSampleSet();
@@ -394,7 +360,11 @@ public:
 
 	// There CERTAINLY has to be a better way to handle this stuff than keeping the new sample set window and nmae as globals
 	G3D::String sNewSampleSetName;
+	SProbeStructureCreationOptions newProbeStructureOptions;
+
+
 	shared_ptr<GuiWindow> windowNewSampleSet;
+	shared_ptr<GuiWindow> windowNewProbeStructure;
 	SOfflineRenderingOptions offlineRenderingOptions;
 
 	G3D::Array<G3D::String> integratorList;

@@ -18,7 +18,7 @@ bool runCommand(std::string command)
 	std::string comm = "C:\\Windows\\winsxs\\amd64_microsoft-windows-commandprompt_31bf3856ad364e35_6.1.7601.17514_none_e932cc2c30fc13b0\\cmd.exe";
 	LPCSTR sw = comm.c_str();
 	LPSTR arg2 = const_cast<char *>(command.c_str());
-	bool result = CreateProcessA(sw, arg2, NULL, NULL, FALSE, CREATE_NO_WINDOW, NULL, NULL, &si, &pi);
+	bool result = CreateProcessA(sw, arg2, NULL, NULL, FALSE, 0, NULL, NULL, &si, &pi);
 
 	if (result == false)
 	{
@@ -39,7 +39,8 @@ bool runPythonScriptFromDataFiles(std::string scriptName, std::string args)
 {
 	std::stringstream ss;
 
-	ss << "cmd /c \"cd C:\\git\\AutoProbePlacement\\AutoProbePlacement\\data-files\\scripts && C:\\Users\\Joel\\Anaconda2\\python.exe ";
+	//ss << "cmd /c \"cd C:\\git\\AutoProbePlacement\\AutoProbePlacement\\data-files\\scripts && C:\\Users\\Joel\\Anaconda2\\python.exe ";
+	ss << "cmd /c \"cd C:\\git\\AutoProbePlacement\\AutoProbePlacement\\data-files\\scripts && python ";
 	ss << scriptName << " ";
 	ss << args << "\"";
 

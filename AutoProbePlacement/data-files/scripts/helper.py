@@ -252,6 +252,11 @@ def readSceneAndProbeStructureInfo(sceneName, probeStructureName):
 		seekedInfo = ["scale", "dimensions"];
 	else:
 		seekedInfo = ["scale", "step", "dimensions", "firstProbePosition", "minBound", "maxBound"];
+
+	seekedInfo.append("gamma");
+	seekedInfo.append("sampleCount");
+	seekedInfo.append("width");
+	seekedInfo.append("height");
 		
 	for line in sceneInfo:
 		for info in seekedInfo:

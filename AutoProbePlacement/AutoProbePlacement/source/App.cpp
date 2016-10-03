@@ -72,28 +72,7 @@ void App::onInit() {
 	instance = this;
     renderDevice->setSwapBuffersAutomatically(true);
     
-	windowNewSampleSet = GuiWindow::create("New sample set");
-	GuiPane* pane = windowNewSampleSet->pane();
-	pane->addTextBox("Name: ", &sNewSampleSetName);
-	pane->addButton("Ok", [this]() 
-	{ 
-		G3D::String newSSPath = "../data-files/Scenes/" + m_scene.m_name + "/SampleSets/" + sNewSampleSetName;
-		createFolder(newSSPath.c_str());
-		createFolder((newSSPath + "/irradiance").c_str());
-		createEmptyFile((newSSPath + "/SamplePositions.txt").c_str());
-		createEmptyFile((newSSPath + "/IrradianceResults2.txt").c_str());
-		windowNewSampleSet->setVisible(false);
-		generateSampleSetList();
-	});
-	pane->addButton("Cancel", [this]() 
-	{
-		sNewSampleSetName = ""; 
-		windowNewSampleSet->setVisible(false);
-	});
-	windowNewSampleSet->pack();
-	addWidget(windowNewSampleSet);
-	windowNewSampleSet->moveTo(Point2(500, 500));
-	windowNewSampleSet->setVisible(false);
+	createNewSampleSetWindow();
 
 	integratorList.resize(EIntegrator::NUM_INTEGRATORS);
 	integratorList[EIntegrator::Path] = "path";
@@ -192,10 +171,6 @@ void App::onInit() {
 	addOneActor();
     makeGui();
 
-	String sceneName;
-	String sampleSetName;
-
-
 	probeStructure = NULL;
 
     //Load the textures containing the SH coefficient values
@@ -207,30 +182,15 @@ void App::onInit() {
 	offlineRenderingOptions.width = "512";
 	offlineRenderingOptions.gamma = "2.2";
 
+	setActiveCamera(m_debugCamera);
+
 }//end of onInit 
 
 void App::loadScene(String sceneName)
 {
 	lightPositions.clear();
 
-	if (sceneName == "ZScene")
-	{
-		loadZScene();
-	}
-	else if (sceneName == "crytek-sponza")
-	{
-		loadSponza();
-	}
-	//else if (sceneName == "zcbox")
-	//{
-	//	loadCornell();
-	//}
-	else
-	{
-		m_scene = JScene(sceneName);
-		//loadScene(std::string(sceneName.c_str()));
-	}
-
+	m_scene = JScene(sceneName);
 }
 
 void App::initializeProbeStructure(String sceneName, String probeStructureName)
@@ -380,11 +340,7 @@ void App::renderActors(RenderDevice* rd)
 			//setSHTexturesUniforms(args);
 			drawModel(rd, "SH_shader2.*", actor.getModel(), actor.getFrame(), args);
 		}
-
-
-
     }
-
 }
 
 void App::drawProbes(RenderDevice* rd)
@@ -411,10 +367,7 @@ void App::drawProbes(RenderDevice* rd)
 			else args.setUniform("uSampler", probe->getTexture(0), Sampler());
 			args.setUniform("multiplier", (float)1.0);
 			drawModel(rd, "texture.*", sphereModel, probe->getPosition(), args);
-			
-
 		}
-
 
 		if (bManipulateProbesEnabled)
 		{
@@ -437,26 +390,9 @@ void App::drawLights(RenderDevice* rd)
 
 void App::drawSurfaceSamples(RenderDevice* rd)
 {
-
 	int numOfsamplesToShow = atoi(maxSamplesPointsToDraw.c_str());
 
 	Draw::points(sampleSet->m_points, rd, sampleSet->m_colors, 4.0f);
-	//for (int i =0; i < numOfsamplesToShow; i++){
-	//	SceneSample& ss = sampleSet->m_samples[i];
-	//	Color3 color = ss.irradiance;
-	//	if (color == Color3(0, 0, 0))
-	//	{
-	//		if (!showDarkSamples) continue;
-	//		color = Color3(1, 0, 0);
-	//	}
-
-	//	Draw::point(ss.position, rd, color * sampleMultiplier, 4.0f);
-	//	if (showSampleNormals)
-	//	{
-	//		Draw::arrow(ss.position + (0.01 * ss.normal), ss.normal, rd, ss.irradiance, 0.1f); 
-	//	}
-	//}
-
 }
 
 void App::drawScene(RenderDevice* rd)
@@ -500,7 +436,6 @@ void App::drawProbeLineSegments(RenderDevice* rd)
  */
 void App::onGraphics3D(RenderDevice* rd, Array<shared_ptr<Surface> >& surface3D) {
 
-
 	GBuffer::Specification gbufferSpec = m_gbufferSpecification;
 	gbufferSpec.encoding[GBuffer::Field::WS_POSITION].format = ImageFormat::RGBA16F();
 	extendGBufferSpecification(gbufferSpec);
@@ -511,35 +446,16 @@ void App::onGraphics3D(RenderDevice* rd, Array<shared_ptr<Surface> >& surface3D)
 	m_renderer->render(rd, m_framebuffer, scene()->lightingEnvironment().ambientOcclusionSettings.enabled ? m_depthPeelFramebuffer : shared_ptr<Framebuffer>(),
 		scene()->lightingEnvironment(), m_gbuffer, surface3D);
 
-
-	//if (submitToDisplayMode() == SubmitToDisplayMode::MAXIMIZE_THROUGHPUT) {
-	//	swapBuffers();
-	//}
-
-
-
-
-
- //   Args args;
- //   CFrame cframe;
-
     rd->setColorClearValue(Color3(0.3f, 0.3f, 0.3f));
     rd->setRenderMode(RenderDevice::RENDER_SOLID);
  //   
  //   //Set the framebuffer for drawing
     rd->pushState(m_framebuffer);
 
- //   //Clear the renderdevice
-    //rd->clear();
 	if (showSamples)
 	{
 		drawSurfaceSamples(rd);
 	}
-
-	//if (!hideActors)
-	//{
-	//	renderActors(rd);
-	//}
 
 	////Draw Probes
     if (probeStructure && (showInterpolationProbes || showAllProbes))
@@ -547,55 +463,13 @@ void App::onGraphics3D(RenderDevice* rd, Array<shared_ptr<Surface> >& surface3D)
 		drawProbes(rd);
     }
 
-	////Draw the lights
-	//drawLights(rd);
-
- //   //Draw immobile scene
- //   if (!hideRoom)
-	//{
-	//	drawScene(rd);
-	//}
-
-	//if (CPUInterpolation)
-	//{
-	//	drawProbeLineSegments(rd);
-	//	for (int i = 0; i < extrapolationTriangleVertices.size(); ++i)
-	//	{
-	//		Sphere s = Sphere(extrapolationTriangleVertices[i], 0.05);
-	//		Draw::sphere(s, rd);
-	//	}
-	//}
-
  //   //Draw manipulator and other stuff
-	//drawDebugShapes();
     rd->popState();
 
-	//drawDebugShapes();
 	rd->clear();
     m_film->exposeAndRender(rd, activeCamera()->filmSettings(), m_framebuffer->texture(0), 0, 0);
- //   timer++;
-
-	//// I'm only doing this because I can't get rd->screenshot() to save to a good filename
-	//if (numPassesLeft > 0)
-	//{
-	//	const shared_ptr<Image> screen(rd->screenshotPic());
-
-	//	FileSystem::ListSettings ls;
-	//	ls.includeParentPath = false;
-	//	ls.recursive = false;
-	//	G3D::Array<G3D::String> screenshotList;
-	//	FileSystem::list("C:/temp/CurrentOptimization/screens/*", screenshotList, ls);
-	//	int num = screenshotList.size();
-
-	//	String filename = "C:/temp/CurrentOptimization/screens/" + String(std::to_string(num).c_str()) + ".jpg";
-	//	debugPrintf("%s", filename.c_str());
-	//	screen->save(filename);
-
-	//	debugPrintf("%d optimization passes left \n", numPassesLeft);
-	//	numPassesLeft--;
-	//}
+ 
 }
-
 
 void App::drawModel(RenderDevice* rd, String shaderName, shared_ptr<ArticulatedModel> model, CFrame frame, Args args){
     args.setUniform("intensity", 0.1f); 
@@ -663,8 +537,6 @@ void App::addActor(String name, shared_ptr<ArticulatedModel> model, Point3 posit
 	
 }
 
-
-
 void App::addModel(String filename, Color3 color)
 {
 	//if (!//loadOBJ(filename))
@@ -701,172 +573,12 @@ void App::debugIntArray(Array<int> myArray){
     }
     debugPrintf("\n");
 }
+
 void App::debugFloatArray(Array<float> myArray){
     for (int i =0; i < myArray.size(); i++){
         debugPrintf("array[%d] = %f ",i,myArray[i]);
     }
     debugPrintf("\n");
-}
-
-void App::loadSHTextures(){
-    debugPrintf("Loading SH Textures...\n");
-
-    for (int i = 0; i < 100; i++){
-        char str[8];
-        sprintf(str, "%d", i);
-        String filename = "../data-files/SH/512x256/SHRender";
-        filename.append(str);
-        filename.append(".png");
-        shTextures.append(Texture::fromFile(filename));
-    }
-}
-
-void App::makeGui() {
-    shared_ptr<GuiWindow> gui = GuiWindow::create("Parameters");    
-    GuiPane* pane = gui->pane();
-	    
-	GuiTabPane* tabPane = pane->addTabPane();
-	GuiPane* tab = tabPane->addTab("General Controls");
-
-    tab->beginRow();
-	tab->addCheckBox("Interpolate Coefficients", &interpolateCoefficients);
-	tab->addButton("displace", GuiControl::Callback(this, &App::displaceProbes), GuiTheme::TOOL_BUTTON_STYLE);
-
-    tab->endRow();
-
-    tab->beginRow();
-	tab->addButton("Compute samplesRGB", GuiControl::Callback(this, &App::computeSamplesRGB), GuiTheme::TOOL_BUTTON_STYLE);
-	tab->addButton("Compute samplesRGB_ref", GuiControl::Callback(this, &App::computeSamplesRGBRef), GuiTheme::TOOL_BUTTON_STYLE);
-	tab->addButton("Compute triplets", GuiControl::Callback(this, &App::computeTriplets), GuiTheme::TOOL_BUTTON_STYLE);
-    tab->addCheckBox("MATLAB", &useMatlabOptimization);
-    tab->addButton("Optimization pass", GuiControl::Callback(this, &App::startOptimizationPasses),GuiTheme::TOOL_BUTTON_STYLE);
-	tab->addTextBox("Num", &tbNumPassesLeft);
-    tab->addCheckBox("log", &logSampleSet);
-    tab->endRow();
-
-    tab->beginRow();
-    tab->addButton("Find Initial Conditions", GuiControl::Callback(this, &App::findBestInitialConditions),GuiTheme::TOOL_BUTTON_STYLE);
-	tab->addTextBox("NumTries", &m_sNumICTries);
-	tab->addTextBox("NumProbes", &m_sNumICProbes);
-	tab->endRow();
-
-	tab = tabPane->addTab("Rendering");
-	tab->beginRow();
-	tab->addCheckBox("Direct", &(bRenderDirect));
-	tab->addCheckBox("Indirect (probes)", &(bRenderIndirect));
-	tab->addCheckBox("* BRDF", &(bRenderMultiplyIndirectByBRDF));
-	tab->addSlider("Mutiplier", &shadingMultiplier, 0.0f, 5.0f);
-	tab->addCheckBox("AOF", &(bRenderAO));
-	tab->addCheckBox("Shadow Maps", &(bRenderShadowMaps));
-	tab->addTextBox("NumSamples", &maxSamplesPointsToDraw);
-	tab->addCheckBox("Show", &showSamples);
-	tab->addCheckBox("Show normals", &showSampleNormals);
-	tab->addCheckBox("Show dark samples", &showDarkSamples);
-	tab->addSlider("F", &sampleMultiplier, 1.0f, 5.f);
-	tab->endRow();
-
-	tab->beginRow();
-	tab->addCheckBox("Show Interp Probes", &showInterpolationProbes);
-	tab->addCheckBox("Show ALL Probes", &showAllProbes);
-	tab->addCheckBox("CPUInterpolation", &CPUInterpolation);
-	tab->addCheckBox("highlight probes", &highlightProbes);
-	tab->addButton("OfflineRender", GuiControl::Callback(this, &App::offlineRender), GuiTheme::TOOL_BUTTON_STYLE);
-	tab->endRow();
-
-	tab = tabPane->addTab("Actors");
-	tab->beginRow();
-	tab->addButton("Add sphere", GuiControl::Callback(this, &App::addOneActor), GuiTheme::TOOL_BUTTON_STYLE);
-	tab->addButton("Add sceneActor", GuiControl::Callback(this, &App::addOneActorSq), GuiTheme::TOOL_BUTTON_STYLE);
-	tab->addButton("Clear actors", GuiControl::Callback(this, &App::clearAllActors), GuiTheme::TOOL_BUTTON_STYLE);
-	tab->addTextBox("X", &actorSpawnX);
-	tab->addTextBox("Y", &actorSpawnY);
-	tab->addTextBox("Z", &actorSpawnZ);
-	tab->endRow();
-    for (int i = 0 ; i < actors.size(); i++)
-	{
-		tab->beginRow();
-		tab->addLabel(GuiText(actors[i].name));
-		tab->addCheckBox("visible", &actors[i].updateVisibility);
-		tab->addSlider("Phong",    &actors[i].phongExponent, 1.0f, 60.f);
-		tab->addSlider("Max band",    &actors[i].drawBand, 0, maxDrawBand);
-		tab->addCheckBox("show this band only", &actors[i].showOnlyOneBand);
-		tab->endRow();
-    }
-
-	tab = tabPane->addTab("Render");
-
-	tab->beginRow();
-	tab->addDropDownList("Integrator", integratorList, &(offlineRenderingOptions.integratorIndex), [this]() {});
-	tab->addDropDownList("Film Type", filmTypeList, &(offlineRenderingOptions.filmTypeIndex), [this]() {} );
-	tab->addTextBox("Gamma", &(offlineRenderingOptions.gamma));
-	tab->addTextBox("NumSamples", &(offlineRenderingOptions.numSamples));
-	tab->addTextBox("Width", &(offlineRenderingOptions.width));
-	tab->addTextBox("Height", &(offlineRenderingOptions.height));
-	tab->endRow();
-
-	tab->beginRow();
-	tab->addCheckBox("Show CMD", &(offlineRenderingOptions.showWindow));
-	tab->addCheckBox("Requireclose CMD", &(offlineRenderingOptions.requireToCloseWindow));
-	tab->addButton("OfflineRender", GuiControl::Callback(this, &App::offlineRender), GuiTheme::TOOL_BUTTON_STYLE);
-	tab->endRow();
-
-	addScenePane(tabPane);
-    gui->pack();
-    addWidget(gui);
-    gui->moveTo(Point2(10, 50));
-}
-
-void App::generateSampleSetList()
-{
-	G3D::String selectedScene = scenePane.selectedSceneList->selectedValue();
-	G3D::Array<G3D::String> sampleSetList;
-	FileSystem::ListSettings ls;
-	ls.includeParentPath = false;
-	ls.recursive = false;
-	FileSystem::list("../data-files/Scenes/" + selectedScene + "/SampleSets/*", sampleSetList, ls);
-	scenePane.sampleSetList->setList(sampleSetList);
-}
-
-void App::addScenePane(GuiTabPane* tabPane)
-{
-	GuiPane* tab = tabPane->addTab("Scene");
-
-	G3D::Array<G3D::String> sceneList;
-
-	FileSystem::ListSettings ls;
-	ls.includeParentPath = false;
-	ls.recursive = false;
-	
-	FileSystem::list("../data-files/Scenes/*", sceneList, ls);
-
-	scenePane.selectedSceneList = tab->addDropDownList("Scene", sceneList, NULL, GuiControl::Callback(this, &App::updateSelectedScenePane));
-	
-	G3D::String selectedScene = scenePane.selectedSceneList->selectedValue();
-
-	tab->beginRow();
-	G3D::Array<G3D::String> probeStructureList;
-	FileSystem::list("../data-files/Scenes/" + selectedScene + "/ProbeStructures/*", probeStructureList, ls);
-	scenePane.probeStructureList = tab->addDropDownList("ProbeStructure", probeStructureList, NULL, GuiControl::Callback(this, &App::updateProbeStructure));
-	tab->addButton(GuiText("Switch Back"), GuiControl::Callback(this, &App::loadPreviousProbeStructure), GuiTheme::TOOL_BUTTON_STYLE );
-	tab->addButton(GuiText("Edit mode"), GuiControl::Callback(this, &App::switchEditProbeStructure), GuiTheme::TOOL_BUTTON_STYLE);
-	tab->addButton(GuiText("Save"), GuiControl::Callback(this, &App::saveProbeStructureUpdate), GuiTheme::TOOL_BUTTON_STYLE);
-	tab->addButton(GuiText("Update All"), GuiControl::Callback(this, &App::saveProbeStructureUpdateAll), GuiTheme::TOOL_BUTTON_STYLE );
-	
-	tab->endRow();
-
-	tab->beginRow();
-	G3D::Array<G3D::String> sampleSetList;
-	FileSystem::list("../data-files/Scenes/" + selectedScene + "/SampleSets/*", sampleSetList, ls);
-	scenePane.sampleSetList = tab->addDropDownList("SampleSet", sampleSetList, NULL, GuiControl::Callback(this, &App::updateSampleSet));
-	tab->addButton(GuiText("New"), [this]() { windowNewSampleSet->setVisible(true); } , GuiTheme::TOOL_BUTTON_STYLE);
-	tab->addButton(GuiText("Clear values"), GuiControl::Callback(this, &App::clearSampleSetValues), GuiTheme::TOOL_BUTTON_STYLE);
-	tab->addButton(GuiText("Clear positions"), GuiControl::Callback(this, &App::clearSampleSetPositions), GuiTheme::TOOL_BUTTON_STYLE);
-	tab->addButton(GuiText("Reload"), GuiControl::Callback(this, &App::reloadSampleSet), GuiTheme::TOOL_BUTTON_STYLE);
-	tab->addTextBox("samplesToSave", samplesToSave);
-	tab->addButton("Generate Positions", GuiControl::Callback(this, &App::generateSampleSetPositions), GuiTheme::TOOL_BUTTON_STYLE);
-	tab->addButton("Generate Values", GuiControl::Callback(this, &App::generateSampleSetValues), GuiTheme::TOOL_BUTTON_STYLE);
-	tab->addCheckBox("write samples", &saveSample);
-	tab->beginRow();
 }
 
 void App::clearSampleSetValues()
@@ -916,9 +628,7 @@ void App::generateSampleSetValues()
 	std::stringstream args;
 	runPythonScriptFromDataFiles("IrradianceSensorRender.py", std::string(m_scene.m_name.c_str()) + " " + sampleSet->m_sampleSetName + " " + std::string((*samplesToSave).c_str()));
 	sampleSet->load(std::stoi((*samplesToSave).c_str()));
-
 }
-
 
 void App::saveProbeStructureUpdate()
 {
@@ -953,27 +663,6 @@ void App::switchEditProbeStructure()
 	
 }
 
-void App::updateSelectedScenePane()
-{
-	G3D::String selectedScene = scenePane.selectedSceneList->selectedValue();
-	debugPrintf("update ldofgio");
-
-	loadScene(selectedScene);
-
-	FileSystem::ListSettings ls;
-	ls.includeParentPath = false;
-	ls.recursive = false;
-
-	G3D::Array<G3D::String> probeStructureList;
-	FileSystem::list("../data-files/Scenes/" + selectedScene + "/ProbeStructures/*", probeStructureList, ls);
-	scenePane.probeStructureList->setList(probeStructureList);
-
-	G3D::Array<G3D::String> sampleSetList;
-	FileSystem::list("../data-files/Scenes/" + selectedScene + "/SampleSets/*", sampleSetList, ls);
-	scenePane.sampleSetList->setList(sampleSetList);
-}
-
-
 void App::updateProbeStructure()
 {
 	G3D::String selectedScene = scenePane.selectedSceneList->selectedValue();
@@ -1007,65 +696,12 @@ void App::updateSampleSet()
 	}
 }
 
-void App::updateSelectedSceneTextures(){
-	debugPrintf("Wow! The dropdown list index has been set to %d!!!!\n", sampleDropDownIndex);
-}
-
-
-void App::saveCoeffs(String path){
-    std::fstream coeffFile;
-	debugPrintf("Saving coeffs \n");
-
-    coeffFile.open(path.c_str(), std::fstream::out);
-	if (!coeffFile)
-	{
-		throw std::runtime_error("..");
-	}
-    for (int i = 0; i < actors[0].coefficients.size(); i++){
-			debugPrintf("%f\n",actors[0].coefficients[i].x);
-            coeffFile<<actors[0].coefficients[i].x << "\n";
-            coeffFile<<actors[0].coefficients[i].y << "\n";
-            coeffFile<<actors[0].coefficients[i].z << "\n";
-        
-    }
-    coeffFile.close();
-}
-
-void App::loadSampleCoeffs()
-{
-	std::fstream coeffFile;
-	debugPrintf("loading sampled coeffs\n");
-    coeffFile.open("../data-files/ProbeStructures/computed/GeneratedCoeffFromSamples.txt", std::fstream::in);
-
-	Array<Vector3> loadedCoeffs;
-
-	for (int i = 0; i < 9; i++)
-	{
-		std::string line;
-		std::getline(coeffFile, line);
-		float cr = std::stof(line.c_str());
-
-		std::getline(coeffFile, line);
-		float cg = std::stof(line.c_str());
-
-		std::getline(coeffFile, line);
-		float cb = std::stof(line.c_str());
-
-		Vector3 v = Vector3(cr, cg, cb);
-
-		loadedCoeffs.append(v);
-	}
-	debugPrintf("%s\n",printVector3Array(loadedCoeffs).c_str());
-	actors[0].coefficients = loadedCoeffs;
-}
-
 void App::onAI(){
     GApp::onAI();
 
 	if (actors.size() > 0)
 	{
 		screenPrintf("Actor pos: %s", actors[0].getPosition().toString().c_str());
-
 	}
 
 	if (numPassesLeft > 0)
@@ -1079,10 +715,8 @@ void App::onAI(){
 	}
 	
 	//TODO: probe ray casting one day? if i find a real use for it
-
-    for (int i = 0 ; i < actors.size(); i++){
-
-
+    for (int i = 0 ; i < actors.size(); i++)
+	{
 		if (interpolateCoefficients)
 		{
 			bool keepProbes = (i == 0);
@@ -1103,8 +737,6 @@ void App::onAI(){
 					probesToRender.push_back(probeStructure->getProbe(iRec.probeIndices[i]));
 				}
 			}
-
-
 		}
         if (actors[i].updateVisibility)
 		{
@@ -1121,8 +753,6 @@ void App::onAI(){
             actors[i].updateVisibility = false;
         }
     }
-
-
 }
 
 String App::printVector3Array(Array<Vector3> arr){
@@ -1135,109 +765,6 @@ String App::printVector3Array(Array<Vector3> arr){
 
     return s;
 }
-
-void App::loadCornell()
-{
-    ArticulatedModel::Specification spec = ArticulatedModel::Specification();
-    m_scene.m_meshShapes = Array<MeshShape*>();
-	m_scene.m_scale = 0.01f;
-    //loadOBJ("../data-files/Scenes/zcbox/meshes/cbox_back.obj",		m_scene.scale());
-    //loadOBJ("../data-files/Scenes/zcbox/meshes/cbox_ceiling.obj",	m_scene.scale());
-    //loadOBJ("../data-files/Scenes/zcbox/meshes/cbox_floor.obj",		m_scene.scale());
-    //loadOBJ("../data-files/Scenes/zcbox/meshes/cbox_greenwall.obj", m_scene.scale());
-    //loadOBJ("../data-files/Scenes/zcbox/meshes/cbox_largebox.obj",	m_scene.scale());
-    //loadOBJ("../data-files/Scenes/zcbox/meshes/cbox_luminaire.obj", m_scene.scale());
-    //loadOBJ("../data-files/Scenes/zcbox/meshes/cbox_redwall.obj",	m_scene.scale());
-    //loadOBJ("../data-files/Scenes/zcbox/meshes/cbox_smallbox.obj",	m_scene.scale());
-
-    loadCornellColors();
-}
-
-void App::loadCornellColors()
-{
-    m_scene.m_colors.append(Vector3(1,1,1));
-	m_scene.m_colors.append(Vector3(1,1,1));
-	m_scene.m_colors.append(Vector3(1,1,1));
-	m_scene.m_colors.append(Vector3(0,1,0));
-	m_scene.m_colors.append(Vector3(0,0,1));
-	m_scene.m_colors.append(Vector3(1,1,1));
-	m_scene.m_colors.append(Vector3(1,0,0));
-	m_scene.m_colors.append(Vector3(0,0,1));
-
-}
-
-
-void App::loadSponza(){
-	m_scene.m_scale = 1.0f;
-    //loadOBJ("../data-files/Scenes/crytek-sponza/sponza_v2_scaled.obj");
-
-    makeSponzaTextures();
-	addLight(Point3(0,3,0), Color3(1,0,0));
-}
-
-//comment my friend
-void App::loadZScene(){
-	m_scene.m_scale = 1.0f;
-    //loadOBJ("../data-files/Z2/objparts/white_connectedtored.obj");
-    //loadOBJ("../data-files/Z2/objparts/bluewall_connectedtogreen.obj");
-    //loadOBJ("../data-files/Z2/objparts/white_connectedtogreen.obj");
-    //loadOBJ("../data-files/Z2/objparts/bluewall_connectedtored.obj");
-    //loadOBJ("../data-files/Z2/objparts/floor.obj");
-    //loadOBJ("../data-files/Z2/objparts/ceiling.obj");
-    //loadOBJ("../data-files/Z2/objparts/largeredwall.obj");
-    //loadOBJ("../data-files/Z2/objparts/smallredwall.obj");
-    //loadOBJ("../data-files/Z2/objparts/largegreenwall.obj");
-    //loadOBJ("../data-files/Z2/objparts/smallgreenwall2.obj");
-
-    makeZTextures();
-
-	addLight(Point3(0,4,0), Color3(1,1,1));
-	addLight(Point3(-3.5,4,-3.5), Color3(1,1,1));
-	addLight(Point3(3.5,4,3.5), Color3(1,1,1));
-}
-
-void App::makeSponzaTextures(){
-	sceneTextures = Array<Array<shared_ptr<Texture> > >();
-	sceneTextures.append(Array<shared_ptr<Texture> >());
-
-	sceneTextures[0].append(Texture::fromFile("../data-files/Scenes/crytek-sponza/sponz_diff2.tga"));
-
-}
-
-// LLoad the scene textures
-void App::makeZTextures(){
-	sceneTextures = Array<Array<shared_ptr<Texture> > >();
-	sceneTextures.append(Array<shared_ptr<Texture> >());
-
-	Array<String> textures;
-	FileSystem::list("../data-files/Scenes/ZScene/cycles_renders/*", textures);
-	String s = System::findDataFile("../data-files/Scenes/ZScene/cycles_renders/white_redconnect_3000.png");
-
-    //sceneTextures[0].append(Texture::fromFile(textures[0]));
-    //sceneTextures[0].append(Texture::fromFile("/Scenes/ZScene/cycles_renders/blue_greenside_3000_rotated.png"));
-    //sceneTextures[0].append(Texture::fromFile("/Scenes/ZScene/cycles_renders/white_greenconnect_3000.png"));
-    //sceneTextures[0].append(Texture::fromFile("/Scenes/ZScene/cycles_renders/blue_redside_3000_rotated.png"));
-    //sceneTextures[0].append(Texture::fromFile("/Scenes/ZScene/cycles_renders/floor_3000.png"));
-    //sceneTextures[0].append(Texture::fromFile("/Scenes/ZScene/cycles_renders/ceiling_3000.png"));
-    //sceneTextures[0].append(Texture::fromFile("/Scenes/ZScene/cycles_renders/big_red_3000.png"));
-    //sceneTextures[0].append(Texture::fromFile("/Scenes/ZScene/cycles_renders/small_red_3000_rotated.png"));
-    //sceneTextures[0].append(Texture::fromFile("/Scenes/ZScene/cycles_renders/big_green_3000.png"));
-    //sceneTextures[0].append(Texture::fromFile("/Scenes/ZScene/cycles_renders/small_green_3000.png"));
-
-	m_scene.m_colors.append(Vector3(1,1,1));
-	m_scene.m_colors.append(Vector3(0,0,1));
-	m_scene.m_colors.append(Vector3(1,1,1));
-	m_scene.m_colors.append(Vector3(0,0,1));
-	m_scene.m_colors.append(Vector3(1,1,1));
-	m_scene.m_colors.append(Vector3(1,1,1));
-	m_scene.m_colors.append(Vector3(1,0,0));
-	m_scene.m_colors.append(Vector3(1,0,0));
-	m_scene.m_colors.append(Vector3(0,1,0));
-	m_scene.m_colors.append(Vector3(0,1,0));
-
-	//System::findDataFile("../data-files/objs/sphere.obj");
-}
-
 
 
 void App::offlineRender()
@@ -1267,4 +794,226 @@ void App::offlineRender()
 
 	debugPrintf("%s\n", command.str().c_str());
 	runCommand(command.str());
+}
+
+/*
+//	GUI
+*/
+
+void App::createNewProbeStructureWindow()
+{
+	windowNewProbeStructure = GuiWindow::create("New probe structure");
+	GuiPane* pane = windowNewProbeStructure->pane();
+	pane->addTextBox("Name: ", &newProbeStructureOptions.name);
+	pane->addButton("Ok", [this]()
+	{
+		createNewSampleSet(m_scene.m_name, sNewSampleSetName);
+	});
+	pane->addButton("Cancel", [this]()
+	{
+		sNewSampleSetName = "";
+		windowNewProbeStructure->setVisible(false);
+	});
+	windowNewProbeStructure->pack();
+	addWidget(windowNewProbeStructure);
+	windowNewProbeStructure->moveTo(Point2(500, 500));
+	windowNewProbeStructure->setVisible(false);
+}
+
+void App::createNewSampleSet(String& sceneName, String& newSampleSetName)
+{
+	G3D::String newSSPath = "../data-files/Scenes/" + sceneName + "/SampleSets/" + newSampleSetName;
+	createFolder(newSSPath.c_str());
+	createFolder((newSSPath + "/irradiance").c_str());
+	createEmptyFile((newSSPath + "/SamplePositions.txt").c_str());
+	createEmptyFile((newSSPath + "/IrradianceResults2.txt").c_str());
+	windowNewSampleSet->setVisible(false);
+	generateSampleSetList();
+}
+
+void App::createNewSampleSetWindow()
+{
+	windowNewSampleSet = GuiWindow::create("New sample set");
+	GuiPane* pane = windowNewSampleSet->pane();
+	pane->addTextBox("Name: ", &sNewSampleSetName);
+	pane->addButton("Ok", [this]()
+	{
+		createNewSampleSet(m_scene.m_name, sNewSampleSetName);
+	});
+	pane->addButton("Cancel", [this]()
+	{
+		sNewSampleSetName = "";
+		windowNewSampleSet->setVisible(false);
+	});
+	windowNewSampleSet->pack();
+	addWidget(windowNewSampleSet);
+	windowNewSampleSet->moveTo(Point2(500, 500));
+	windowNewSampleSet->setVisible(false);
+}
+
+void App::makeGui() {
+	shared_ptr<GuiWindow> gui = GuiWindow::create("Parameters");
+	GuiPane* pane = gui->pane();
+
+	GuiTabPane* tabPane = pane->addTabPane();
+	GuiPane* tab = tabPane->addTab("General Controls");
+
+	tab->beginRow();
+	tab->addCheckBox("Interpolate Coefficients", &interpolateCoefficients);
+	tab->addButton("displace", GuiControl::Callback(this, &App::displaceProbes), GuiTheme::TOOL_BUTTON_STYLE);
+
+	tab->endRow();
+
+	tab->beginRow();
+	tab->addButton("Compute samplesRGB", GuiControl::Callback(this, &App::computeSamplesRGB), GuiTheme::TOOL_BUTTON_STYLE);
+	tab->addButton("Compute samplesRGB_ref", GuiControl::Callback(this, &App::computeSamplesRGBRef), GuiTheme::TOOL_BUTTON_STYLE);
+	tab->addButton("Compute triplets", GuiControl::Callback(this, &App::computeTriplets), GuiTheme::TOOL_BUTTON_STYLE);
+	tab->addCheckBox("MATLAB", &useMatlabOptimization);
+	tab->addButton("Optimization pass", GuiControl::Callback(this, &App::startOptimizationPasses), GuiTheme::TOOL_BUTTON_STYLE);
+	tab->addTextBox("Num", &tbNumPassesLeft);
+	tab->addCheckBox("log", &logSampleSet);
+	tab->endRow();
+
+	tab->beginRow();
+	tab->addButton("Find Initial Conditions", GuiControl::Callback(this, &App::findBestInitialConditions), GuiTheme::TOOL_BUTTON_STYLE);
+	tab->addTextBox("NumTries", &m_sNumICTries);
+	tab->addTextBox("NumProbes", &m_sNumICProbes);
+	tab->endRow();
+
+	tab = tabPane->addTab("Display");
+	tab->beginRow();
+	tab->addCheckBox("Direct", &(bRenderDirect));
+	tab->addCheckBox("Indirect (probes)", &(bRenderIndirect));
+	tab->addCheckBox("* BRDF", &(bRenderMultiplyIndirectByBRDF));
+	tab->addSlider("Mutiplier", &shadingMultiplier, 0.0f, 5.0f);
+	tab->addCheckBox("AOF", &(bRenderAO));
+	tab->addCheckBox("Shadow Maps", &(bRenderShadowMaps));
+	tab->addTextBox("NumSamples", &maxSamplesPointsToDraw);
+	tab->addCheckBox("Show", &showSamples);
+	tab->addCheckBox("Show normals", &showSampleNormals);
+	tab->addCheckBox("Show dark samples", &showDarkSamples);
+	tab->addSlider("F", &sampleMultiplier, 1.0f, 5.f);
+	tab->endRow();
+
+	tab->beginRow();
+	tab->addCheckBox("Show Interp Probes", &showInterpolationProbes);
+	tab->addCheckBox("Show ALL Probes", &showAllProbes);
+	tab->addCheckBox("CPUInterpolation", &CPUInterpolation);
+	tab->addCheckBox("highlight probes", &highlightProbes);
+	tab->endRow();
+
+	tab = tabPane->addTab("Actors");
+	tab->beginRow();
+	tab->addButton("Add sphere", GuiControl::Callback(this, &App::addOneActor), GuiTheme::TOOL_BUTTON_STYLE);
+	tab->addButton("Add sceneActor", GuiControl::Callback(this, &App::addOneActorSq), GuiTheme::TOOL_BUTTON_STYLE);
+	tab->addButton("Clear actors", GuiControl::Callback(this, &App::clearAllActors), GuiTheme::TOOL_BUTTON_STYLE);
+	tab->addTextBox("X", &actorSpawnX);
+	tab->addTextBox("Y", &actorSpawnY);
+	tab->addTextBox("Z", &actorSpawnZ);
+	tab->endRow();
+	for (int i = 0; i < actors.size(); i++)
+	{
+		tab->beginRow();
+		tab->addLabel(GuiText(actors[i].name));
+		tab->addCheckBox("visible", &actors[i].updateVisibility);
+		tab->addSlider("Phong", &actors[i].phongExponent, 1.0f, 60.f);
+		tab->addSlider("Max band", &actors[i].drawBand, 0, maxDrawBand);
+		tab->addCheckBox("show this band only", &actors[i].showOnlyOneBand);
+		tab->endRow();
+	}
+
+	tab = tabPane->addTab("Offline Render");
+
+	tab->beginRow();
+	tab->addDropDownList("Integrator", integratorList, &(offlineRenderingOptions.integratorIndex), [this]() {});
+	tab->addDropDownList("Film Type", filmTypeList, &(offlineRenderingOptions.filmTypeIndex), [this]() {});
+	tab->addTextBox("Gamma", &(offlineRenderingOptions.gamma));
+	tab->addTextBox("NumSamples", &(offlineRenderingOptions.numSamples));
+	tab->addTextBox("Width", &(offlineRenderingOptions.width));
+	tab->addTextBox("Height", &(offlineRenderingOptions.height));
+	tab->endRow();
+
+	tab->beginRow();
+	tab->addCheckBox("Show CMD", &(offlineRenderingOptions.showWindow));
+	tab->addCheckBox("Requireclose CMD", &(offlineRenderingOptions.requireToCloseWindow));
+	tab->addButton("OfflineRender", GuiControl::Callback(this, &App::offlineRender), GuiTheme::TOOL_BUTTON_STYLE);
+	tab->endRow();
+
+	addScenePane(tabPane);
+	gui->pack();
+	addWidget(gui);
+	gui->moveTo(Point2(10, 50));
+}
+
+void App::generateSampleSetList()
+{
+	G3D::String selectedScene = scenePane.selectedSceneList->selectedValue();
+	G3D::Array<G3D::String> sampleSetList;
+	FileSystem::ListSettings ls;
+	ls.includeParentPath = false;
+	ls.recursive = false;
+	FileSystem::list("../data-files/Scenes/" + selectedScene + "/SampleSets/*", sampleSetList, ls);
+	scenePane.sampleSetList->setList(sampleSetList);
+}
+
+void App::addScenePane(GuiTabPane* tabPane)
+{
+	GuiPane* tab = tabPane->addTab("Scene");
+
+	G3D::Array<G3D::String> sceneList;
+
+	FileSystem::ListSettings ls;
+	ls.includeParentPath = false;
+	ls.recursive = false;
+
+	FileSystem::list("../data-files/Scenes/*", sceneList, ls);
+
+	scenePane.selectedSceneList = tab->addDropDownList("Scene", sceneList, NULL, GuiControl::Callback(this, &App::updateSelectedScenePane));
+
+	G3D::String selectedScene = scenePane.selectedSceneList->selectedValue();
+
+	tab->beginRow();
+	G3D::Array<G3D::String> probeStructureList;
+	FileSystem::list("../data-files/Scenes/" + selectedScene + "/ProbeStructures/*", probeStructureList, ls);
+	scenePane.probeStructureList = tab->addDropDownList("ProbeStructure", probeStructureList, NULL, GuiControl::Callback(this, &App::updateProbeStructure));
+	tab->addButton(GuiText("Switch Back"), GuiControl::Callback(this, &App::loadPreviousProbeStructure),  GuiTheme::TOOL_BUTTON_STYLE);
+	tab->addButton(GuiText("Edit mode"),   GuiControl::Callback(this, &App::switchEditProbeStructure),	  GuiTheme::TOOL_BUTTON_STYLE);
+	tab->addButton(GuiText("Save"),		   GuiControl::Callback(this, &App::saveProbeStructureUpdate),    GuiTheme::TOOL_BUTTON_STYLE);
+	tab->addButton(GuiText("Update All"),  GuiControl::Callback(this, &App::saveProbeStructureUpdateAll), GuiTheme::TOOL_BUTTON_STYLE);
+
+	tab->endRow();
+
+	tab->beginRow();
+	G3D::Array<G3D::String> sampleSetList;
+	FileSystem::list("../data-files/Scenes/" + selectedScene + "/SampleSets/*", sampleSetList, ls);
+	scenePane.sampleSetList = tab->addDropDownList("SampleSet", sampleSetList, NULL, GuiControl::Callback(this, &App::updateSampleSet));
+	tab->addButton(GuiText("New"), [this]() { windowNewSampleSet->setVisible(true); }, GuiTheme::TOOL_BUTTON_STYLE);
+	tab->addButton(GuiText("Clear values"), GuiControl::Callback(this, &App::clearSampleSetValues), GuiTheme::TOOL_BUTTON_STYLE);
+	tab->addButton(GuiText("Clear positions"), GuiControl::Callback(this, &App::clearSampleSetPositions), GuiTheme::TOOL_BUTTON_STYLE);
+	tab->addButton(GuiText("Reload"), GuiControl::Callback(this, &App::reloadSampleSet), GuiTheme::TOOL_BUTTON_STYLE);
+	tab->addTextBox("samplesToSave", samplesToSave);
+	tab->addButton("Generate Positions", GuiControl::Callback(this, &App::generateSampleSetPositions), GuiTheme::TOOL_BUTTON_STYLE);
+	tab->addButton("Generate Values", GuiControl::Callback(this, &App::generateSampleSetValues), GuiTheme::TOOL_BUTTON_STYLE);
+	tab->addCheckBox("write samples", &saveSample);
+	tab->beginRow();
+}
+
+void App::updateSelectedScenePane()
+{
+	G3D::String selectedScene = scenePane.selectedSceneList->selectedValue();
+	debugPrintf("update ldofgio");
+
+	loadScene(selectedScene);
+
+	FileSystem::ListSettings ls;
+	ls.includeParentPath = false;
+	ls.recursive = false;
+
+	G3D::Array<G3D::String> probeStructureList;
+	FileSystem::list("../data-files/Scenes/" + selectedScene + "/ProbeStructures/*", probeStructureList, ls);
+	scenePane.probeStructureList->setList(probeStructureList);
+
+	G3D::Array<G3D::String> sampleSetList;
+	FileSystem::list("../data-files/Scenes/" + selectedScene + "/SampleSets/*", sampleSetList, ls);
+	scenePane.sampleSetList->setList(sampleSetList);
 }

@@ -101,6 +101,10 @@ private:
 	void createNewSampleSet(String& sceneName, String& sNewSampleSetName);
 	void createNewProbeStructureWindow();
 
+	ScenePane scenePane;
+	GuiPane* probeStructurePane;
+	void updateProbeStructurePane();
+
 	void generateSampleSetList();
 	void addScenePane(GuiTabPane* tabPane);
 	void updateSelectedScenePane();
@@ -248,7 +252,6 @@ private:
 	bool useIrradianceTexture;
 	bool bManipulateProbesEnabled;
 
-	ScenePane scenePane;
 
 	/**
 	* Various

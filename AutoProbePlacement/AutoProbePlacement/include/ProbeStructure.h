@@ -18,10 +18,11 @@ struct ProbeInterpolationRecord
 
 enum EProbeStructureType
 {
-	Trilinear,
-	Closest,
-	Tetrahedral,
-	WeightedNearestNeighbour
+	Trilinear = 0,
+	Closest = 1,
+	Tetrahedral = 2,
+	WeightedNearestNeighbour = 3,
+	NUM_TYPES = 4
 };
 
 
@@ -48,7 +49,7 @@ protected:
 
 public:
 	
-	static std::map<std::string, EProbeStructureType> typeMap;
+	static std::vector<std::string> typeMap;
 	EProbeStructureType m_type;
 	inline void createTypeMap();
 
@@ -85,6 +86,13 @@ public:
 	bool isOutsideSceneBounds(G3D::Vector3 pos, float tolerance);
 	void displaceProbesWithGradient(std::vector<float>& displacements);
 
+
+	String name() { return m_name; }
+
+	String type() { return String(typeMap[m_type]); }
+
+	float gamma() { return m_gamma; }
+
 	//void coefficientInterpolation(G3D::Vector3 position, std::vector<G3D::Vector3> interpolatedCoefficients, std::vector<int>& probeIndices, std::vector<float> weights);
 	ProbeInterpolationRecord getInterpolationProbeIndicesAndWeights(G3D::Vector3 position);
 	G3D::Array<G3D::Vector3> ProbeStructure::getInterpolatingProbesCoords(const G3D::Vector3& pos, int step);
@@ -98,7 +106,7 @@ public:
 	Array<Probe*> probeList;
 	String m_name;
 	String m_sceneName;
-
+	float m_gamma;
 
 };
 

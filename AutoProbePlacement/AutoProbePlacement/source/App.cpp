@@ -73,6 +73,10 @@ void App::onInit() {
     renderDevice->setSwapBuffersAutomatically(true);
     
 	createNewSampleSetWindow();
+	probeStructurePane = NULL;	
+	probeStructure = NULL;
+
+	sampleSet = NULL;
 
 	integratorList.resize(EIntegrator::NUM_INTEGRATORS);
 	integratorList[EIntegrator::Path] = "path";
@@ -138,8 +142,8 @@ void App::onInit() {
 	bRenderDirect = true;
 	bRenderIndirect = true;
 	bRenderMultiplyIndirectByBRDF = false;
-	sampleSet = NULL;
-    timer = 0;
+
+	timer = 0;
 	m_activeCamera->setPosition(Point3(0,3,3));
 	sampleDropDownIndex = 0;
 	tetgenString = "../data-files/tetgen/44/";
@@ -171,7 +175,6 @@ void App::onInit() {
 	addOneActor();
     makeGui();
 
-	probeStructure = NULL;
 
     //Load the textures containing the SH coefficient values
     //loadSHTextures();
@@ -668,6 +671,7 @@ void App::updateProbeStructure()
 	G3D::String selectedScene = scenePane.selectedSceneList->selectedValue();
 	G3D::String probeStructureName = scenePane.probeStructureList->selectedValue();
 	initializeProbeStructure(selectedScene, probeStructureName);
+	updateProbeStructurePane();
 }
 
 void App::loadPreviousProbeStructure()
@@ -939,7 +943,13 @@ void App::makeGui() {
 	tab->addButton("OfflineRender", GuiControl::Callback(this, &App::offlineRender), GuiTheme::TOOL_BUTTON_STYLE);
 	tab->endRow();
 
+
+
 	addScenePane(tabPane);
+
+	probeStructurePane = tabPane->addTab("Probes");
+	updateProbeStructurePane();
+
 	gui->pack();
 	addWidget(gui);
 	gui->moveTo(Point2(10, 50));
@@ -955,6 +965,48 @@ void App::generateSampleSetList()
 	FileSystem::list("../data-files/Scenes/" + selectedScene + "/SampleSets/*", sampleSetList, ls);
 	scenePane.sampleSetList->setList(sampleSetList);
 }
+
+void App::updateProbeStructurePane()
+{
+	probeStructurePane->removeAllChildren();
+
+	G3D::String selectedScene = scenePane.selectedSceneList->selectedValue();
+
+	probeStructurePane->beginRow();
+	G3D::Array<G3D::String> probeStructureList;
+	FileSystem::ListSettings ls;
+	ls.includeParentPath = false;
+	ls.recursive = false;
+	FileSystem::list("../data-files/Scenes/" + selectedScene + "/ProbeStructures/*", probeStructureList, ls);
+	scenePane.probeStructureList = probeStructurePane->addDropDownList("ProbeStructure", probeStructureList, NULL, GuiControl::Callback(this, &App::updateProbeStructure));
+	probeStructurePane->addButton(GuiText("Switch Back"), GuiControl::Callback(this, &App::loadPreviousProbeStructure), GuiTheme::TOOL_BUTTON_STYLE);
+	probeStructurePane->addButton(GuiText("Edit mode"), GuiControl::Callback(this, &App::switchEditProbeStructure), GuiTheme::TOOL_BUTTON_STYLE);
+	probeStructurePane->addButton(GuiText("Save"), GuiControl::Callback(this, &App::saveProbeStructureUpdate), GuiTheme::TOOL_BUTTON_STYLE);
+	probeStructurePane->addButton(GuiText("Update All"), GuiControl::Callback(this, &App::saveProbeStructureUpdateAll), GuiTheme::TOOL_BUTTON_STYLE);
+
+	probeStructurePane->endRow();
+
+	if (probeStructure != NULL)
+	{
+		probeStructurePane->beginRow();
+
+		const G3D::String name = "Currently loaded : " + probeStructure->name();
+		probeStructurePane->addLabel(name);
+		const G3D::String type = "Type : " + probeStructure->type();
+		probeStructurePane->addLabel(type);
+		probeStructurePane->addLabel("Number of probes : " + probeStructure->type());
+		probeStructurePane->addLabel("Gamma : " + String(probeStructure->gamma()));
+
+
+		probeStructurePane->endRow();
+	}
+	else
+	{
+		probeStructurePane->addLabel("No probe structure loaded");
+	}
+	probeStructurePane->addButton(GuiText("Save"), GuiControl::Callback(this, &App::saveProbeStructureUpdate), GuiTheme::TOOL_BUTTON_STYLE);
+}
+
 
 void App::addScenePane(GuiTabPane* tabPane)
 {
@@ -973,17 +1025,6 @@ void App::addScenePane(GuiTabPane* tabPane)
 	G3D::String selectedScene = scenePane.selectedSceneList->selectedValue();
 
 	tab->beginRow();
-	G3D::Array<G3D::String> probeStructureList;
-	FileSystem::list("../data-files/Scenes/" + selectedScene + "/ProbeStructures/*", probeStructureList, ls);
-	scenePane.probeStructureList = tab->addDropDownList("ProbeStructure", probeStructureList, NULL, GuiControl::Callback(this, &App::updateProbeStructure));
-	tab->addButton(GuiText("Switch Back"), GuiControl::Callback(this, &App::loadPreviousProbeStructure),  GuiTheme::TOOL_BUTTON_STYLE);
-	tab->addButton(GuiText("Edit mode"),   GuiControl::Callback(this, &App::switchEditProbeStructure),	  GuiTheme::TOOL_BUTTON_STYLE);
-	tab->addButton(GuiText("Save"),		   GuiControl::Callback(this, &App::saveProbeStructureUpdate),    GuiTheme::TOOL_BUTTON_STYLE);
-	tab->addButton(GuiText("Update All"),  GuiControl::Callback(this, &App::saveProbeStructureUpdateAll), GuiTheme::TOOL_BUTTON_STYLE);
-
-	tab->endRow();
-
-	tab->beginRow();
 	G3D::Array<G3D::String> sampleSetList;
 	FileSystem::list("../data-files/Scenes/" + selectedScene + "/SampleSets/*", sampleSetList, ls);
 	scenePane.sampleSetList = tab->addDropDownList("SampleSet", sampleSetList, NULL, GuiControl::Callback(this, &App::updateSampleSet));
@@ -995,7 +1036,7 @@ void App::addScenePane(GuiTabPane* tabPane)
 	tab->addButton("Generate Positions", GuiControl::Callback(this, &App::generateSampleSetPositions), GuiTheme::TOOL_BUTTON_STYLE);
 	tab->addButton("Generate Values", GuiControl::Callback(this, &App::generateSampleSetValues), GuiTheme::TOOL_BUTTON_STYLE);
 	tab->addCheckBox("write samples", &saveSample);
-	tab->beginRow();
+	tab->endRow();
 }
 
 void App::updateSelectedScenePane()

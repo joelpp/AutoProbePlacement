@@ -9,19 +9,16 @@
 
 
 App* App::instance;
-std::map<std::string, EProbeStructureType> ProbeStructure::typeMap;
+std::vector<std::string> ProbeStructure::typeMap;
 
 inline void ProbeStructure::createTypeMap()
 {
-	if (typeMap.size() == 0)
-	{
-		typeMap.insert(std::make_pair("trilinear", EProbeStructureType::Trilinear));
-		typeMap.insert(std::make_pair("closest", EProbeStructureType::Closest));
-		typeMap.insert(std::make_pair("tetrahedral", EProbeStructureType::Tetrahedral));
-		typeMap.insert(std::make_pair("wNN", EProbeStructureType::WeightedNearestNeighbour));
-		
-	}
+	typeMap.resize(EProbeStructureType::NUM_TYPES);
 
+	typeMap[EProbeStructureType::Trilinear] = "trilinear";;
+	typeMap[EProbeStructureType::Closest] = "closest";
+	typeMap[EProbeStructureType::Tetrahedral] = "tetrahedral";
+	typeMap[EProbeStructureType::WeightedNearestNeighbour] = "wNN";
 }
 
 ProbeStructure::ProbeStructure()
@@ -90,7 +87,12 @@ void ProbeStructure::loadProbeInfo()
 		splitLine.remove(0);
 		if (param == "type")
 		{
-			this->m_type = typeMap[std::string(splitLine[0].c_str())];
+			std::string s = std::string(splitLine[0].c_str());
+			auto it = std::find(typeMap.begin(), typeMap.end(), s);
+			if (it != typeMap.end())
+			{
+				this->m_type = EProbeStructureType( (int) std::distance(typeMap.begin(), it) );
+			}
 		}
 		if (param == "step")
 		{
@@ -100,7 +102,7 @@ void ProbeStructure::loadProbeInfo()
 		{
 			for (int i = 0; i < splitLine.size(); ++i)
 			{
-				this->m_dimensions.push_back(std::atoi(splitLine[i].c_str()));
+				this->m_dimensions.push_back(std::stoi(splitLine[i].c_str()));
 			}
 		}
 		else if (param == "firstProbePosition")
@@ -109,6 +111,12 @@ void ProbeStructure::loadProbeInfo()
 			this->m_firstProbePosition[1] = std::stof(splitLine[1].c_str());
 			this->m_firstProbePosition[2] = std::stof(splitLine[2].c_str());
 		}
+		else if (param == "gamma")
+		{
+			this->m_gamma = std::stof(splitLine[0].c_str());
+		}
+
+
 	}
 }
 

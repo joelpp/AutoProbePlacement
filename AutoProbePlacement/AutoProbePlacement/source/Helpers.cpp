@@ -1,8 +1,11 @@
+#define WIN32_LEAN_AND_MEAN
 #include <Windows.h>
 #include <sstream>
 #include <iostream>
 #include <fstream>
 #include "Helpers.h"
+#include "SH.h"
+
 
 bool runCommand(std::string command)
 {
@@ -35,14 +38,19 @@ bool runCommand(std::string command)
 	return result;
 }
 
-bool runPythonScriptFromDataFiles(std::string scriptName, std::string args)
+bool runPythonScriptFromDataFiles(std::string scriptName, std::string args, bool showOutput)
 {
 	std::stringstream ss;
 
-	ss << "cmd /c \"cd C:\\git\\AutoProbePlacement\\AutoProbePlacement\\data-files\\scripts && C:\\Users\\Joel\\Anaconda2\\python.exe ";
-	//ss << "cmd /c \"cd C:\\git\\AutoProbePlacement\\AutoProbePlacement\\data-files\\scripts && python ";
+	//ss << "cmd /c \"cd C:\\git\\AutoProbePlacement\\AutoProbePlacement\\data-files\\scripts && C:\\Users\\Joel\\Anaconda2\\python.exe ";
+	ss << "cmd /c \"cd C:\\git\\AutoProbePlacement\\AutoProbePlacement\\data-files\\scripts && python ";
 	ss << scriptName << " ";
 	ss << args << "\"";
+
+	if (!showOutput)
+	{
+		ss << " > nul";
+	}
 
 	std::cout << ss.str();
 	return runCommand(ss.str());
@@ -57,4 +65,53 @@ bool createFolder(const char* name)
 void createEmptyFile(const char* name)
 {
 	std::fstream file(name, std::fstream::out);
+}
+//
+//
+//G3D::Array<G3D::String> getFoldersInFolder(const G3D::String& path)
+//{
+//	G3D::Array<G3D::String> folderList;
+//	FileSystem::ListSettings ls;
+//	ls.includeParentPath = false;
+//	ls.recursive = false;
+//
+//	FileSystem::list(path + "/*", folderList, ls);
+//
+//	return folderList;
+//}
+
+
+float phongCoeffs(int l, float r)
+{
+    if (l == 0)
+    {
+        return PI;
+    }
+    else if (l == 1)
+    {
+        return PI * (1.0f + r) / (2.0f + r);
+    }
+    else if (l == 2)
+    {
+        return PI * r / (3.0f + r);
+    }
+    return 0;
+}
+
+double NDotOmegaCoeff(int l)
+{
+    if (l == 1)
+    {
+        return 2 * PI / 3;
+    }
+    else if (l % 2 == 0)
+    {
+        int a = (int)pow(-1, l / 2.f - 1);
+        int b = SH::factorial(l);
+        return (double)((2 * PI * a * b) / ((l + 2) * (l + 1) * ((int)pow(2, l)) * SH::factorial((int)pow(((float)l) / 2.f, 2))));
+    }
+    else
+    {
+        return 0;
+    }
 }

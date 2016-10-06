@@ -101,7 +101,9 @@ def render(sampleNumber):
 		'sampleNormal': Normal(normal[0], normal[1], normal[2]),
 		'pointSampling': 1,
 		'logFinalValue': False,
-		'logRayTerminations': False
+		'logRayTerminations': False,
+		'multiplySecondBRDF': True,
+		'divideTwiceByPi': True
 		});
 	integrator.configure();
 	sceneCopy.setIntegrator(integrator);

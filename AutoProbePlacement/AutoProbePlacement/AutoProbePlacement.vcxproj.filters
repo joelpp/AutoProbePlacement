@@ -69,6 +69,9 @@
     <ClInclude Include="include\Helpers.h">
       <Filter>Header Files</Filter>
     </ClInclude>
+    <ClInclude Include="TrilinearProbeStructure.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="source\stdafx.cpp">
@@ -120,6 +123,9 @@
       <Filter>Source Files</Filter>
     </ClCompile>
     <ClCompile Include="source\Helpers.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="TrilinearProbeStructure.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
   </ItemGroup>

@@ -8,6 +8,7 @@
 #include "SceneSample.h"
 #include "ProbeStructure.h"
 #include "SH.h"
+#include "Helpers.h"
 
 
 #define COLOR_RED	0
@@ -26,8 +27,6 @@
 
 #define GENERATE_POSITION_FITTING_MATRIX 1
 #define GENERATE_COEFFICIENTS_FITTING_MATRIX 0
-
-#define PI 3.141592653589793238462643383279f
 
 
 bool invertNormal = true;
@@ -171,41 +170,6 @@ void SceneSampleSet::save()
 	saveFile.close();
 }
 
-float phongCoeffs(int l, float r = 1.0f)
-{
-	if (l == 0)
-	{
-		return PI;
-	}
-	else if (l == 1)
-	{
-		return PI * (1.0f + r) / (2.0f + r);
-	}
-	else if (l == 2)
-	{
-		return PI * r / (3.0f + r);
-	}
-	return 0;
-}
-
-double NDotOmegaCoeff(int l)
-{
-	if (l == 1)
-	{
-		return 2 * PI / 3;
-	}
-	else if (l % 2 == 0)
-	{
-		int a = (int) pow(-1, l / 2.f - 1);
-		int b = SH::factorial(l);
-		return (double) ( (2 * PI * a * b) / ((l + 2) * (l + 1) * ((int) pow(2, l)) * SH::factorial( (int)pow( ((float)l) / 2.f, 2) ) ) );
-	}
-	else
-	{
-		return 0;
-	}
-}
-
 
 std::string generateUniqueName(int NumberOfProbes, G3D::Vector3 baseProbePosition)
 {
@@ -280,7 +244,7 @@ void SceneSampleSet::generateTriplets(int NumberOfSamples, std::vector<Eigen::Tr
 
 						std::pair<int, int> lm = SH::kToLM(coeff);
 						float weight = iRec.weights[i]; 
-						float phong = phongCoeffs(lm.first);
+						float phong = phongCoeffs(lm.first, 1.0f);
 						float sh = SH::SHxyz_yup(lm.first, lm.second, SampleNormal);
 						element += gradient * phong * sh;
 					}
@@ -353,6 +317,22 @@ void SceneSampleSet::generateTriplets(int NumberOfSamples, std::vector<Eigen::Tr
 
 }
 
+void SceneSampleSet::generateRGBValuesFromProbes(int NumberOfSamples)
+{
+    std::fstream file = openFile(ESSFile::Values, false);
+    for (int i = 0; i < NumberOfSamples; ++i)
+    {
+        const SceneSample& ss = m_samples[i];
+
+        Vector3 rgb = probeStructure->reconstructSH(ss.position, ss.normal);
+
+        file << rgb.x << " " << rgb.y << " " << rgb.z << "\n";
+    }
+
+    file.close();
+}
+
+
 void SceneSampleSet::generateRGBValuesFromProbes(int NumberOfSamples, bool ref = false, Eigen::VectorXd* eigenVector = 0)
 {
 
@@ -419,7 +399,7 @@ void SceneSampleSet::generateRGBValuesFromProbes(int NumberOfSamples, bool ref =
 				std::pair<int, int> lm = SH::kToLM(coeff);
 
 				// We multiply the inter weight by the geometric term and the SH function value in this direction
-				float phong = phongCoeffs(lm.first);
+				float phong = phongCoeffs(lm.first, 1.0f);
 				float sh = SH::SHxyz_yup(lm.first, lm.second, SampleNormal);
 				float factors = weight *
 					//NDotOmegaCoeff(lm(0)) *
@@ -475,6 +455,33 @@ void SceneSampleSet::createbVector(Eigen::VectorXd* bVector, const Eigen::Vector
 		counter++;
 	}
 	refFile.close();
+}
+
+std::fstream SceneSampleSet::openFile(ESSFile type, bool reading)
+{
+    std::string val;
+    if (type == ESSFile::Samples)
+    {
+        val = "SamplePositions.txt";
+    }
+    else
+    {
+        val = "IrradianceResults2.txt";
+    }
+
+    int operation;
+
+    if (reading)
+    {
+        operation = std::fstream::in;
+    }
+    else
+    {
+        operation = std::fstream::out;
+    }
+
+    std::string path = "../data-files/Scenes/" + m_sceneName + "/SampleSets/" + m_sampleSetName + "/" + val;
+    return std::fstream(path.c_str(), operation);
 }
 
 void SceneSampleSet::clearValues()

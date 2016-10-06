@@ -177,6 +177,7 @@
     <ClInclude Include="include\tetgen.h" />
     <ClInclude Include="include\Tetrahedron.h" />
     <ClInclude Include="include\Transform.h" />
+    <ClInclude Include="TrilinearProbeStructure.h" />
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="source\Actor.cpp" />
@@ -198,6 +199,7 @@
     </ClCompile>
     <ClCompile Include="source\Tetrahedron.cpp" />
     <ClCompile Include="source\Transform.cpp" />
+    <ClCompile Include="TrilinearProbeStructure.cpp" />
   </ItemGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.targets" />
   <ImportGroup Label="ExtensionTargets">

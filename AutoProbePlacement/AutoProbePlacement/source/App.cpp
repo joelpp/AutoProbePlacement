@@ -187,6 +187,7 @@ void App::onInit() {
 
 	setActiveCamera(m_debugCamera);
 
+	loadScene("zcbox");
 }//end of onInit 
 
 void App::loadScene(String sceneName)
@@ -629,8 +630,14 @@ void App::generateSampleSetPositions()
 void App::generateSampleSetValues()
 {
 	std::stringstream args;
-	runPythonScriptFromDataFiles("IrradianceSensorRender.py", std::string(m_scene.m_name.c_str()) + " " + sampleSet->m_sampleSetName + " " + std::string((*samplesToSave).c_str()));
+	runPythonScriptFromDataFiles("IrradianceSensorRender.py", std::string(m_scene.m_name.c_str()) + " " + sampleSet->m_sampleSetName + " " + std::string((*samplesToSave).c_str()), false);
 	sampleSet->load(std::stoi((*samplesToSave).c_str()));
+}
+
+void App::generateSampleSetValuesFromProbes()
+{
+    int numSamples = std::stoi((*samplesToSave).c_str());
+    sampleSet->generateRGBValuesFromProbes(numSamples);
 }
 
 void App::saveProbeStructureUpdate()
@@ -775,8 +782,7 @@ void App::offlineRender()
 {
 
 	std::stringstream command;
-	command << "cmd /c \"cd C:\\git\\AutoProbePlacement\\AutoProbePlacement\\data-files\\scripts";
-	command << " && C:\\Users\\Joel\\Anaconda2\\python.exe CreateSceneRender.py zcbox 1Probe Probes ";
+	command << "zcbox 1Probe Probes ";
 
 	command << m_activeCamera->frame().translation.x << " ";
 	command << m_activeCamera->frame().translation.y << " ";
@@ -794,15 +800,26 @@ void App::offlineRender()
 	command << offlineRenderingOptions.gamma.c_str() << " ";
 	command << filmTypeList[offlineRenderingOptions.filmTypeIndex].c_str() << " ";
 
-	command << "\"";
-
 	debugPrintf("%s\n", command.str().c_str());
-	runCommand(command.str());
+
+	runPythonScriptFromDataFiles("CreateSceneRender.py", command.str(), true);
 }
 
 /*
 //	GUI
 */
+
+G3D::Array<G3D::String> getFoldersInFolder(const G3D::String& path)
+{
+	G3D::Array<G3D::String> folderList;
+	FileSystem::ListSettings ls;
+	ls.includeParentPath = false;
+	ls.recursive = false;
+
+	FileSystem::list(path + "/*", folderList, ls);
+
+	return folderList;
+}
 
 void App::createNewProbeStructureWindow()
 {
@@ -945,7 +962,7 @@ void App::makeGui() {
 
 
 
-	addScenePane(tabPane);
+	addSampleSetPane(tabPane);
 
 	probeStructurePane = tabPane->addTab("Probes");
 	updateProbeStructurePane();
@@ -958,11 +975,8 @@ void App::makeGui() {
 void App::generateSampleSetList()
 {
 	G3D::String selectedScene = scenePane.selectedSceneList->selectedValue();
-	G3D::Array<G3D::String> sampleSetList;
-	FileSystem::ListSettings ls;
-	ls.includeParentPath = false;
-	ls.recursive = false;
-	FileSystem::list("../data-files/Scenes/" + selectedScene + "/SampleSets/*", sampleSetList, ls);
+	G3D::Array<G3D::String> sampleSetList = getFoldersInFolder("../data-files/Scenes/" + selectedScene + "/SampleSets");
+
 	scenePane.sampleSetList->setList(sampleSetList);
 }
 
@@ -973,11 +987,8 @@ void App::updateProbeStructurePane()
 	G3D::String selectedScene = scenePane.selectedSceneList->selectedValue();
 
 	probeStructurePane->beginRow();
-	G3D::Array<G3D::String> probeStructureList;
-	FileSystem::ListSettings ls;
-	ls.includeParentPath = false;
-	ls.recursive = false;
-	FileSystem::list("../data-files/Scenes/" + selectedScene + "/ProbeStructures/*", probeStructureList, ls);
+	G3D::Array<G3D::String> probeStructureList = getFoldersInFolder("../data-files/Scenes/" + selectedScene + "/ProbeStructures");
+
 	scenePane.probeStructureList = probeStructurePane->addDropDownList("ProbeStructure", probeStructureList, NULL, GuiControl::Callback(this, &App::updateProbeStructure));
 	probeStructurePane->addButton(GuiText("Switch Back"), GuiControl::Callback(this, &App::loadPreviousProbeStructure), GuiTheme::TOOL_BUTTON_STYLE);
 	probeStructurePane->addButton(GuiText("Edit mode"), GuiControl::Callback(this, &App::switchEditProbeStructure), GuiTheme::TOOL_BUTTON_STYLE);
@@ -1008,25 +1019,19 @@ void App::updateProbeStructurePane()
 }
 
 
-void App::addScenePane(GuiTabPane* tabPane)
+void App::addSampleSetPane(GuiTabPane* tabPane)
 {
 	GuiPane* tab = tabPane->addTab("Scene");
 
-	G3D::Array<G3D::String> sceneList;
-
-	FileSystem::ListSettings ls;
-	ls.includeParentPath = false;
-	ls.recursive = false;
-
-	FileSystem::list("../data-files/Scenes/*", sceneList, ls);
+	G3D::Array<G3D::String> sceneList = getFoldersInFolder("../data-files/Scenes");
 
 	scenePane.selectedSceneList = tab->addDropDownList("Scene", sceneList, NULL, GuiControl::Callback(this, &App::updateSelectedScenePane));
 
 	G3D::String selectedScene = scenePane.selectedSceneList->selectedValue();
 
 	tab->beginRow();
-	G3D::Array<G3D::String> sampleSetList;
-	FileSystem::list("../data-files/Scenes/" + selectedScene + "/SampleSets/*", sampleSetList, ls);
+	G3D::Array<G3D::String> sampleSetList = getFoldersInFolder("../data-files/Scenes/" + selectedScene + "/SampleSets");
+
 	scenePane.sampleSetList = tab->addDropDownList("SampleSet", sampleSetList, NULL, GuiControl::Callback(this, &App::updateSampleSet));
 	tab->addButton(GuiText("New"), [this]() { windowNewSampleSet->setVisible(true); }, GuiTheme::TOOL_BUTTON_STYLE);
 	tab->addButton(GuiText("Clear values"), GuiControl::Callback(this, &App::clearSampleSetValues), GuiTheme::TOOL_BUTTON_STYLE);
@@ -1034,7 +1039,8 @@ void App::addScenePane(GuiTabPane* tabPane)
 	tab->addButton(GuiText("Reload"), GuiControl::Callback(this, &App::reloadSampleSet), GuiTheme::TOOL_BUTTON_STYLE);
 	tab->addTextBox("samplesToSave", samplesToSave);
 	tab->addButton("Generate Positions", GuiControl::Callback(this, &App::generateSampleSetPositions), GuiTheme::TOOL_BUTTON_STYLE);
-	tab->addButton("Generate Values", GuiControl::Callback(this, &App::generateSampleSetValues), GuiTheme::TOOL_BUTTON_STYLE);
+    tab->addButton("Generate Values (mitsuba)", GuiControl::Callback(this, &App::generateSampleSetValues), GuiTheme::TOOL_BUTTON_STYLE);
+    tab->addButton("Generate Values (probes)", GuiControl::Callback(this, &App::generateSampleSetValuesFromProbes), GuiTheme::TOOL_BUTTON_STYLE);
 	tab->addCheckBox("write samples", &saveSample);
 	tab->endRow();
 }
@@ -1046,15 +1052,9 @@ void App::updateSelectedScenePane()
 
 	loadScene(selectedScene);
 
-	FileSystem::ListSettings ls;
-	ls.includeParentPath = false;
-	ls.recursive = false;
-
-	G3D::Array<G3D::String> probeStructureList;
-	FileSystem::list("../data-files/Scenes/" + selectedScene + "/ProbeStructures/*", probeStructureList, ls);
+	G3D::Array<G3D::String> probeStructureList = getFoldersInFolder("../data-files/Scenes/" + selectedScene + "/ProbeStructures");
 	scenePane.probeStructureList->setList(probeStructureList);
 
-	G3D::Array<G3D::String> sampleSetList;
-	FileSystem::list("../data-files/Scenes/" + selectedScene + "/SampleSets/*", sampleSetList, ls);
+	G3D::Array<G3D::String> sampleSetList = getFoldersInFolder("../data-files/Scenes/" + selectedScene + "/SampleSets");
 	scenePane.sampleSetList->setList(sampleSetList);
 }

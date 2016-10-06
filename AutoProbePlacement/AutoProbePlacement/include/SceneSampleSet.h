@@ -9,7 +9,11 @@ struct ProbeInterpolationRecord;
 class SceneSample;
 class ProbeStructure;
 
-
+enum ESSFile
+{
+    Samples = 0,
+    Values = 1
+};
 
 class SceneSampleSet
 {
@@ -22,7 +26,8 @@ public:
 	void addSample(SceneSample sample);
 	void generateTriplets(int NumberOfSamples, std::vector<Eigen::Triplet<float>>* eigenTriplets);
 	void generateRGBValuesFromProbes(int NumberOfSamples, bool ref, Eigen::VectorXd* eigenVector);
-	void save();
+    void generateRGBValuesFromProbes(int NumberOfSamples);
+    void save();
 	void load(int maxSamples);
 	std::vector<float> tryOptimizationPass(int NumberOfSamples, bool ref);
 	bool probeOptimizationPass(WeightMatrixType& A, Eigen::VectorXd& b, Eigen::VectorXd* result);
@@ -31,6 +36,7 @@ public:
 	void clearValues();
 	void clearPositions();
 
+    std::fstream SceneSampleSet::openFile(ESSFile type, bool reading);
 
 	/*
 		Member variables

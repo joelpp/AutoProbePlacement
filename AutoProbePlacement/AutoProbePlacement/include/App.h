@@ -106,7 +106,7 @@ private:
 	void updateProbeStructurePane();
 
 	void generateSampleSetList();
-	void addScenePane(GuiTabPane* tabPane);
+	void addSampleSetPane(GuiTabPane* tabPane);
 	void updateSelectedScenePane();
 	void updateProbeStructure();
 	void updateSampleSet();
@@ -360,6 +360,7 @@ public:
 	void reloadSampleSet();
 	void generateSampleSetPositions();
 	void generateSampleSetValues();
+    void generateSampleSetValuesFromProbes();
 
 	// There CERTAINLY has to be a better way to handle this stuff than keeping the new sample set window and nmae as globals
 	G3D::String sNewSampleSetName;

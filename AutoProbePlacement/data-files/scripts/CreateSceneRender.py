@@ -77,6 +77,8 @@ def makeProbe(x, y, z, probeCount, rootPath, pRenderType):
 
 	sampleCount = numSamplesOption;
 
+	multiplySecondBRDF = True;
+	divideTwiceByPi = False;
 	#Create integrator
 	integrator = pmgr.create({
 		'type' : integratorOption,
@@ -85,7 +87,9 @@ def makeProbe(x, y, z, probeCount, rootPath, pRenderType):
 		'sampleNormal': Normal(0,0,0),
 		'pointSampling': 0,
 		'logFinalValue': False,
-		'logRayTerminations': False
+		'logRayTerminations': False,
+		'multiplySecondBRDF': multiplySecondBRDF,
+		'divideTwiceByPi': divideTwiceByPi
 		})
 
 	#Create sampler
@@ -146,6 +150,12 @@ def makeProbe(x, y, z, probeCount, rootPath, pRenderType):
 	
 	# Your custom destination goes here.
 	destination = rootPath + "/" + integratorOption + "gamma_" + repr(gammaOption).translate(None, '.') + "_numSamples_" + repr(numSamplesOption);
+	destination += repr(origin[0]).translate(None, '.') + "_" + repr(origin[1]).translate(None, '.') + "_" + repr(origin[2]).translate(None, '.') + "_"; 
+	destination += repr(direction[0]).translate(None, '.') + "_" + repr(direction[1]).translate(None, '.') + "_" + repr(direction[2]).translate(None, '.') + "_"; 
+	if (multiplySecondBRDF):
+		destination += "_multiplySecondBRDF";
+	if (divideTwiceByPi):
+		destination += "_divideTwiceByPi";
 	scene.setDestinationFile(destination)
 	print(destination)
 	#Render!

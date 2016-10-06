@@ -94,9 +94,12 @@ public:
 	float gamma() { return m_gamma; }
 
 	//void coefficientInterpolation(G3D::Vector3 position, std::vector<G3D::Vector3> interpolatedCoefficients, std::vector<int>& probeIndices, std::vector<float> weights);
-	ProbeInterpolationRecord getInterpolationProbeIndicesAndWeights(G3D::Vector3 position);
+	ProbeInterpolationRecord getInterpolationProbeIndicesAndWeights(const G3D::Vector3& position);
 	G3D::Array<G3D::Vector3> ProbeStructure::getInterpolatingProbesCoords(const G3D::Vector3& pos, int step);
 	G3D::Array<int> getInterpolatingProbeIndices(const G3D::Vector3& pos);
+
+
+    G3D::Vector3 ProbeStructure::reconstructSH(const G3D::Vector3& position, const G3D::Vector3& normal);
 
 	void loadProbeInfo();
 

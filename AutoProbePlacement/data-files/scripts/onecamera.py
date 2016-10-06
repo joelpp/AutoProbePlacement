@@ -60,9 +60,9 @@ def makeProbe(x, y, z, probeCount, rootPath, pRenderType):
 	sampleCount = 1
 	if (pRenderType == "Probes"):
 		sampleCount = int(globalInfo["sampleCount"]);
-		integratorType = "path";
+		# integratorType = "path";
 		# integratorType = "direct";
-		# integratorType = "path_samples";
+		integratorType = "path_samples";
 
 	#Create integrator
 	integrator = pmgr.create({
@@ -72,7 +72,9 @@ def makeProbe(x, y, z, probeCount, rootPath, pRenderType):
 		'sampleNormal': Normal(0,0,0),
 		'pointSampling': 0,
 		'logFinalValue': False,
-		'logRayTerminations': False
+		'logRayTerminations': False,
+		'multiplySecondBRDF': True,
+		'divideTwiceByPi': True
 		})
 
 	#Create sampler

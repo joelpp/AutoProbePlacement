@@ -3,6 +3,7 @@
 #include "ProbeStructure.h"
 #include "App.h"
 #include "Helpers.h"
+#include "SH.h"
 
 #define DEAV3(x) debugPrintf(#x); for(int num = 0; num < x.size(); num++){ debugPrintf(", [num]: (%s)\n",x[num].toString().c_str()); debugPrintf("\n");}
 
@@ -752,27 +753,100 @@ G3D::Array<int> ProbeStructure::getInterpolatingProbeIndices(const G3D::Vector3&
 	return toReturn;
 }
 
-ProbeInterpolationRecord ProbeStructure::getInterpolationProbeIndicesAndWeights(G3D::Vector3 position)
+
+G3D::Vector3 findNode000(const G3D::Vector3& wsPos, G3D::Vector3& firstProbePosition, float step)
+{
+    G3D::Vector3 toReturn;
+
+    toReturn.x = floor((wsPos.x - firstProbePosition.x) / step) * step + firstProbePosition.x;
+    toReturn.y = floor((wsPos.y - firstProbePosition.y) / step) * step + firstProbePosition.y;
+    toReturn.z = floor((wsPos.z - firstProbePosition.z) / step) * step + firstProbePosition.z;
+
+    return toReturn;
+}
+
+int findProbeIndex(G3D::Vector3& probePosition, G3D::Vector3& startingPosition, G3D::Vector3& dimensions, float step)
+{
+    G3D::Vector3 fprobeSpaceCoords = (probePosition - startingPosition) / step;
+
+    G3D::Vector3 probeSpaceCoords = G3D::Vector3(fprobeSpaceCoords);
+    int index = probeSpaceCoords.x * dimensions[1] * dimensions[2] +
+        probeSpaceCoords.y * dimensions[2] +
+        probeSpaceCoords.z;
+
+    return index;
+}
+
+ProbeInterpolationRecord ProbeStructure::getInterpolationProbeIndicesAndWeights(const G3D::Vector3& position)
 {
 	// TODO FIX THIS
 	int step = 1;
 	ProbeInterpolationRecord record;
 	if (m_type == EProbeStructureType::Trilinear)
 	{
-		G3D::Array<G3D::Vector3> coords = getInterpolatingProbesCoords(position, step);
+		//G3D::Array<G3D::Vector3> coords = getInterpolatingProbesCoords(position, step);
 
-		// Find how close the sample is to probe 000
-		G3D::Vector3 ratios((position[0] - coords[0][0]) / step,
-							(position[1] - coords[0][1]) / step,
-							(position[2] - coords[0][2]) / step);
+		//// Find how close the sample is to probe 000
+		//G3D::Vector3 ratios((position[0] - coords[0][0]) / step,
+		//					(position[1] - coords[0][1]) / step,
+		//					(position[2] - coords[0][2]) / step);
 
-		std::vector<float> interpolationWeights;// = getInterpolationWeights(ratios);
+		//std::vector<float> interpolationWeights;// = getInterpolationWeights(ratios);
 
-		for (float f : interpolationWeights)
+		//for (float f : interpolationWeights)
+		//{
+		//	record.weights.push_back(f);
+		//}
+		// TODO: fix the fact that this doesnt consider the borders.
+        G3D::Vector3 firstProbePosition = G3D::Vector3(m_firstProbePosition);
+        G3D::Vector3 probe000Pos = findNode000(position, firstProbePosition, step);
+        G3D::Vector3 dimensions = G3D::Vector3(m_dimensions[0], m_dimensions[1], m_dimensions[2]);
+        int index = findProbeIndex(probe000Pos, firstProbePosition, dimensions, step);
+        G3D::Vector3 offsets = G3D::Vector3(m_dimensions[2] * m_dimensions[1], m_dimensions[2], 1);
+
+        G3D::Vector3 w000 = G3D::Vector3(1.0f, 1.0f, 1.0f) - (position - probe000Pos) / step;
+
+		record.weights.push_back(w000.x * w000.y * w000.z);
+		record.weights.push_back(w000.x * w000.y * (1.0f - w000.z));
+		record.weights.push_back(w000.x * (1.0f - w000.y) * w000.z);
+		record.weights.push_back(w000.x *		(1.0f - w000.y) * (1.0f - w000.z));
+		record.weights.push_back((1.0f - w000.x) * w000.y * w000.z);
+		record.weights.push_back((1.0f - w000.x) * w000.y * (1.0f - w000.z));
+		record.weights.push_back((1.0f - w000.x) * (1.0f - w000.y) * w000.z);
+		record.weights.push_back((1.0f - w000.x)* (1.0f - w000.y) * (1.0f - w000.z));
+
+        record.probeIndices[0] = index;
+        record.probeIndices[1] = record.probeIndices[0] + offsets[2]; 							 // p001
+        record.probeIndices[2] = record.probeIndices[0] + offsets[1]; 							 // p010
+        record.probeIndices[3] = record.probeIndices[0] + offsets[1] + offsets[2];                 // p011
+        record.probeIndices[4] = record.probeIndices[0] + offsets[0];                              // p100
+        record.probeIndices[5] = record.probeIndices[0] + offsets[0] + offsets[2];                 // p101
+        record.probeIndices[6] = record.probeIndices[0] + offsets[0] + offsets[1];                 // p110
+        record.probeIndices[7] = record.probeIndices[0] + offsets[0] + offsets[1] + offsets[2];    // p111
+
+		int numProbes = m_dimensions[0] * m_dimensions[1] * m_dimensions[2];
+		bool shouldNormalize = false;
+		for (int i = 0; i < 8; ++i)
 		{
-			record.weights.push_back(f);
+			if ((record.probeIndices[i] > numProbes) || (record.probeIndices[i] < 0))
+			{
+                record.weights[i] = 0;
+				shouldNormalize = true;
+			}
 		}
 
+		if (shouldNormalize)
+		{
+			float weightSum = 0;
+			for (int i = 0; i < 8; ++i)
+			{
+				weightSum += record.weights[i];
+			}
+			for (int i = 0; i < 8; ++i)
+			{
+                record.weights[i] /= weightSum;
+			}
+		}
 	}
 	else if (m_type == EProbeStructureType::Closest)
 	{
@@ -880,7 +954,7 @@ void ProbeStructure::updateProbes(bool updateAll)
 		std::stringstream args;
 		args << m_sceneName.c_str() << " " << m_name.c_str() << " Probes";
 
-		runPythonScriptFromDataFiles("onecamera.py", args.str());
+		runPythonScriptFromDataFiles("onecamera.py", args.str(), true);
 	}
 
 	//for (int i = 0; i < probeList.size(); ++i)
@@ -1004,4 +1078,58 @@ void ProbeStructure::displaceProbesWithGradient(std::vector<float>& displacement
 		}
 		DEAV3(probe->coeffs);
 	}
+}
+
+
+G3D::Vector3 ProbeStructure::reconstructSH(const G3D::Vector3& position, const G3D::Vector3& normal)
+{
+    ProbeInterpolationRecord record = getInterpolationProbeIndicesAndWeights(position);
+    int NumberOfCoefficientsPerProbe = 9;
+    Vector3 rgb = Vector3(0, 0, 0);
+
+    for (int i = 0; i < record.weights.size(); ++i)
+    {
+        //int probeIndex = getProbeStartIndex(coords[i], firstProbePosition, dimensions, 1);
+        int probeIndex = record.probeIndices[i];
+        float weight = record.weights[i];
+
+        //if (this->outputToLog)
+        //{
+        //    logFile << "Probe " << i << std::endl;
+        //    //logFile << "position =  " << coords[i].toString().c_str() << std::endl;
+        //    logFile << "weight =  " << weight << std::endl;
+        //}
+
+        // For all SH bands
+        for (int coeff = 0; coeff < NumberOfCoefficientsPerProbe; ++coeff)
+        {
+            std::pair<int, int> lm = SH::kToLM(coeff);
+
+            // We multiply the inter weight by the geometric term and the SH function value in this direction
+            float phong = phongCoeffs(lm.first, 1.0f);
+            float sh = SH::SHxyz_yup(lm.first, lm.second, normal);
+            float factors = weight *
+                //NDotOmegaCoeff(lm(0)) *
+                phong *
+                sh;
+            Vector3& probeCoeffs = getProbe(probeIndex)->coeffs[coeff];
+            Vector3 accumulation = factors * probeCoeffs;
+            rgb += accumulation;
+
+            //if (this->outputToLog)
+            //{
+            //    logFile << "SH band: ( " << lm.first << ", " << lm.second << " )" << std::endl;
+            //    logFile << "phong = " << phong << std::endl;
+            //    logFile << "shFunctionEvaluation = " << sh << std::endl;
+            //    logFile << "weight * phong * sh = " << factors << std::endl;
+            //    logFile << "probeCoeffs (R,G,B) = " << probeCoeffs.toString().c_str() << std::endl;
+            //    logFile << "weight * phong * sh * probeCoeffs = " << accumulation.toString().c_str() << std::endl;
+            //    logFile << "accumulatedRGB(" << coeff << ") = " << rgb.toString().c_str() << std::endl << std::endl;
+            //}
+
+        }
+    }
+    //rgb /= 3.141592654f;
+
+    return rgb;
 }

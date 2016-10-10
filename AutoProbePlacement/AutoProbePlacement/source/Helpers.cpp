@@ -115,3 +115,34 @@ double NDotOmegaCoeff(int l)
         return 0;
     }
 }
+
+//def sRGBToRGBVal(val) :
+//    if (val < 0.04045) :
+//        return val / 12.92;
+//    else :
+//        return ((val + 0.055) / 1.055)**2.4;
+//
+//def sRGBToRGB(srgbColor) :
+//    rgb = [];
+//for x in srgbColor :
+//rgb.push(sRGBToRGBVal(x))
+//
+//return rgb;
+
+float sRGBtoRGB(float source)
+{
+    float c = 0;
+
+    if (source < 0.04045)
+    {
+        return source / 12.92;
+    }
+    else
+    {
+        return pow(((source + 0.055) / 1.055), 2.4);
+    }
+}
+Color3 sRGBtoRGB(const Color3& source)
+{
+    return Color3(sRGBtoRGB(source.r), sRGBtoRGB(source.g), sRGBtoRGB(source.b));
+}

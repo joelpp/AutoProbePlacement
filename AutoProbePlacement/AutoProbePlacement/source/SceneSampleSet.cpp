@@ -148,7 +148,7 @@ void SceneSampleSet::load(int maxSamples)
 	for (SceneSample& ss : m_samples)
 	{
 		m_points.push_back(ss.position);
-		m_colors.push_back(ss.irradiance);
+		m_colors.push_back(ss.irradiance / PI);
 	}
 }
 

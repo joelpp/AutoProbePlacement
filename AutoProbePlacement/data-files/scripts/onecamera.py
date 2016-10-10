@@ -7,13 +7,19 @@ import os, sys
 
 # Ensure that Python will be able to find the Mitsuba core libraries
 
-if (True):
-	sys.path.append('C:/git/mitsuba/dist/python/2.7/')
-	# Ensure that Python will be able to find the Mitsuba core libraries
-	os.environ['PATH'] = 'C:/git/mitsuba/dist/' + os.pathsep + os.environ['PATH']
-else:
-	sys.path.append('C:/Users/Joel/Downloads/mitsuba-c7aac473729a/mitsuba-c7aac473729a/dist/python/2.7/')
-	os.environ['PATH'] = 'C:/Users/Joel/Downloads/mitsuba-c7aac473729a/mitsuba-c7aac473729a/dist/' + os.pathsep + os.environ['PATH']
+# if (True):
+# 	sys.path.append('C:/git/mitsuba/dist/python/2.7/')
+# 	# Ensure that Python will be able to find the Mitsuba core libraries
+# 	os.environ['PATH'] = 'C:/git/mitsuba/dist/' + os.pathsep + os.environ['PATH']
+# else:
+# 	sys.path.append('C:/Users/Joel/Downloads/mitsuba-c7aac473729a/mitsuba-c7aac473729a/dist/python/2.7/')
+# 	os.environ['PATH'] = 'C:/Users/Joel/Downloads/mitsuba-c7aac473729a/mitsuba-c7aac473729a/dist/' + os.pathsep + os.environ['PATH']
+
+sys.path.append('C:/Users/polardpj.artichaut/Downloads/mitsuba-eaff1cd989f3/mitsuba-eaff1cd989f3/dist/python/2.7/')
+# Ensure that Python will be able to find the Mitsuba core libraries
+os.environ['PATH'] = 'C:/Users/polardpj.artichaut/Downloads/mitsuba-eaff1cd989f3/mitsuba-eaff1cd989f3/dist/' + os.pathsep + os.environ['PATH']
+
+
 from mitsuba.core import *
 from mitsuba.render import SceneHandler, RenderQueue, RenderJob
 
@@ -37,7 +43,7 @@ fileResolver.appendPath(path);
 renderType = sys.argv[3];
 
 
-scene = SceneHandler.loadScene("../Scenes/zcbox/MitsubaScene2.xml", paramMap)
+scene = SceneHandler.loadScene("../Scenes/" + sceneName + "/MitsubaScene.xml", paramMap)
 
 #Initialise Mitsuba stuff
 queue = RenderQueue()
@@ -62,7 +68,7 @@ def makeProbe(x, y, z, probeCount, rootPath, pRenderType):
 		sampleCount = int(globalInfo["sampleCount"]);
 		# integratorType = "path";
 		# integratorType = "direct";
-		integratorType = "path_samples";
+		integratorType = globalInfo["integrator"];
 
 	#Create integrator
 	integrator = pmgr.create({
@@ -102,7 +108,7 @@ def makeProbe(x, y, z, probeCount, rootPath, pRenderType):
 	# film.setFilter(pmgr.createObject(boxProps));
 
 	# offset = 4;
-	scale = globalInfo["scale"];
+	scale = float(globalInfo["scale"]);
 	x /= scale;
 	y /= scale;
 	z /= scale;

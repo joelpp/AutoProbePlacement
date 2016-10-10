@@ -112,16 +112,17 @@ void ProbeRenderer::renderProbeShading(RenderDevice* rd, const shared_ptr<GBuffe
 		
 		App* app = App::instance;
 
-		bool probeStructureLoaded = app->probeStructure != NULL;
+		bool probeStructureLoaded = app->m_probeStructure != NULL;
 
 		args.setMacro("Render_DIRECT", app->bRenderDirect);
 		if (probeStructureLoaded)
 		{
-			args.setMacro("Render_INDIRECT", app->bRenderIndirect);
+            args.setMacro("NUM_PROBES", app->m_probeStructure->probeCount());
+            args.setMacro("Render_INDIRECT", app->bRenderIndirect);
 			args.setMacro("Render_INDIRECTBRDF", app->bRenderMultiplyIndirectByBRDF);
 
-			args.setMacro("WEIGHTS_WNN", app->probeStructure->m_type == EProbeStructureType::WeightedNearestNeighbour);
-			args.setMacro("WEIGHTS_TRILERP", app->probeStructure->m_type == EProbeStructureType::Trilinear);
+			args.setMacro("WEIGHTS_WNN", app->m_probeStructure->m_type == EProbeStructureType::WeightedNearestNeighbour);
+			args.setMacro("WEIGHTS_TRILERP", app->m_probeStructure->m_type == EProbeStructureType::Trilinear);
 
 			args.setUniform("SHMultiplier", app->shadingMultiplier);
 		}

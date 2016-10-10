@@ -16,7 +16,7 @@ Array<Vector3> App::getRandomPoint(int modelNumber, Vector3* P, Vector3* N, Vect
     Array<Vector3> toReturn = Array<Vector3>();
 	//Random r(System::time());
 
-	MeshShape* meshShape = m_scene.getMeshShape(modelNumber);
+	MeshShape* meshShape = m_scene->getMeshShape(modelNumber);
 
     meshShape->getRandomSurfacePoint(*P, *N, *s, *barycentricWeights, Random::common());
 
@@ -41,7 +41,7 @@ SceneSample App::generateSceneSample(int* _selectedModel, Vector3 *_P, Vector2* 
     Vector3* P = new Vector3();
     Vector3* N = new Vector3();
     startingIndex = new int(0);
-    selectedModel = (int)(m_scene.numModels() * Random::common().uniform());
+    selectedModel = (int)(m_scene->numModels() * Random::common().uniform());
     //selectedModel = 3;
     Array<Vector3> vertices = getRandomPoint(selectedModel, P, N, baryWeights, startingIndex);
 
@@ -92,12 +92,12 @@ void App::startOptimizationPasses()
 		if (!infoFile)
 		{
 			infoFile.open("C:/temp/CurrentOptimization/InitialConditions.txt", std::fstream::in | std::fstream::out | std::fstream::trunc);
-			infoFile << m_scene.m_name.c_str() << std::endl;
-			infoFile << probeStructure->m_name.c_str() << std::endl;
+			infoFile << m_scene->m_name.c_str() << std::endl;
+			infoFile << m_probeStructure->m_name.c_str() << std::endl;
 
-			for (int i = 0; i <  probeStructure->probeList.size(); ++i)
+			for (int i = 0; i <  m_probeStructure->probeList.size(); ++i)
 			{
-				infoFile << "Probe " << i << " : " << probeStructure->probeList[i]->getPosition() << std::endl;
+				infoFile << "Probe " << i << " : " << m_probeStructure->probeList[i]->getPosition() << std::endl;
 			}
 		}
 		sampleSet->outputToLog = logSampleSet;
@@ -147,7 +147,7 @@ float App::computeError(std::string logFilePath)
 
 void App::createTempProbeStructure(G3D::Array<G3D::Vector3>& probePositions)
 {
-	ProbeStructure tempStructure = ProbeStructure(m_scene.m_name, "temp", probePositions.size(), EProbeStructureType::WeightedNearestNeighbour);
+	ProbeStructure tempStructure = ProbeStructure(m_scene->m_name, "temp", probePositions.size(), EProbeStructureType::WeightedNearestNeighbour);
 
 	for (int i = 0; i < probePositions.size(); ++i)
 	{
@@ -164,8 +164,8 @@ G3D::Array<G3D::Vector3> App::generateRandomPositions(int NumberOfPositions)
 	G3D::Array<G3D::Vector3> toReturn;
 	float maxDistance = 4;
 	float offset = 0.5;
-	G3D::Vector3 min = m_scene.m_minBound + Vector3(offset, offset, offset);
-	G3D::Vector3 max = m_scene.m_maxBound - Vector3(offset, offset, offset);
+	G3D::Vector3 min = m_scene->m_minBound + Vector3(offset, offset, offset);
+	G3D::Vector3 max = m_scene->m_maxBound - Vector3(offset, offset, offset);
 
 	for (int i = 0; i < NumberOfPositions; ++i)
 	{
@@ -213,7 +213,7 @@ void App::findBestInitialConditions()
 
 		createTempProbeStructure(positions);
 
-		initializeProbeStructure(m_scene.m_name, "temp");
+		initializeProbeStructure(m_scene->m_name, "temp");
 		
 		computeSamplesRGB();
 
@@ -244,7 +244,7 @@ void App::findBestInitialConditions()
 
 	createTempProbeStructure(bestPositions);
 	//exit(0);
-	initializeProbeStructure(m_scene.m_name, "temp");
+	initializeProbeStructure(m_scene->m_name, "temp");
 }
 
 
@@ -282,7 +282,7 @@ void App::tryOptimization()
 	sw.after("Performed optimization step");
 	if (displacements.size() > 0)
 	{
-		probeStructure->displaceProbesWithGradient(displacements);
+		m_probeStructure->displaceProbesWithGradient(displacements);
 		//sampleSet->generateRGBValuesFromProbes(numSamples, false,0);
 		//float error = computeError("C:/temp/CurrentOptimization/errorlog.txt");
 		//sw.after("Computed error");
@@ -318,18 +318,18 @@ void App::computeTriplets()
 
 void App::addOneActor()
 {
-	addActor("bunny", bunnyModel /*sceneModel*/, 
+	addActor("bunny", sphereModel /*sceneModel*/, 
 			 Vector3( std::stof(actorSpawnX.c_str()), std::stof(actorSpawnY.c_str()), std::stof(actorSpawnZ.c_str()) ),
 			 0.1f, shared_ptr<Texture>(), true, Vector3(1,1,1));
 }
 
 void App::addOneActorSq()
 {
-	for (int i = 0; i < m_scene.m_models.size(); ++i)
+	for (int i = 0; i < m_scene->m_models.size(); ++i)
 	{
-		addActor("square", m_scene.m_models[i], 
+		addActor("square", m_scene->m_models[i], 
 				 Vector3(std::stof(actorSpawnX.c_str()), std::stof(actorSpawnY.c_str()), std::stof(actorSpawnZ.c_str())),
-				 1.0f, shared_ptr<Texture>(), false, m_scene.m_colors[i]);
+				 1.0f, shared_ptr<Texture>(), false, m_scene->m_colors[i]);
 	}
 	//addActor("square", sceneModel, 
 	//		 Vector3(stof(actorSpawnX.c_str()),stof(actorSpawnY.c_str()),stof(actorSpawnZ.c_str())), 
@@ -341,9 +341,9 @@ void App::displaceProbes()
 
 	std::vector<G3D::Vector3> originalPositions;
 
-	for (int i = 0 ; i < probeStructure->probeCount(); ++i)
+	for (int i = 0 ; i < m_probeStructure->probeCount(); ++i)
 	{
-		originalPositions.push_back(probeStructure->getProbe(i)->frame.translation);
+		originalPositions.push_back(m_probeStructure->getProbe(i)->frame.translation);
 	}
 
 
@@ -351,11 +351,11 @@ void App::displaceProbes()
 	for (int i = 1; i <= numTries; ++i)
 	{
 
-		for (int j = 0 ; j < probeStructure->probeCount(); ++j)
+		for (int j = 0 ; j < m_probeStructure->probeCount(); ++j)
 		{
-			probeStructure->getProbe(j)->frame.translation = originalPositions[j];
+			m_probeStructure->getProbe(j)->frame.translation = originalPositions[j];
 		}
-		probeStructure->updateProbes(true);
+		m_probeStructure->updateProbes(true);
 		updateProbeStructure();
 
 		G3D::Vector3 displacementV = Vector3(1,1,1).unit();
@@ -367,16 +367,16 @@ void App::displaceProbes()
 
 		Array<G3D::Vector3> renderedCoeffs, optimCoeffs;
 
-		probeStructure->displaceProbesWithGradient(displacement);
+		m_probeStructure->displaceProbesWithGradient(displacement);
 		computeSamplesRGB();
 		//computeError("C:/temp/errorlog.txt");
-		optimCoeffs = probeStructure->getProbe(0)->coeffs;
+		optimCoeffs = m_probeStructure->getProbe(0)->coeffs;
 
-		probeStructure->updateProbes(true);
+		m_probeStructure->updateProbes(true);
 		updateProbeStructure();
 		computeSamplesRGB();
 		//computeError("C:/temp/errorlog2.txt");
-		renderedCoeffs = probeStructure->getProbe(0)->coeffs;
+		renderedCoeffs = m_probeStructure->getProbe(0)->coeffs;
 
 		float err = 0;
 		for (int j = 0; j < optimCoeffs.size(); ++j)

@@ -26,7 +26,7 @@ void main()
 {
 #if FRAGMENT_SHADING
     float pi = 3.14159;
-    vec3 normal = -normalize(tNormal);
+    vec3 normal = normalize(tNormal);
 
     //normal.x *= -1;
     float u = ( 1 - ( atan(normal.z, normal.x) / (2 * pi) ) );
@@ -37,7 +37,7 @@ void main()
 
 	
 	vec3 translationVector = -(wsPos - getProbePosition(int(iRec.probeIndices[0])));
-    //translationVector.x *= -1;
+    // translationVector.x *= -1;
 
 	finalValue = fullSHInterpolation(iRec, normal
 #if USE_SH_GRADIENTS

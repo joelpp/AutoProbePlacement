@@ -25,20 +25,6 @@ classes and use G3D::Sky to handle the skybox.
 
 class SceneSampleSet;
 
-struct SProbe
-{
-	float position[4];
-	float coefficients[27];
-	float gradients[81];
-};
-
-struct SProbeStructure
-{
-	SProbe probes[343];
-	int dimensions[4]; // int3 padded into int4
-	float firstProbePosition[4];  // vec3 padded into vec4
-	float step;
-};
 
 
 struct ScenePane
@@ -87,7 +73,6 @@ enum EFilmType
 
 class App : public GApp {
 private:
-	SProbeStructure probeList;
 	/**
 	* METHODS
 	*
@@ -322,7 +307,7 @@ private:
 
 public:
 	float shadingMultiplier;
-	ProbeStructure *probeStructure;
+	ProbeStructure *m_probeStructure;
 
 	bool bRenderDirect;
 	bool bRenderIndirect;
@@ -335,6 +320,7 @@ public:
 	virtual void onAI() override;
 	virtual void onInit();
 	virtual void onGraphics3D(RenderDevice* rd, Array< shared_ptr<Surface> >& surface);
+    virtual void onUserInput(UserInput* userInput);
 	String m_scenePath;
 	G3D::String previousProbeStructure;
 
@@ -346,9 +332,7 @@ public:
 	void tetrahedralInterpolation(G3D::Vector3 testPoint, Array<int> *_probeIndices, Array<float> *_coeffs);
 
 	void switchEditProbeStructure();
-	void saveProbeStructureUpdateAll();
-	void saveProbeStructureUpdate();
-	JScene m_scene;
+	JScene* m_scene;
 
 	String m_sNumICTries;
 	String m_sNumICProbes;

@@ -58,7 +58,7 @@ Array<Vector3> App::getInterpolatedCoeffs(ProbeInterpolationRecord iRec, int max
 
 	for (int i = 0; i < iRec.probeIndices.size(); i++)
 	{
-		Probe* p = probeStructure->getProbe(iRec.probeIndices[i]);
+		Probe* p = m_probeStructure->getProbe(iRec.probeIndices[i]);
 		for (int j = 0; j <= maxBand; ++j)
 		{
 			interpolatedCoeffs[j] += p->coeffs[j] * iRec.weights[i];
@@ -79,10 +79,10 @@ Vector3 App::getBarycentricCoordinates(Point3 testPoint, Tetrahedron* t){
 
 	if (actors[0].tetrahedronIndex == -1) return Vector3(-1,-1,-1);
 	try{
-		probe0 = probeStructure->getProbe(t->indexes[0]);
-		probe1 = probeStructure->getProbe(t->indexes[1]);
-		probe2 = probeStructure->getProbe(t->indexes[2]);
-		probe3 = probeStructure->getProbe(t->indexes[3]);
+		probe0 = m_probeStructure->getProbe(t->indexes[0]);
+		probe1 = m_probeStructure->getProbe(t->indexes[1]);
+		probe2 = m_probeStructure->getProbe(t->indexes[2]);
+		probe3 = m_probeStructure->getProbe(t->indexes[3]);
 	}
 	catch(...){
 		throw std::invalid_argument("you suck");
@@ -104,11 +104,11 @@ bool App::tetrahedralInterpolation(Actor& actor, Array<int> *_probeIndices, Arra
 
     Vector3 testPoint = actor.getPosition();
 
-	Tetrahedron* t = probeStructure->getTetrahedron(actor.tetrahedronIndex);
+	Tetrahedron* t = m_probeStructure->getTetrahedron(actor.tetrahedronIndex);
 
         Vector3 weights;
         float d;
-		float pDotFaceNormal = (testPoint - probeStructure->getFaceNormalPosition(actor.tetrahedronIndex)).dot(probeStructure->getFaceNormal(actor.tetrahedronIndex));
+		float pDotFaceNormal = (testPoint - m_probeStructure->getFaceNormalPosition(actor.tetrahedronIndex)).dot(m_probeStructure->getFaceNormal(actor.tetrahedronIndex));
         // debugPrintf("p dot face normal = %f\n",pDotFaceNormal);
         
 		// If the dot product is negative we are inside the hull
@@ -235,13 +235,13 @@ Array<Vector3> App::getTriangleVertices(double t, Tetrahedron* tet){
 		if (tet->neighbors[i] == -1) continue;
 		else indices.append(tet->indexes[i]);
 
-    Vector3 V0 = probeStructure->getProbe(indices[0])->position;
-    Vector3 V1 = probeStructure->getProbe(indices[1])->position;
-    Vector3 V2 = probeStructure->getProbe(indices[2])->position;
+    Vector3 V0 = m_probeStructure->getProbe(indices[0])->position;
+    Vector3 V1 = m_probeStructure->getProbe(indices[1])->position;
+    Vector3 V2 = m_probeStructure->getProbe(indices[2])->position;
 													
-	Vector3 N0 = probeStructure->getProbe(indices[0])->normal;
-    Vector3 N1 = probeStructure->getProbe(indices[1])->normal;
-    Vector3 N2 = probeStructure->getProbe(indices[2])->normal;
+	Vector3 N0 = m_probeStructure->getProbe(indices[0])->normal;
+    Vector3 N1 = m_probeStructure->getProbe(indices[1])->normal;
+    Vector3 N2 = m_probeStructure->getProbe(indices[2])->normal;
 
     Array<Vector3> toReturn = Array<Vector3>();
 
@@ -296,7 +296,7 @@ Tetrahedron* App::updateNeighbor(Vector3 weights, float d, Actor& actor, Tetrahe
 		debugPrintf("Weights: %s\n", weights.toString().c_str());
 		exit(1);
 	}
-    return probeStructure->getTetrahedron(newIndex);
+    return m_probeStructure->getTetrahedron(newIndex);
 }
 
 bool App::badWeights(Vector3 v, float d){
@@ -312,17 +312,17 @@ double App::findTforCurrentTriangleFace(Point3 testPosition, Tetrahedron* tet){
 		if (tet->neighbors[i] == -1) continue;
 		else indices.append(tet->indexes[i]);
 
-    Vector3 V0 = probeStructure->getProbe(indices[0])->position - probeStructure->getProbe(indices[2])->position;
-    Vector3 V1 = probeStructure->getProbe(indices[1])->position - probeStructure->getProbe(indices[2])->position;
-    Vector3 V2 = probeStructure->getProbe(indices[2])->position - testPosition;
+    Vector3 V0 = m_probeStructure->getProbe(indices[0])->position - m_probeStructure->getProbe(indices[2])->position;
+    Vector3 V1 = m_probeStructure->getProbe(indices[1])->position - m_probeStructure->getProbe(indices[2])->position;
+    Vector3 V2 = m_probeStructure->getProbe(indices[2])->position - testPosition;
 												   
-    Vector3 N0 = (probeStructure->getProbe(indices[0])->normal - probeStructure->getProbe(indices[2])->normal).fastUnit();
-    Vector3 N1 = (probeStructure->getProbe(indices[1])->normal - probeStructure->getProbe(indices[2])->normal).fastUnit();
-    Vector3 N2 = (probeStructure->getProbe(indices[2])->normal).fastUnit();
+    Vector3 N0 = (m_probeStructure->getProbe(indices[0])->normal - m_probeStructure->getProbe(indices[2])->normal).fastUnit();
+    Vector3 N1 = (m_probeStructure->getProbe(indices[1])->normal - m_probeStructure->getProbe(indices[2])->normal).fastUnit();
+    Vector3 N2 = (m_probeStructure->getProbe(indices[2])->normal).fastUnit();
 
-	screenPrintf("probeStructure->getProbe(%d).normal: %s\n", indices[0], probeStructure->getProbe(indices[0])->normal.toString().c_str());
-	screenPrintf("probeStructure->getProbe(%d).normal: %s\n", indices[1], probeStructure->getProbe(indices[1])->normal.toString().c_str());
-	screenPrintf("probeStructure->getProbe(%d).normal: %s\n", indices[2], probeStructure->getProbe(indices[2])->normal.toString().c_str());
+	screenPrintf("m_probeStructure->getProbe(%d).normal: %s\n", indices[0], m_probeStructure->getProbe(indices[0])->normal.toString().c_str());
+	screenPrintf("m_probeStructure->getProbe(%d).normal: %s\n", indices[1], m_probeStructure->getProbe(indices[1])->normal.toString().c_str());
+	screenPrintf("m_probeStructure->getProbe(%d).normal: %s\n", indices[2], m_probeStructure->getProbe(indices[2])->normal.toString().c_str());
 
     double t = extrapolationT;
     double prevT = extrapolationT + 100;

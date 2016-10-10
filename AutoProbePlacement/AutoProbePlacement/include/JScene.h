@@ -30,6 +30,8 @@ public:
 	float scale();
 	bool isOOB(G3D::Vector3 pos, float tolerance);
 
+    G3D::String name() { return m_name; }
+
 	G3D::String m_name;
 	G3D::Vector3 m_minBound;
 	G3D::Vector3 m_maxBound;

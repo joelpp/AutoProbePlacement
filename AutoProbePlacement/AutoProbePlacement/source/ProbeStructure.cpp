@@ -48,6 +48,8 @@ ProbeStructure::ProbeStructure(String sceneName, String probeStructureName, int 
 	infoFile << "type wNN" << std::endl;
 	infoFile << "dimensions " << numProbes << std::endl;
 	infoFile.close();
+
+
 }
 
 ProbeStructure::ProbeStructure(String sceneName, String probeStructureName)
@@ -58,7 +60,7 @@ ProbeStructure::ProbeStructure(String sceneName, String probeStructureName)
 	this->m_name = probeStructureName;
 	this->probeStructurePath = "../data-files/Scenes/" + sceneName + "/ProbeStructures/" + probeStructureName;;
 
-	loadProbeInfo();
+	loadProbeStructureInfo();
 	makeProbeList();
 
 	if (m_type == EProbeStructureType::Tetrahedral)
@@ -70,10 +72,12 @@ ProbeStructure::ProbeStructure(String sceneName, String probeStructureName)
 		computeTetFaceNormals();
 		computeTetVertexNormals();
 	}
+ 
+    uploadToGPU();
 }
 
 
-void ProbeStructure::loadProbeInfo()
+void ProbeStructure::loadProbeStructureInfo()
 {
 	String probeInfoPath = probeStructurePath + "/info.txt";
 	std::fstream structureInformationFile;
@@ -116,6 +120,7 @@ void ProbeStructure::loadProbeInfo()
 		{
 			this->m_gamma = std::stof(splitLine[0].c_str());
 		}
+
 
 
 	}
@@ -234,8 +239,8 @@ void ProbeStructure::makeProbeList()
 
 					std::getline(coeffFile, line2);
 					std::getline(coeffFile, line3);
-					//temporaryArray.push_back(Vector3(std::stof(line.c_str()), std::stof(line2.c_str()), std::stof(line3.c_str())));
-					temporaryArray.push_back(Vector3(Random::common().uniform(1.f,5.f), Random::common().uniform(1.f,5.f), Random::common().uniform(1.f,5.f)));
+					temporaryArray.push_back(Vector3(std::stof(line.c_str()), std::stof(line2.c_str()), std::stof(line3.c_str())));
+					//temporaryArray.push_back(Vector3(Random::common().uniform(1.f,5.f), Random::common().uniform(1.f,5.f), Random::common().uniform(1.f,5.f)));
 
 					if (++counter == 3)
 					{
@@ -815,20 +820,20 @@ ProbeInterpolationRecord ProbeStructure::getInterpolationProbeIndicesAndWeights(
 		record.weights.push_back((1.0f - w000.x) * (1.0f - w000.y) * w000.z);
 		record.weights.push_back((1.0f - w000.x)* (1.0f - w000.y) * (1.0f - w000.z));
 
-        record.probeIndices[0] = index;
-        record.probeIndices[1] = record.probeIndices[0] + offsets[2]; 							 // p001
-        record.probeIndices[2] = record.probeIndices[0] + offsets[1]; 							 // p010
-        record.probeIndices[3] = record.probeIndices[0] + offsets[1] + offsets[2];                 // p011
-        record.probeIndices[4] = record.probeIndices[0] + offsets[0];                              // p100
-        record.probeIndices[5] = record.probeIndices[0] + offsets[0] + offsets[2];                 // p101
-        record.probeIndices[6] = record.probeIndices[0] + offsets[0] + offsets[1];                 // p110
-        record.probeIndices[7] = record.probeIndices[0] + offsets[0] + offsets[1] + offsets[2];    // p111
+        record.probeIndices.push_back(index);
+        record.probeIndices.push_back(record.probeIndices[0] + offsets[2]); 							 // p001
+        record.probeIndices.push_back(record.probeIndices[0] + offsets[1]); 							 // p010
+        record.probeIndices.push_back(record.probeIndices[0] + offsets[1] + offsets[2]);                 // p011
+        record.probeIndices.push_back(record.probeIndices[0] + offsets[0]);                              // p100
+        record.probeIndices.push_back(record.probeIndices[0] + offsets[0] + offsets[2]);                 // p101
+        record.probeIndices.push_back(record.probeIndices[0] + offsets[0] + offsets[1]);                 // p110
+        record.probeIndices.push_back(record.probeIndices[0] + offsets[0] + offsets[1] + offsets[2]);    // p111
 
 		int numProbes = m_dimensions[0] * m_dimensions[1] * m_dimensions[2];
 		bool shouldNormalize = false;
 		for (int i = 0; i < 8; ++i)
 		{
-			if ((record.probeIndices[i] > numProbes) || (record.probeIndices[i] < 0))
+			if ((record.probeIndices[i] >= numProbes) || (record.probeIndices[i] < 0))
 			{
                 record.weights[i] = 0;
 				shouldNormalize = true;
@@ -911,17 +916,31 @@ std::fstream& GotoLine(std::fstream& file, unsigned int num) {
 	return file;
 }
 
+std::fstream ProbeStructure::probeListFileHandle(bool reading)
+{
+    int operation = reading ? std::fstream::in : std::fstream::out;
+    std::fstream file((probeStructurePath + "/probeList.txt").c_str(), operation);
+
+    if (!file || !file.is_open())
+    {
+        if (reading)
+        {
+            debugPrintf("Failed to open probeList file for reading.");
+
+        }
+        else
+        {
+            debugPrintf("Failed to open probeList file for writing.");
+        }
+    }
+
+    return file;
+}
+
 
 void ProbeStructure::updateProbes(bool updateAll)
 {
-	std::fstream probeListFile;
-	probeListFile.open((probeStructurePath + "/probeList.txt").c_str(), std::fstream::out);
-
-	if (!probeListFile || !probeListFile.is_open())
-	{
-		debugPrintf("Failed to open probeList file for saving updated probes.");
-		return;
-	}
+    std::fstream probeListFile = probeListFileHandle(false);
 
 	for (int i = 0; i < probeList.size(); ++i)
 	{
@@ -957,36 +976,36 @@ void ProbeStructure::updateProbes(bool updateAll)
 		runPythonScriptFromDataFiles("onecamera.py", args.str(), true);
 	}
 
-	//for (int i = 0; i < probeList.size(); ++i)
-	//{
-	//	Probe* p = probeList[i];
+	for (int i = 0; i < probeList.size(); ++i)
+	{
+		Probe* p = probeList[i];
 
-	//	if (updateAll || p->bNeedsUpdate)
-	//	{
-	//		if (!updateAll)
-	//		{
-	//			// system call to mitsuba
-	//			std::stringstream command;
-	//			command << "cmd /c \"cd C:\\libraries\\g3d\\samples\\aTest\\data-files\\scripts";
-	//			command << " && renderoneprobe.bat " << m_sceneName.c_str() << " " << m_name.c_str() << " " << i << "\"";
+		if (updateAll || p->bNeedsUpdate)
+		{
+			//if (!updateAll)
+			//{
+			//	// system call to mitsuba
+			//	std::stringstream command;
+			//	command << "cmd /c \"cd C:\\libraries\\g3d\\samples\\aTest\\data-files\\scripts";
+			//	command << " && renderoneprobe.bat " << m_sceneName.c_str() << " " << m_name.c_str() << " " << i << "\"";
 
-	//			result = runCommand(command.str());
-	//		}
+			//	result = runCommand(command.str());
+			//}
 
-	//		// reload new probes textures and coefficients
-	//		if (result == true)
-	//		{
-	//			p->computeCoefficientsFromTexture(false);
-	//			p->bNeedsUpdate = false;
-	//		}
+			// reload new probes textures and coefficients
+			//if (result == true)
+			{
+				p->computeCoefficientsFromTexture(false);
+				p->bNeedsUpdate = false;
+			}
 
-	//	}
-	//}
+		}
+	}
 }
 
 bool ProbeStructure::isOutsideSceneBounds(G3D::Vector3 pos, float tolerance)
 {
-	return App::instance->m_scene.isOOB(pos, tolerance);
+	return App::instance->m_scene->isOOB(pos, tolerance);
 }
 
 
@@ -1092,6 +1111,10 @@ G3D::Vector3 ProbeStructure::reconstructSH(const G3D::Vector3& position, const G
         //int probeIndex = getProbeStartIndex(coords[i], firstProbePosition, dimensions, 1);
         int probeIndex = record.probeIndices[i];
         float weight = record.weights[i];
+        if (weight == 0)
+        {
+            continue;
+        }
 
         //if (this->outputToLog)
         //{
@@ -1132,4 +1155,106 @@ G3D::Vector3 ProbeStructure::reconstructSH(const G3D::Vector3& position, const G
     //rgb /= 3.141592654f;
 
     return rgb;
+}
+
+void ProbeStructure::generateProbes(std::string type)
+{
+    // system call to mitsuba
+    std::stringstream args;
+    args << m_sceneName.c_str() << " " << m_name.c_str() << " " << type;
+
+    runPythonScriptFromDataFiles("onecamera.py", args.str(), true);
+
+    for (Probe* p : probeList)
+    {
+        p->texture.reset();
+        p->texture = NULL;
+    }
+
+}
+
+void ProbeStructure::extractSHCoeffs()
+{
+    for (int i = 0; i < probeList.size(); ++i)
+    {
+        Probe* p = probeList[i];
+
+        p->computeCoefficientsFromTexture(true);
+    }
+
+    uploadToGPU();
+}
+
+void ProbeStructure::savePositions()
+{
+    std::fstream probeListFile = probeListFileHandle(false);
+
+    for (int i = 0; i < probeList.size(); ++i)
+    {
+        Probe* p = probeList[i];
+
+        // todo: ugh :(
+        G3D::Vector3 probePosition = p->manipulator->frame().translation;
+
+        std::string toWrite = std::to_string(probePosition[0]) + " " + std::to_string(probePosition[1]) + " " + std::to_string(probePosition[2]) + "\n";
+        probeListFile << toWrite;
+    }
+
+    probeListFile.close();
+}
+
+void ProbeStructure::uploadToGPU()
+{
+    SProbeStructure probeList;
+
+    for (int i = 0; i < probeCount(); ++i)
+    {
+        SProbe gpuProbe;
+        Probe* cpuProbe = getProbe(i);
+        for (int j = 0; j < 9; j += 1)
+        {
+            gpuProbe.coefficients[(3 * j)] = cpuProbe->coeffs[j].x;
+            gpuProbe.coefficients[(3 * j) + 1] = cpuProbe->coeffs[j].y;
+            gpuProbe.coefficients[(3 * j) + 2] = cpuProbe->coeffs[j].z;
+
+            gpuProbe.gradients[(9 * j) + 0] = cpuProbe->coeffGradients[j][0].x;
+            gpuProbe.gradients[(9 * j) + 1] = cpuProbe->coeffGradients[j][0].y;
+            gpuProbe.gradients[(9 * j) + 2] = cpuProbe->coeffGradients[j][0].z;
+
+            gpuProbe.gradients[(9 * j) + 3] = cpuProbe->coeffGradients[j][1].x;
+            gpuProbe.gradients[(9 * j) + 4] = cpuProbe->coeffGradients[j][1].y;
+            gpuProbe.gradients[(9 * j) + 5] = cpuProbe->coeffGradients[j][1].z;
+
+            gpuProbe.gradients[(9 * j) + 6] = cpuProbe->coeffGradients[j][2].x;
+            gpuProbe.gradients[(9 * j) + 7] = cpuProbe->coeffGradients[j][2].y;
+            gpuProbe.gradients[(9 * j) + 8] = cpuProbe->coeffGradients[j][2].z;
+
+        }
+        gpuProbe.position[0] = cpuProbe->position[0];
+        gpuProbe.position[1] = cpuProbe->position[1];
+        gpuProbe.position[2] = cpuProbe->position[2];
+        gpuProbe.position[3] = 0.0f;
+        probeList.probes[i] = gpuProbe;
+    }
+
+    for (int i = 0; i < m_dimensions.size(); ++i)
+    {
+        probeList.dimensions[i] = m_dimensions[i];
+    }
+    probeList.dimensions[3] = 0;;
+
+    probeList.firstProbePosition[0] = m_firstProbePosition[0];
+    probeList.firstProbePosition[1] = m_firstProbePosition[1];
+    probeList.firstProbePosition[2] = m_firstProbePosition[2];
+    probeList.firstProbePosition[3] = 0.0f;
+
+    probeList.step = m_step;
+
+    // Generate the SSBO holding probe information
+    GLuint mySSBO = 0;
+    glGenBuffers(1, &mySSBO);
+    glBindBuffer(GL_SHADER_STORAGE_BUFFER, mySSBO);
+    glBufferData(GL_SHADER_STORAGE_BUFFER, sizeof(probeList), &probeList, GL_DYNAMIC_DRAW);
+    glBindBufferBase(GL_SHADER_STORAGE_BUFFER, 0, mySSBO);
+    glBindBuffer(GL_SHADER_STORAGE_BUFFER, 0);
 }

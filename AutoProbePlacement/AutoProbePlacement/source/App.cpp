@@ -74,8 +74,8 @@ void App::onInit() {
     
 	createNewSampleSetWindow();
 	probeStructurePane = NULL;	
-	probeStructure = NULL;
-
+	m_probeStructure = NULL;
+    m_scene = NULL;
 	sampleSet = NULL;
 
 	integratorList.resize(EIntegrator::NUM_INTEGRATORS);
@@ -102,7 +102,8 @@ void App::onInit() {
     sphereModel = ArticulatedModel::create(spec);
 	spec.filename = System::findDataFile("../data-files/objs/square.obj");
 	squareModel = ArticulatedModel::create(spec);
-	spec.filename = System::findDataFile("../data-files/objs/bunny.obj");
+    spec.scale = 1.0f;
+    spec.filename = System::findDataFile("../data-files/objs/bunny.obj");
 	bunnyModel = ArticulatedModel::create(spec);
 
     spec.scale = 1.0f;
@@ -178,7 +179,6 @@ void App::onInit() {
 
     //Load the textures containing the SH coefficient values
     //loadSHTextures();
-	GApp::loadScene((String)"C:\\git\\AutoProbePlacement\\AutoProbePlacement\\data-files\\Scenes\\zcbox\\cbox.Scene.Any");
 
 	offlineRenderingOptions.numSamples = "256";
 	offlineRenderingOptions.height = "256";
@@ -187,14 +187,18 @@ void App::onInit() {
 
 	setActiveCamera(m_debugCamera);
 
-	loadScene("zcbox");
 }//end of onInit 
 
 void App::loadScene(String sceneName)
 {
 	lightPositions.clear();
 
-	m_scene = JScene(sceneName);
+	m_scene = new JScene(sceneName);
+
+
+    GApp::loadScene((String)"C:\\git\\AutoProbePlacement\\AutoProbePlacement\\data-files\\Scenes\\" + sceneName + "\\" + sceneName + ".Scene.Any");
+    setActiveCamera(m_debugCamera);
+
 }
 
 void App::initializeProbeStructure(String sceneName, String probeStructureName)
@@ -204,75 +208,23 @@ void App::initializeProbeStructure(String sceneName, String probeStructureName)
 
 	if (previousProbeStructure != "")
 	{
-		previousProbeStructure = probeStructure->m_name;
+		previousProbeStructure = m_probeStructure->m_name;
 	}
 	else
 	{
 		previousProbeStructure = probeStructureName;
 	}
 
-	if (probeStructure != NULL)
+	if (m_probeStructure != NULL)
 	{
-		delete(probeStructure);
+		delete(m_probeStructure);
 	}
 
-
-	probeStructure = new ProbeStructure(sceneName, probeStructureName);
-
-	for (int i = 0; i < probeStructure->probeCount(); ++i)
-	{
-		SProbe gpuProbe;
-		Probe* cpuProbe = probeStructure->getProbe(i);
-		for (int j = 0; j < 9; j += 1)
-		{
-			gpuProbe.coefficients[(3 * j)] = cpuProbe->coeffs[j].x;
-			gpuProbe.coefficients[(3 * j) + 1] = cpuProbe->coeffs[j].y;
-			gpuProbe.coefficients[(3 * j) + 2] = cpuProbe->coeffs[j].z;
-
-			gpuProbe.gradients[(9 * j) + 0] = cpuProbe->coeffGradients[j][0].x;
-			gpuProbe.gradients[(9 * j) + 1] = cpuProbe->coeffGradients[j][0].y;
-			gpuProbe.gradients[(9 * j) + 2] = cpuProbe->coeffGradients[j][0].z;
-
-			gpuProbe.gradients[(9 * j) + 3] = cpuProbe->coeffGradients[j][1].x;
-			gpuProbe.gradients[(9 * j) + 4] = cpuProbe->coeffGradients[j][1].y;
-			gpuProbe.gradients[(9 * j) + 5] = cpuProbe->coeffGradients[j][1].z;
-
-			gpuProbe.gradients[(9 * j) + 6] = cpuProbe->coeffGradients[j][2].x;
-			gpuProbe.gradients[(9 * j) + 7] = cpuProbe->coeffGradients[j][2].y;
-			gpuProbe.gradients[(9 * j) + 8] = cpuProbe->coeffGradients[j][2].z;
-
-		}
-		gpuProbe.position[0] = cpuProbe->position[0];
-		gpuProbe.position[1] = cpuProbe->position[1];
-		gpuProbe.position[2] = cpuProbe->position[2];
-		gpuProbe.position[3] = 0.0f;
-		probeList.probes[i] = gpuProbe;
-	}
-
-	for (int i = 0; i < probeStructure->m_dimensions.size(); ++i)
-	{
-		probeList.dimensions[i] = probeStructure->m_dimensions[i];
-	}
-	probeList.dimensions[3] = 0;;
-
-	probeList.firstProbePosition[0] = probeStructure->m_firstProbePosition[0];
-	probeList.firstProbePosition[1] = probeStructure->m_firstProbePosition[1];
-	probeList.firstProbePosition[2] = probeStructure->m_firstProbePosition[2];
-	probeList.firstProbePosition[3] = 0.0f;
-
-	probeList.step = probeStructure->m_step;
-
-	// Generate the SSBO holding probe information
-	GLuint mySSBO = 0;
-	glGenBuffers(1, &mySSBO);
-	glBindBuffer(GL_SHADER_STORAGE_BUFFER, mySSBO);
-	glBufferData(GL_SHADER_STORAGE_BUFFER, sizeof(probeList), &probeList, GL_DYNAMIC_DRAW);
-	glBindBufferBase(GL_SHADER_STORAGE_BUFFER, 0, mySSBO);
-	glBindBuffer(GL_SHADER_STORAGE_BUFFER, 0);
+	m_probeStructure = new ProbeStructure(sceneName, probeStructureName);
 
 	if (sampleSet)
 	{
-		sampleSet->probeStructure = probeStructure;
+		sampleSet->probeStructure = m_probeStructure;
 	}
 }
 
@@ -339,7 +291,7 @@ void App::renderActors(RenderDevice* rd)
 				args.setMacro("USE_SH_GRADIENTS", 1);
 			}
 
-			args.setMacro("AMT_INTERP_PROBES", probeStructure ? probeStructure->probeCount() : 0);
+			args.setMacro("AMT_INTERP_PROBES", m_probeStructure != NULL ? m_probeStructure->probeCount() : 0);
 			//args.setMacro("AMT_INTERP_PROBES", 9);
 			//setSHTexturesUniforms(args);
 			drawModel(rd, "SH_shader2.*", actor.getModel(), actor.getFrame(), args);
@@ -349,7 +301,7 @@ void App::renderActors(RenderDevice* rd)
 
 void App::drawProbes(RenderDevice* rd)
 {
-	G3D::Array<Probe*>& probeRenderList = showAllProbes ? probeStructure->probeList : probesToRender;
+	G3D::Array<Probe*>& probeRenderList = showAllProbes ? m_probeStructure->probeList : probesToRender;
 	Args args;
 
 	for (Probe* probe : probeRenderList)
@@ -385,7 +337,7 @@ void App::drawLights(RenderDevice* rd)
     Args args = Args();
     args.setUniform("multiplier", (float)1.0);
 
-	for (SceneLight light: m_scene.m_sceneLights)
+	for (SceneLight light: m_scene->m_sceneLights)
 	{
 		args.setUniform("uColor", light.color);
 		drawModel(rd, "color.*", sphereModel, CFrame(light.position), args);
@@ -402,7 +354,7 @@ void App::drawSurfaceSamples(RenderDevice* rd)
 void App::drawScene(RenderDevice* rd)
 {
     Args args;
-    for (int i = 0; i < m_scene.m_models.size(); i++)
+    for (int i = 0; i < m_scene->m_models.size(); i++)
 	{
         //if ((i == 5) && hideCeiling) continue;
 
@@ -415,20 +367,20 @@ void App::drawScene(RenderDevice* rd)
 		}
 		else
 		{
-			args.setUniform("uColor", m_scene.m_colors[i]);
-			drawModel(rd, "color.*", m_scene.m_models[i], CFrame(), args);
+			args.setUniform("uColor", m_scene->m_colors[i]);
+			drawModel(rd, "color.*", m_scene->m_models[i], CFrame(), args);
 		}
     }
 }
 
 void App::drawProbeLineSegments(RenderDevice* rd)
 {
-	for (int i = 0; i < probeStructure->lineArraySize(); i++){
-        Draw::lineSegment(probeStructure->getLineSegment(i), rd, Color3::yellow());
+	for (int i = 0; i < m_probeStructure->lineArraySize(); i++){
+        Draw::lineSegment(m_probeStructure->getLineSegment(i), rd, Color3::yellow());
      }
 
-	for (int i = 0; i < probeStructure->probeCount(); i++){
-		Probe* p = probeStructure->getProbe(i);
+	for (int i = 0; i < m_probeStructure->probeCount(); i++){
+		Probe* p = m_probeStructure->getProbe(i);
         Draw::lineSegment(LineSegment::fromTwoPoints(p->position, p->position+ p->normal*50.), rd, Color3::brown());
     }
 }
@@ -462,10 +414,12 @@ void App::onGraphics3D(RenderDevice* rd, Array<shared_ptr<Surface> >& surface3D)
 	}
 
 	////Draw Probes
-    if (probeStructure && (showInterpolationProbes || showAllProbes))
+    if (m_probeStructure && (showInterpolationProbes || showAllProbes))
 	{
 		drawProbes(rd);
     }
+
+    renderActors(rd);
 
  //   //Draw manipulator and other stuff
     rd->popState();
@@ -548,7 +502,7 @@ void App::addModel(String filename, Color3 color)
 	//	debugPrintf("Couldn't load file %s", filename);
 	//	return;
 	//}
-	//m_scene.m_colors.push_back(Vector3(color));
+	//m_scene->m_colors.push_back(Vector3(color));
 }
 
 void App::addLight(Point3 pos, Color3 color)
@@ -630,7 +584,7 @@ void App::generateSampleSetPositions()
 void App::generateSampleSetValues()
 {
 	std::stringstream args;
-	runPythonScriptFromDataFiles("IrradianceSensorRender.py", std::string(m_scene.m_name.c_str()) + " " + sampleSet->m_sampleSetName + " " + std::string((*samplesToSave).c_str()), false);
+	runPythonScriptFromDataFiles("IrradianceSensorRender.py", std::string(m_scene->m_name.c_str()) + " " + sampleSet->m_sampleSetName + " " + std::string((*samplesToSave).c_str()), false);
 	sampleSet->load(std::stoi((*samplesToSave).c_str()));
 }
 
@@ -640,23 +594,11 @@ void App::generateSampleSetValuesFromProbes()
     sampleSet->generateRGBValuesFromProbes(numSamples);
 }
 
-void App::saveProbeStructureUpdate()
-{
-	probeStructure->updateProbes(false);
-	updateProbeStructure();
-}
-
-void App::saveProbeStructureUpdateAll()
-{
-	probeStructure->updateProbes(true);
-	updateProbeStructure();
-}
-
 void App::switchEditProbeStructure()
 {
 	if (!bManipulateProbesEnabled)
 	{
-		for (Probe* p : probeStructure->probeList)
+		for (Probe* p : m_probeStructure->probeList)
 		{
 			addWidget(p->getManipulator());
 		}
@@ -664,7 +606,7 @@ void App::switchEditProbeStructure()
 	}
 	else
 	{
-		for (Probe* p : probeStructure->probeList)
+		for (Probe* p : m_probeStructure->probeList)
 		{
 			removeWidget(p->getManipulator());
 		}
@@ -689,7 +631,7 @@ void App::loadPreviousProbeStructure()
 	}
 	if (sampleSet)
 	{
-		sampleSet->probeStructure = probeStructure;
+		sampleSet->probeStructure = m_probeStructure;
 	}
 }
 
@@ -700,10 +642,10 @@ void App::updateSampleSet()
 	
 	//loadSurfaceSamples(selectedScene, sampleSetName);
 	int numSamples = std::stoi((*samplesToSave).c_str());
-	sampleSet = new SceneSampleSet(std::string(selectedScene.c_str()), std::string(sampleSetName.c_str()), m_scene.m_scale, numSamples);
-	if (probeStructure)
+	sampleSet = new SceneSampleSet(std::string(selectedScene.c_str()), std::string(sampleSetName.c_str()), m_scene->m_scale, numSamples);
+	if (m_probeStructure)
 	{
-		sampleSet->probeStructure = probeStructure;
+		sampleSet->probeStructure = m_probeStructure;
 	}
 }
 
@@ -720,9 +662,9 @@ void App::onAI(){
 		tryOptimization();
 	}
 
-	if (probeStructure)
+	if (m_probeStructure)
 	{
-		screenPrintf("ProbeStructure: %s", probeStructure->m_name.c_str());
+		screenPrintf("ProbeStructure: %s", m_probeStructure->m_name.c_str());
 	}
 	
 	//TODO: probe ray casting one day? if i find a real use for it
@@ -733,7 +675,7 @@ void App::onAI(){
 			bool keepProbes = (i == 0);
 			//actors[i].coefficients = triLinearInterpolation(i, &probeIndices, &weights, keepProbes);
 
-			ProbeInterpolationRecord iRec = probeStructure->getInterpolationProbeIndicesAndWeights(actors[i].getPosition());
+			ProbeInterpolationRecord iRec = m_probeStructure->getInterpolationProbeIndicesAndWeights(actors[i].getPosition());
 
 			//if (tetrahedralInterpolation(actors[i], &probeIndices, &weights))
 			{
@@ -745,7 +687,7 @@ void App::onAI(){
 				probesToRender.clear();
 				for (int i = 0; i < iRec.probeIndices.size(); ++i)
 				{
-					probesToRender.push_back(probeStructure->getProbe(iRec.probeIndices[i]));
+					probesToRender.push_back(m_probeStructure->getProbe(iRec.probeIndices[i]));
 				}
 			}
 		}
@@ -828,7 +770,7 @@ void App::createNewProbeStructureWindow()
 	pane->addTextBox("Name: ", &newProbeStructureOptions.name);
 	pane->addButton("Ok", [this]()
 	{
-		createNewSampleSet(m_scene.m_name, sNewSampleSetName);
+		createNewSampleSet(m_scene->m_name, sNewSampleSetName);
 	});
 	pane->addButton("Cancel", [this]()
 	{
@@ -859,7 +801,7 @@ void App::createNewSampleSetWindow()
 	pane->addTextBox("Name: ", &sNewSampleSetName);
 	pane->addButton("Ok", [this]()
 	{
-		createNewSampleSet(m_scene.m_name, sNewSampleSetName);
+		createNewSampleSet(m_scene->m_name, sNewSampleSetName);
 	});
 	pane->addButton("Cancel", [this]()
 	{
@@ -989,24 +931,52 @@ void App::updateProbeStructurePane()
 	probeStructurePane->beginRow();
 	G3D::Array<G3D::String> probeStructureList = getFoldersInFolder("../data-files/Scenes/" + selectedScene + "/ProbeStructures");
 
+    int currentIndex = 0;
+
+    if (m_probeStructure != NULL)
+    {
+        for (const G3D::String& s : probeStructureList)
+        {
+            if (s == m_probeStructure->name())
+            {
+                break;
+            }
+            currentIndex++;
+        }
+    }
+
 	scenePane.probeStructureList = probeStructurePane->addDropDownList("ProbeStructure", probeStructureList, NULL, GuiControl::Callback(this, &App::updateProbeStructure));
-	probeStructurePane->addButton(GuiText("Switch Back"), GuiControl::Callback(this, &App::loadPreviousProbeStructure), GuiTheme::TOOL_BUTTON_STYLE);
+    scenePane.probeStructureList->setSelectedIndex(currentIndex);
+
+    probeStructurePane->addButton(GuiText("Switch Back"), GuiControl::Callback(this, &App::loadPreviousProbeStructure), GuiTheme::TOOL_BUTTON_STYLE);
 	probeStructurePane->addButton(GuiText("Edit mode"), GuiControl::Callback(this, &App::switchEditProbeStructure), GuiTheme::TOOL_BUTTON_STYLE);
-	probeStructurePane->addButton(GuiText("Save"), GuiControl::Callback(this, &App::saveProbeStructureUpdate), GuiTheme::TOOL_BUTTON_STYLE);
-	probeStructurePane->addButton(GuiText("Update All"), GuiControl::Callback(this, &App::saveProbeStructureUpdateAll), GuiTheme::TOOL_BUTTON_STYLE);
+
+    probeStructurePane->addButton(GuiText("Save positions"), [this]() 
+    { 	
+        m_probeStructure->savePositions();
+        updateProbeStructure(); 
+    } 
+    , GuiTheme::TOOL_BUTTON_STYLE);
+
+    probeStructurePane->addButton(GuiText("Update Probes (all)"), [this]() { m_probeStructure->generateProbes("all"); }, GuiTheme::TOOL_BUTTON_STYLE);
+    probeStructurePane->addButton(GuiText("Update Probes (probes)"), [this]() { m_probeStructure->generateProbes("Probes"); }, GuiTheme::TOOL_BUTTON_STYLE);
+    probeStructurePane->addButton(GuiText("Update Probes (positions)"), [this]() { m_probeStructure->generateProbes("Positions"); }, GuiTheme::TOOL_BUTTON_STYLE);
+    probeStructurePane->addButton(GuiText("Update Probes (normals)"), [this]() { m_probeStructure->generateProbes("Normals"); }, GuiTheme::TOOL_BUTTON_STYLE);
+	probeStructurePane->addButton(GuiText("Extract coeffs"), [this]() { m_probeStructure->extractSHCoeffs(); }, GuiTheme::TOOL_BUTTON_STYLE);
+    probeStructurePane->addCheckBox("Use gradients", &useSHGradients);
 
 	probeStructurePane->endRow();
 
-	if (probeStructure != NULL)
+	if (m_probeStructure != NULL)
 	{
 		probeStructurePane->beginRow();
 
-		const G3D::String name = "Currently loaded : " + probeStructure->name();
+		const G3D::String name = "Currently loaded : " + m_probeStructure->name();
 		probeStructurePane->addLabel(name);
-		const G3D::String type = "Type : " + probeStructure->type();
+		const G3D::String type = "Type : " + m_probeStructure->type();
 		probeStructurePane->addLabel(type);
-		probeStructurePane->addLabel("Number of probes : " + probeStructure->type());
-		probeStructurePane->addLabel("Gamma : " + String(probeStructure->gamma()));
+		probeStructurePane->addLabel("Number of probes : " + m_probeStructure->type());
+		probeStructurePane->addLabel("Gamma : " + String(m_probeStructure->gamma()));
 
 
 		probeStructurePane->endRow();
@@ -1015,7 +985,10 @@ void App::updateProbeStructurePane()
 	{
 		probeStructurePane->addLabel("No probe structure loaded");
 	}
-	probeStructurePane->addButton(GuiText("Save"), GuiControl::Callback(this, &App::saveProbeStructureUpdate), GuiTheme::TOOL_BUTTON_STYLE);
+
+    // Dummy hidden button so the labels get shown
+    G3D::GuiButton* button = probeStructurePane->addButton(GuiText(""), [this]() {});
+    button->setVisible(false);
 }
 
 
@@ -1041,7 +1014,7 @@ void App::addSampleSetPane(GuiTabPane* tabPane)
 	tab->addButton("Generate Positions", GuiControl::Callback(this, &App::generateSampleSetPositions), GuiTheme::TOOL_BUTTON_STYLE);
     tab->addButton("Generate Values (mitsuba)", GuiControl::Callback(this, &App::generateSampleSetValues), GuiTheme::TOOL_BUTTON_STYLE);
     tab->addButton("Generate Values (probes)", GuiControl::Callback(this, &App::generateSampleSetValuesFromProbes), GuiTheme::TOOL_BUTTON_STYLE);
-	tab->addCheckBox("write samples", &saveSample);
+    tab->addCheckBox("write samples", &saveSample);
 	tab->endRow();
 }
 
@@ -1057,4 +1030,14 @@ void App::updateSelectedScenePane()
 
 	G3D::Array<G3D::String> sampleSetList = getFoldersInFolder("../data-files/Scenes/" + selectedScene + "/SampleSets");
 	scenePane.sampleSetList->setList(sampleSetList);
+}
+
+void App::onUserInput(UserInput* userInput)
+{
+    GApp::onUserInput(userInput);
+
+    if (userInput->keyDown(GKey('u')))
+    {
+        updateProbeStructurePane();
+    }
 }

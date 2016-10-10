@@ -197,17 +197,24 @@ def getSceneAndStructureFromCommandLineArguments(args):
 	return (sceneName, structureName);
 
 
-def getParamFromLine(line, func = float):
+def getParamFromLine(line):
 	splitLine = line.split();
+	length = len(splitLine);
+
+	print(splitLine)
+	toReturn = [];
+	toReturn.append(splitLine[0]);
+
 	splitLine.pop(0);
 	
 	length = len(splitLine);
 	
 	if (length == 1):
-		return func(splitLine[0]);
+		toReturn.append(splitLine[0]);
 	else:
-		return [func(x) for x in splitLine];
+		toReturn.append([x for x in splitLine]);
 		
+	return toReturn;
 def readSceneInfo(sceneName):
 	# define the paths to the info files
 	scenePath = "../Scenes/" + sceneName;
@@ -243,30 +250,33 @@ def readSceneAndProbeStructureInfo(sceneName, probeStructureName):
 	returnInfo = {};
 
 	# Look for the probe structure type to see what info we'll need
-	for line in probeStructureInfo:
-		if line.startswith("type"):
-			type = getParamFromLine(line, str);
-			returnInfo["type"] = type;
+	# for line in probeStructureInfo:
+	# 	if line.startswith("type"):
+	# 		type = getParamFromLine(line);
+	# 		returnInfo[type] = type;
 
-	if (returnInfo["type"] == "tetrahedral"):
-		seekedInfo = ["scale", "dimensions"];
-	else:
-		seekedInfo = ["scale", "step", "dimensions", "firstProbePosition", "minBound", "maxBound"];
+	# if (returnInfo["type"] == "tetrahedral"):
+	# 	seekedInfo = ["scale", "dimensions"];
+	# else:
+	# 	seekedInfo = ["scale", "step", "dimensions", "firstProbePosition", "minBound", "maxBound"];
 
-	seekedInfo.append("gamma");
-	seekedInfo.append("sampleCount");
-	seekedInfo.append("width");
-	seekedInfo.append("height");
+	# seekedInfo.append("gamma");
+	# seekedInfo.append("sampleCount");
+	# seekedInfo.append("width");
+	# seekedInfo.append("height");
+	# seekedInfo.append("integrator");
 		
 	for line in sceneInfo:
-		for info in seekedInfo:
-			if line.startswith(info):
-				returnInfo[info] = getParamFromLine(line);
+		if (line == "\n"):
+			continue;
+		param = getParamFromLine(line);
+		returnInfo[param[0]] = param[1] 
 			
 	for line in probeStructureInfo:
-		for info in seekedInfo:
-			if line.startswith(info):
-				returnInfo[info] = getParamFromLine(line);
+		if (line == "\n"):
+			continue;
+		param = getParamFromLine(line);
+		returnInfo[param[0]] = param[1] 
 
 	return returnInfo;
 

@@ -10,6 +10,22 @@
 #include <fstream>
 #include "Actor.h"
 
+struct SProbe
+{
+    float position[4];
+    float coefficients[27];
+    float gradients[81];
+};
+
+struct SProbeStructure
+{
+    SProbe probes[343];
+    int dimensions[4]; // int3 padded into int4
+    float firstProbePosition[4];  // vec3 padded into vec4
+    float step;
+};
+
+
 struct ProbeInterpolationRecord
 {
 	G3D::Array<int> probeIndices;
@@ -24,7 +40,6 @@ enum EProbeStructureType
 	WeightedNearestNeighbour = 3,
 	NUM_TYPES = 4
 };
-
 
 namespace std {
     template <>
@@ -99,9 +114,19 @@ public:
 	G3D::Array<int> getInterpolatingProbeIndices(const G3D::Vector3& pos);
 
 
+    std::fstream probeListFileHandle(bool reading);
+
     G3D::Vector3 ProbeStructure::reconstructSH(const G3D::Vector3& position, const G3D::Vector3& normal);
 
-	void loadProbeInfo();
+    void generateProbes(std::string type);
+
+    void extractSHCoeffs();
+
+	void loadProbeStructureInfo();
+
+    void savePositions();
+
+    void uploadToGPU();
 
 	float m_step;
 	std::vector<int> m_dimensions;

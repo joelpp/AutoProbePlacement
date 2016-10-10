@@ -149,10 +149,10 @@ void Probe::computeCoefficientsFromTexture(bool alsoSet)
 			
 			Color3 radiance;
 			probeTexture->get(Point2int32(w, h), radiance);
-
+            
 			Color3 cPosition;
 			positionTexture->get(Point2int32(w, h), cPosition);
-			Vector3 vPosition = 700.f * ((Vector3(cPosition) * 2) - Vector3(1,1,1));
+			Vector3 vPosition = 25.f * ((Vector3(cPosition) * 2) - Vector3(1,1,1));
 
 			Color3 cNormal;
 			normalTexture->get(Point2int32(w, h), cNormal);

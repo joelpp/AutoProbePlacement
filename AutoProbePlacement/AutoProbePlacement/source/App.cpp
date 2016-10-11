@@ -5,6 +5,7 @@
 #include "SceneSampleSet.h"
 #include "ProbeRenderer.h"
 #include "Helpers.h"
+#include "Integrator.h"
 
 /*
     Debugging Helpers
@@ -929,24 +930,10 @@ void App::updateProbeStructurePane()
 	G3D::String selectedScene = scenePane.selectedSceneList->selectedValue();
 
 	probeStructurePane->beginRow();
+
 	G3D::Array<G3D::String> probeStructureList = getFoldersInFolder("../data-files/Scenes/" + selectedScene + "/ProbeStructures");
-
-    int currentIndex = 0;
-
-    if (m_probeStructure != NULL)
-    {
-        for (const G3D::String& s : probeStructureList)
-        {
-            if (s == m_probeStructure->name())
-            {
-                break;
-            }
-            currentIndex++;
-        }
-    }
-
 	scenePane.probeStructureList = probeStructurePane->addDropDownList("ProbeStructure", probeStructureList, NULL, GuiControl::Callback(this, &App::updateProbeStructure));
-    scenePane.probeStructureList->setSelectedIndex(currentIndex);
+
 
     probeStructurePane->addButton(GuiText("Switch Back"), GuiControl::Callback(this, &App::loadPreviousProbeStructure), GuiTheme::TOOL_BUTTON_STYLE);
 	probeStructurePane->addButton(GuiText("Edit mode"), GuiControl::Callback(this, &App::switchEditProbeStructure), GuiTheme::TOOL_BUTTON_STYLE);
@@ -969,15 +956,34 @@ void App::updateProbeStructurePane()
 
 	if (m_probeStructure != NULL)
 	{
+		int currentPSIndex = probeStructureList.findIndex(m_probeStructure->name());
+		scenePane.probeStructureList->setSelectedIndex(currentPSIndex);
+
+
 		probeStructurePane->beginRow();
 
 		const G3D::String name = "Currently loaded : " + m_probeStructure->name();
 		probeStructurePane->addLabel(name);
 		const G3D::String type = "Type : " + m_probeStructure->type();
 		probeStructurePane->addLabel(type);
-		probeStructurePane->addLabel("Number of probes : " + m_probeStructure->type());
-		probeStructurePane->addLabel("Gamma : " + String(m_probeStructure->gamma()));
+		probeStructurePane->addLabel("Number of probes : " + String(std::to_string(m_probeStructure->probeCount())));
 
+		probeStructurePanelOptions.gamma = String(std::to_string(m_probeStructure->gamma()));
+		probeStructurePane->addTextBox("Gamma", &(probeStructurePanelOptions.gamma));
+
+		int currentIntegratorIndex = integratorList.findIndex(m_probeStructure->m_integrator);
+		G3D::GuiDropDownList* list = probeStructurePane->addDropDownList("Integrator", integratorList, &(probeStructurePanelOptions.integratorIndex), [this]() 
+		{ 
+			String selected = integratorList[probeStructurePanelOptions.integratorIndex];
+			m_probeStructure->setIntegrator(selected);
+		});
+		list->setSelectedIndex(currentIntegratorIndex);
+
+		probeStructurePane->addButton(GuiText("Save infos"), [this]() 
+		{
+			m_probeStructure->setGamma(std::stof(probeStructurePanelOptions.gamma.c_str()));
+			m_probeStructure->saveInfoFile(); 
+		}, GuiTheme::TOOL_BUTTON_STYLE);
 
 		probeStructurePane->endRow();
 	}

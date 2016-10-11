@@ -64,7 +64,7 @@ protected:
 
 public:
 	
-	static std::vector<std::string> typeMap;
+	static Array<G3D::String> typeMap;
 	EProbeStructureType m_type;
 	inline void createTypeMap();
 
@@ -114,9 +114,10 @@ public:
 	G3D::Array<int> getInterpolatingProbeIndices(const G3D::Vector3& pos);
 
 
-    std::fstream probeListFileHandle(bool reading);
+	std::fstream probeListFileHandle(bool reading);
+	std::fstream infoFileHandle(bool reading);
 
-    G3D::Vector3 ProbeStructure::reconstructSH(const G3D::Vector3& position, const G3D::Vector3& normal);
+    G3D::Vector3 reconstructSH(const G3D::Vector3& position, const G3D::Vector3& normal);
 
     void generateProbes(std::string type);
 
@@ -128,6 +129,14 @@ public:
 
     void uploadToGPU();
 
+	void setIntegrator(String& integrator);
+
+	void setGamma(float gamma);
+
+	void setType(String& type);
+
+	void saveInfoFile();
+
 	float m_step;
 	std::vector<int> m_dimensions;
 	float m_firstProbePosition[3];
@@ -135,6 +144,7 @@ public:
 	String m_name;
 	String m_sceneName;
 	float m_gamma;
+	String m_integrator;
 
 };
 

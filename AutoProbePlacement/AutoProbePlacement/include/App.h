@@ -55,12 +55,11 @@ struct SProbeStructureCreationOptions
 	Vector3 dimensions;
 };
 
-enum EIntegrator
+struct SProbeStructurePanel
 {
-	Path = 0,
-	Indirect,
-	Direct,
-	NUM_INTEGRATORS = Direct + 1
+	int typeIndex;
+	int integratorIndex;
+	String gamma;
 };
 
 
@@ -354,6 +353,7 @@ public:
 	shared_ptr<GuiWindow> windowNewSampleSet;
 	shared_ptr<GuiWindow> windowNewProbeStructure;
 	SOfflineRenderingOptions offlineRenderingOptions;
+	SProbeStructurePanel probeStructurePanelOptions;
 
 	G3D::Array<G3D::String> integratorList;
 	G3D::Array<G3D::String> filmTypeList;

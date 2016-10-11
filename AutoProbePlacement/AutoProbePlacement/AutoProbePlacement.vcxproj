@@ -177,6 +177,7 @@
     <ClInclude Include="include\tetgen.h" />
     <ClInclude Include="include\Tetrahedron.h" />
     <ClInclude Include="include\Transform.h" />
+    <ClInclude Include="include\Integrator.h" />
     <ClInclude Include="TrilinearProbeStructure.h" />
   </ItemGroup>
   <ItemGroup>

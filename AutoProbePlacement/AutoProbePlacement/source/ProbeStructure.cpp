@@ -10,7 +10,7 @@
 
 
 App* App::instance;
-std::vector<std::string> ProbeStructure::typeMap;
+G3D::Array<G3D::String> ProbeStructure::typeMap;
 
 inline void ProbeStructure::createTypeMap()
 {
@@ -92,12 +92,11 @@ void ProbeStructure::loadProbeStructureInfo()
 		splitLine.remove(0);
 		if (param == "type")
 		{
-			std::string s = std::string(splitLine[0].c_str());
-			auto it = std::find(typeMap.begin(), typeMap.end(), s);
-			if (it != typeMap.end())
-			{
-				this->m_type = EProbeStructureType( (int) std::distance(typeMap.begin(), it) );
-			}
+			
+			String& s = splitLine[0];
+
+			this->m_type = EProbeStructureType((int)typeMap.findIndex(s) );
+
 		}
 		if (param == "step")
 		{
@@ -119,6 +118,10 @@ void ProbeStructure::loadProbeStructureInfo()
 		else if (param == "gamma")
 		{
 			this->m_gamma = std::stof(splitLine[0].c_str());
+		}
+		else if (param == "integrator")
+		{
+			this->m_integrator = splitLine[0];
 		}
 
 
@@ -937,6 +940,27 @@ std::fstream ProbeStructure::probeListFileHandle(bool reading)
     return file;
 }
 
+std::fstream ProbeStructure::infoFileHandle(bool reading)
+{
+	int operation = reading ? std::fstream::in : std::fstream::out;
+	std::fstream file((probeStructurePath + "/info.txt").c_str(), operation);
+
+	if (!file || !file.is_open())
+	{
+		if (reading)
+		{
+			debugPrintf("Failed to open info file for reading.");
+
+		}
+		else
+		{
+			debugPrintf("Failed to open info file for writing.");
+		}
+	}
+
+	return file;
+}
+
 
 void ProbeStructure::updateProbes(bool updateAll)
 {
@@ -1257,4 +1281,34 @@ void ProbeStructure::uploadToGPU()
     glBufferData(GL_SHADER_STORAGE_BUFFER, sizeof(probeList), &probeList, GL_DYNAMIC_DRAW);
     glBindBufferBase(GL_SHADER_STORAGE_BUFFER, 0, mySSBO);
     glBindBuffer(GL_SHADER_STORAGE_BUFFER, 0);
+}
+
+void ProbeStructure::setIntegrator(String& integrator)
+{
+	this->m_integrator = integrator;
+
+}
+
+void ProbeStructure::setGamma(float gamma)
+{
+	this->m_gamma = gamma;
+
+}
+
+void ProbeStructure::setType(String& type)
+{
+	this->m_type = (EProbeStructureType)(int)(typeMap.findIndex(type));
+}
+
+void ProbeStructure::saveInfoFile()
+{
+	std::fstream infoFile = infoFileHandle(false);
+
+	infoFile << "type"			<< " " << std::string(typeMap[m_type].c_str())	<< std::endl;
+	infoFile << "dimensions"	<< " " << probeCount()							<< std::endl;
+	infoFile << "integrator"	<< " " << std::string(m_integrator.c_str())		<< std::endl;
+	infoFile << "gamma"			<< " " << m_gamma								<< std::endl;
+	infoFile << "sampleCount"	<< " " << 128									<< std::endl;
+	infoFile << "width"			<< " " << 128									<< std::endl;
+	infoFile << "height"		<< " " << 64									<< std::endl;
 }

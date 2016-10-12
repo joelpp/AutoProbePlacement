@@ -9,7 +9,33 @@
 
 /*
     Debugging Helpers
-*/
+ */
+#define DE_(x) debugPrintf(#x);debugPrintf("\n\n");
+#define DES(x) debugPrintf(#x);debugPrintf(": %s\n",x.c_str());
+#define DEB(x) debugPrintf(#x);debugPrintf(": %f\n",x)
+#define DEB2(x,y) debugPrintf(#x);debugPrintf(": %f\t",x);debugPrintf(#y);debugPrintf(": %f\n",y)
+#define DEB3(x,y,z) debugPrintf(#x);debugPrintf(": %f\t",x);debugPrintf(#y);debugPrintf(": %f\t",y);debugPrintf(#z);debugPrintf(": %f\n",z)
+#define DEI(x) debugPrintf(#x);debugPrintf(": %d\n",x)
+#define DEI2(x,y) debugPrintf(#x);debugPrintf(": %d\t",x);debugPrintf(#y);debugPrintf(": %d\n",y)
+#define DEI3(x,y,z) debugPrintf(#x);debugPrintf(": %d\t",x);debugPrintf(#y);debugPrintf(": %d\t",y);debugPrintf(#z);debugPrintf(": %d\n",z)
+#define DEV2(v) debugPrintf(#v);debugPrintf(": (%f,\t%f)\n",v.x,v.y)
+#define DEV3(v) debugPrintf(#v);debugPrintf(": (%f,\t%f,\t%f)\n",v.x,v.y,v.z)
+#define DEV4(v) debugPrintf(#v);debugPrintf(": (%f,\t%f,\t%f,\t%f)\n",v.x,v.y,v.z,v.w)
+#define DEC(v) debugPrintf(#v);debugPrintf(": (%f,\t%f,\t%f)\n",v.r,v.g,v.b)
+#define DEAV3(x) debugPrintf(#x); for(int num = 0; num < x.size(); num++){ debugPrintf(", [num]: (%s)\n",x[num].toString().c_str()); debugPrintf("\n");}
+
+G3D_START_AT_MAIN();
+
+// Function Declarations
+float legendreP(int l_, int m_, float z);
+float SH(int m, int l, Point3 pos);
+float S(int m, float x, float y);
+float C(int m, float x, float y);
+
+float findDistance(Vector3 v1, Vector3 v2);
+Vector3 transform(Vector3 old);
+
+
 
 int main(int argc, char** argv) {
 
@@ -86,6 +112,7 @@ void App::onInit() {
 	//spec.filename = System::findDataFile("../data-files/Scenes/ZScene/objs/largegreenwall.obj");
 	//sceneModel = ArticulatedModel::create(spec);
 
+
     //Set Critical settings
     // spherePosition = Point3(0,4.5,0);
     lightPosition = Point3(0,4,0);
@@ -121,14 +148,14 @@ void App::onInit() {
     maxDrawBand = 8;
     shadingMultiplier = 1.0f;
     sampleMultiplier = 1.0f;
+
     lightIntensity = 1;
     sceneTextureIntensity = 1.0;
     extrapolationT = 0;
     smallestBaryCoord = -1;
-    numPassesLeft = 0;
-    timer = 0;
 
-    numOptimizationSamples = "0";
+    numPassesLeft = 0;
+
     maxSamplesPointsToDraw = "0";
     samplesToSave = new String("0");
     SampleSetOutputName = new String("SampleSetOutputName");
@@ -137,6 +164,7 @@ void App::onInit() {
     actorSpawnZ = String("0");
     tbNumPassesLeft = String("1");
 
+	timer = 0;
 	m_activeCamera->setPosition(Point3(0,3,3));
 	sampleDropDownIndex = 0;
 	tetgenString = "../data-files/tetgen/44/";
@@ -147,11 +175,13 @@ void App::onInit() {
 		totalNumberOfCoeffs += 2*i + 1; 
 	}
 
+
     createDeveloperHUD();
 
     //Add sliders for rendering parameters
 	addOneActor();
     makeGui();
+
 
     //Load the textures containing the SH coefficient values
     //loadSHTextures();
@@ -519,49 +549,49 @@ void App::clearSampleSetValues()
 {
 	if (sampleSet != NULL)
 	{
-sampleSet->clearValues();
-    }
+		sampleSet->clearValues();
+	}
 }
 
 void App::clearSampleSetPositions()
 {
-    if (sampleSet != NULL)
-    {
-        sampleSet->clearPositions();
-    }
+	if (sampleSet != NULL)
+	{
+		sampleSet->clearPositions();
+	}
 }
 
 void App::reloadSampleSet()
 {
-    if (sampleSet != NULL)
-    {
-        sampleSet->load(std::stoi((*samplesToSave).c_str()));
-    }
+	if (sampleSet != NULL)
+	{
+		sampleSet->load(std::stoi((*samplesToSave).c_str()));
+	}
 }
 
 void App::generateSampleSetPositions()
 {
-    // generate n random points and store their colors, compare to the color in the corresponding texture , add to a cost function
-    int n = atoi(samplesToSave->c_str());
-    Vector2 UV, IJ;
-    Vector3 N, P;
-    int selectedModel;
+	// generate n random points and store their colors, compare to the color in the corresponding texture , add to a cost function
+	int n = atoi(samplesToSave->c_str());
+	Vector2 UV, IJ;
+	Vector3 N, P;
+	int selectedModel;
 
-    for (int i = 0; i < n; i++)
-    {
-        clearAllActors();
-        SceneSample ss = generateSceneSample(&selectedModel, &P, &UV, &N, i);
-        sampleSet->addSample(ss);
+	for (int i = 0; i < n; i++)
+	{
+		clearAllActors();
+		SceneSample ss = generateSceneSample(&selectedModel, &P, &UV, &N, i);
+		sampleSet->addSample(ss);
 
-    }
-    sampleSet->save();
+	}
+	sampleSet->save();
 }
 
 void App::generateSampleSetValues()
 {
-    std::stringstream args;
-    runPythonScriptFromDataFiles("IrradianceSensorRender.py", std::string(m_scene->m_name.c_str()) + " " + sampleSet->m_sampleSetName + " " + std::string((*samplesToSave).c_str()), false);
-    sampleSet->load(std::stoi((*samplesToSave).c_str()));
+	std::stringstream args;
+	runPythonScriptFromDataFiles("IrradianceSensorRender.py", std::string(m_scene->m_name.c_str()) + " " + sampleSet->m_sampleSetName + " " + std::string((*samplesToSave).c_str()), false);
+	sampleSet->load(std::stoi((*samplesToSave).c_str()));
 }
 
 void App::generateSampleSetValuesFromProbes()
@@ -572,58 +602,54 @@ void App::generateSampleSetValuesFromProbes()
 
 void App::switchEditProbeStructure()
 {
-    if (!bManipulateProbesEnabled)
-    {
-        for (Probe* p : m_probeStructure->probeList)
-        {
-            addWidget(p->getManipulator());
-        }
-        bManipulateProbesEnabled = true;
-    }
-    else
-    {
-        for (Probe* p : m_probeStructure->probeList)
-        {
-            removeWidget(p->getManipulator());
-        }
-        bManipulateProbesEnabled = false;
-    }
-
+	if (!bManipulateProbesEnabled)
+	{
+		for (Probe* p : m_probeStructure->probeList)
+		{
+			addWidget(p->getManipulator());
+		}
+		bManipulateProbesEnabled = true;
+	}
+	else
+	{
+		for (Probe* p : m_probeStructure->probeList)
+		{
+			removeWidget(p->getManipulator());
+		}
+		bManipulateProbesEnabled = false;
+	}
+	
 }
 
 void App::updateProbeStructure()
 {
-    G3D::String selectedScene = scenePane.selectedSceneList->selectedValue();
-    G3D::String probeStructureName = scenePane.probeStructureList->selectedValue();
-    initializeProbeStructure(selectedScene, probeStructureName);
-    updateProbeStructurePane();
+	G3D::String selectedScene = scenePane.selectedSceneList->selectedValue();
+	G3D::String probeStructureName = scenePane.probeStructureList->selectedValue();
+	initializeProbeStructure(selectedScene, probeStructureName);
+	updateProbeStructurePane();
 }
 
 void App::loadPreviousProbeStructure()
 {
-    if (previousProbeStructure != "")
-    {
-        initializeProbeStructure(scenePane.selectedSceneList->selectedValue(), previousProbeStructure);
-    }
-    if (sampleSet)
-    {
-        sampleSet->probeStructure = m_probeStructure;
-    }
+	if (previousProbeStructure != "")
+	{
+		initializeProbeStructure(scenePane.selectedSceneList->selectedValue(), previousProbeStructure);
+	}
+	if (sampleSet)
+	{
+		sampleSet->probeStructure = m_probeStructure;
+	}
 }
 
 void App::updateSampleSet()
 {
-    G3D::String selectedScene = scenePane.selectedSceneList->selectedValue();
-    G3D::String sampleSetName = scenePane.sampleSetList->selectedValue();
-
-    //loadSurfaceSamples(selectedScene, sampleSetName);
-    int numSamples = std::stoi((*samplesToSave).c_str());
-    if (sampleSet != NULL)
-    {
-        delete sampleSet;
-    }
+	G3D::String selectedScene = scenePane.selectedSceneList->selectedValue();
+	G3D::String sampleSetName = scenePane.sampleSetList->selectedValue();
+	
+	//loadSurfaceSamples(selectedScene, sampleSetName);
+	int numSamples = std::stoi((*samplesToSave).c_str());
 	sampleSet = new SceneSampleSet(std::string(selectedScene.c_str()), std::string(sampleSetName.c_str()), m_scene->m_scale, numSamples);
-	if (m_probeStructure != NULL)
+	if (m_probeStructure)
 	{
 		sampleSet->probeStructure = m_probeStructure;
 	}
@@ -640,7 +666,6 @@ void App::onAI(){
 	if (numPassesLeft > 0)
 	{
 		tryOptimization();
-        numPassesLeft--;
 	}
 
 	if (m_probeStructure)

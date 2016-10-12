@@ -5,10 +5,6 @@
 #include "Helpers.h"
 #include "SH.h"
 
-#define DEAV3(x) debugPrintf(#x); for(int num = 0; num < x.size(); num++){ debugPrintf(", [num]: (%s)\n",x[num].toString().c_str()); debugPrintf("\n");}
-
-
-
 App* App::instance;
 G3D::Array<G3D::String> ProbeStructure::typeMap;
 
@@ -1097,7 +1093,7 @@ void ProbeStructure::displaceProbesWithGradient(std::vector<float>& displacement
 		G3D::Vector3& displacement = G3D::Vector3(displacements[counter * 3 + 0],
 												  displacements[counter * 3 + 1],
 												  displacements[counter * 3 + 2]);
-
+        displacement /= 5.f;
 		Probe* probe = probeList[counter];
 
 		// Start by sending the probe to its new location
@@ -1119,7 +1115,7 @@ void ProbeStructure::displaceProbesWithGradient(std::vector<float>& displacement
 			}
 			
 		}
-		DEAV3(probe->coeffs);
+		//DEAV3(probe->coeffs);
 	}
 }
 

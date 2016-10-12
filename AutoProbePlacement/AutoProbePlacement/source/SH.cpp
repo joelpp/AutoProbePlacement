@@ -179,6 +179,7 @@ SHGradient SH::gradients(Vector3 dir)
 	float z = dir[2];
 
 	float x2pz2 = pow(x,2) + pow(z,2);
+    float EPSILON = 1e-5;
 
 	for (int i =0 ; i < NumCoefficients; ++i)
 	{
@@ -199,7 +200,7 @@ SHGradient SH::gradients(Vector3 dir)
 			float legendrePLy = legendreP(l, 0, y);
 			float legendreP1Ly = legendreP(l + 1, 0, y);
 
-			if (x2pz2 != 0)
+			if (x2pz2 > EPSILON)
 			{
 				grad[AXIS_X][i] = -( (1 + l) * sqrt1Plus2l * x * y * (y * legendrePLy - legendreP1Ly) ) / (2.f * sqrtPi * x2pz2);
 				grad[AXIS_Z][i] = -( (1 + l) * sqrt1Plus2l * y * z * (y * legendrePLy - legendreP1Ly) ) / (2.f * sqrtPi * x2pz2);
@@ -217,7 +218,7 @@ SHGradient SH::gradients(Vector3 dir)
 			float legendreP1Lmy = legendreP(l + 1, m, y);
 			float legendrePlmy = legendreP(l, m, y);
 			
-			if (x2pz2 != 0)
+			if (x2pz2 > EPSILON)
 			{
 				grad[AXIS_X][i] = ( (sqrt1Plus2l * factLminusAbsM) / factLplusAbsM ) * ( (1 + l - m) * x * y * cosMaXZ * legendreP1Lmy + legendrePlmy * ( -((1 + l) * x * pow(y, 2) * cosMaXZ) + m * z * sinMaXZ) ) / (sqrt2Pi * x2pz2);
 				grad[AXIS_Z][i] = -( (sqrt1Plus2l * factLminusAbsM) / factLplusAbsM) * ( (-1 - l + m) * y * z * cosMaXZ * legendreP1Lmy +  legendrePlmy * ( (1 + l) * z *pow(y, 2) * cosMaXZ + m * x  * sinMaXZ) ) / (sqrt2Pi * x2pz2);
@@ -234,7 +235,7 @@ SHGradient SH::gradients(Vector3 dir)
 			float legendreP1Lminusmy = legendreP(l + 1, -m, y);
 			float legendrePlminusmy = legendreP(l, -m, y);
 
-			if (x2pz2 != 0)
+			if (x2pz2 > EPSILON)
 			{
 				grad[AXIS_X][i] = ( (sqrt1Plus2l * factLminusAbsM) / factLplusAbsM ) * ( -((1 + l + m) * x * y * legendreP1Lminusmy * sinMaXZ ) + legendrePlminusmy * ( m * z  * cosMaXZ + (1 + l) * x *pow(y, 2) * sinMaXZ) ) / (sqrt2Pi * x2pz2);
 				grad[AXIS_Z][i] = ( (sqrt1Plus2l * factLminusAbsM) / factLplusAbsM ) * ( -( (1 + l + m) * y * z * legendreP1Lminusmy * sinMaXZ ) + legendrePlminusmy * (-(m * x  * cosMaXZ) + (1 + l) * pow(y, 2) * z * sinMaXZ)) / (sqrt2Pi * x2pz2);

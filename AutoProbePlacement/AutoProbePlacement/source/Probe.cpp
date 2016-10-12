@@ -248,14 +248,19 @@ void Probe::computeCoefficientsFromTexture(bool alsoSet)
 	coeffFile.precision(20);
 	gradientFile.precision(20);
 
+    char channels[3] = {'R', 'G', 'B'};
+
 	for (int i = 0 ; i < NumCoeffs; ++i)
 	{
-		coeffFile << tempCoeffs[i][0] << std::endl;
+        gradientFile << "// Coeff #" << i << std::endl;
+
+        coeffFile << tempCoeffs[i][0] << std::endl;
 		coeffFile << tempCoeffs[i][1] << std::endl;
 		coeffFile << tempCoeffs[i][2] << std::endl;
 
 		for (int channel = 0; channel < 3; ++channel)
 		{
+            gradientFile << "// Channel " << channels[channel] << std::endl;
 			for (int axis = AXIS_X; axis <= AXIS_Z; ++axis)
 			{
 				gradientFile << tempCoeffGradients[i][channel][axis] << std::endl;

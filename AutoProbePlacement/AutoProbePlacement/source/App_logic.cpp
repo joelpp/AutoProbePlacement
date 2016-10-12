@@ -1,6 +1,6 @@
 #include "App.h"
 #include "SceneSampleSet.h"
-#define DEAV3(x) debugPrintf(#x); for(int num = 0; num < x.size(); num++){ debugPrintf(", [num]: (%s)\n",x[num].toString().c_str()); debugPrintf("\n");}
+#include "Helpers.h"
 
 
 
@@ -130,11 +130,15 @@ float App::computeError(std::string logFilePath)
 
 	std::fstream logFile;
 	logFile.open(logFilePath.c_str(), std::fstream::out | std::fstream::app);
-	if (!logFile)
-	{
-		// create file because it does not exist
-		logFile.open(logFilePath.c_str(),  std::fstream::in | std::fstream::out | std::fstream::trunc);
-	}
+	//if (!logFile)
+	//{
+	//	// create file because it does not exist
+	//	logFile.open(logFilePath.c_str(),  std::fstream::in | std::fstream::out | std::fstream::trunc);
+	//}
+    if (!logFile.is_open())
+    {
+        debugPrintf("Couldn't open error log file at %s\n", logFilePath);
+    }
 	logFile.precision(20);
 	logFile << error << std::endl;
 	logFile.close();
@@ -254,7 +258,7 @@ void App::tryOptimization()
 	G3D::String sceneName = scenePane.selectedSceneList->selectedValue();
 	G3D::String probeStructureName = scenePane.probeStructureList->selectedValue();
 
-	int numSamples = std::atoi((*samplesToSave).c_str());
+	int numSamples = std::atoi(numOptimizationSamples.c_str());
 	//sampleSet->generateRGBValuesFromProbes(numSamples, false, 0);
 
 	std::stringstream ss;
@@ -277,42 +281,34 @@ void App::tryOptimization()
 	}
 	else
 	{
+        float error = computeError("C:\\temp\\CurrentOptimization\\errorlog.txt");
+        debugPrintf("error : %f \n", error);
 		displacements = sampleSet->tryOptimizationPass(numSamples, false);
 	}
 	sw.after("Performed optimization step");
 	if (displacements.size() > 0)
 	{
 		m_probeStructure->displaceProbesWithGradient(displacements);
-		//sampleSet->generateRGBValuesFromProbes(numSamples, false,0);
-		//float error = computeError("C:/temp/CurrentOptimization/errorlog.txt");
-		//sw.after("Computed error");
-
-		//probeStructure->applyOffsetToProbes(displacements);
-		//sw.after("Applied offset to probes");
-		//probeStructure->updateProbes(true);
-		//sw.after("Computed new probe textures and coefficients");
-
-
-		//updateProbeStructure();
-		//sw.after("Reloaded probe structure");
-		//updateSampleSet();
+        m_probeStructure->savePositions();
+        m_probeStructure->updateProbes("all");
+        m_probeStructure->extractSHCoeffs();
 	}
 }
 
 void App::computeSamplesRGB()
 {
-	int numSamples = std::atoi((*samplesToSave).c_str());
+	int numSamples = std::atoi(numOptimizationSamples.c_str());
 	sampleSet->generateRGBValuesFromProbes(numSamples, false, 0);
 }
 void App::computeSamplesRGBRef()
 {
-	int numSamples = std::atoi((*samplesToSave).c_str());
+	int numSamples = std::atoi(numOptimizationSamples.c_str());
 	sampleSet->generateRGBValuesFromProbes(numSamples, true, 0);
 }
 
 void App::computeTriplets()
 {
-	int numSamples = std::atoi((*samplesToSave).c_str());
+	int numSamples = std::atoi(numOptimizationSamples.c_str());
 	sampleSet->generateTriplets(numSamples, 0);
 }
 

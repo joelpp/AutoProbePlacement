@@ -193,7 +193,7 @@ for line in lines:
 	start = time.time();
 
 	splitLine = line.split();
-	probePosition = [float(x) / globalInfo["scale"] for x in splitLine];
+	probePosition = [float(x) / float(globalInfo["scale"]) for x in splitLine];
 
 	path = "/probes/Probe_"+repr(probeCount)+".png";
 	# path = "/probes/Probe_"+repr(probeCount)+".exr";

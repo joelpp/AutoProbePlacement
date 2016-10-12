@@ -322,9 +322,10 @@ public:
     virtual void onUserInput(UserInput* userInput);
 	String m_scenePath;
 	G3D::String previousProbeStructure;
+	G3D::String tbNumPassesLeft;
+    G3D::String numOptimizationSamples;
 
 	int numPassesLeft;
-	G3D::String tbNumPassesLeft;
 	bool logSampleSet;
 
 	Array<Vector3> extrapolationTriangleVertices;

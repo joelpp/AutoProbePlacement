@@ -24,14 +24,14 @@ public:
 	SceneSampleSet(std::string sceneName, std::string sampleSetName, float scale, int numSamplesToLoad);
 	
 	void addSample(SceneSample sample);
-	void generateTriplets(int NumberOfSamples, std::vector<Eigen::Triplet<float>>* eigenTriplets);
-	void generateRGBValuesFromProbes(int NumberOfSamples, bool ref, Eigen::VectorXd* eigenVector);
+	void generateTriplets(int NumberOfSamples, String outputPath, std::vector<Eigen::Triplet<float>>* eigenTriplets);
+	void generateRGBValuesFromProbes(int NumberOfSamples, String savePath, Eigen::VectorXd* eigenVector);
     void generateRGBValuesFromProbes(int NumberOfSamples);
     void save();
 	void load(int maxSamples);
-	std::vector<float> tryOptimizationPass(int NumberOfSamples, bool ref);
+	std::vector<float> tryOptimizationPass(int NumberOfSamples, bool ref, String optimizationFolderPath);
 	bool probeOptimizationPass(WeightMatrixType& A, Eigen::VectorXd& b, Eigen::VectorXd* result);
-	void createbVector(Eigen::VectorXd* bVector, const Eigen::VectorXd* rgbColumn);
+    void createbVector(Eigen::VectorXd* bVector, const Eigen::VectorXd* rgbColumn, String& optimizationFolderPath);
 
 	void clearValues();
 	void clearPositions();

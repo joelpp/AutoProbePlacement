@@ -16,6 +16,7 @@
 #define DEV4(v) debugPrintf(#v);debugPrintf(": (%f,\t%f,\t%f,\t%f)\n",v.x,v.y,v.z,v.w)
 #define DEC(v) debugPrintf(#v);debugPrintf(": (%f,\t%f,\t%f)\n",v.r,v.g,v.b)
 
+String generateFolderNameBaseAnySuffix(const String& prefix);
 
 bool runCommand(std::string command);
 
@@ -24,6 +25,8 @@ bool runPythonScriptFromDataFiles(std::string scriptName, std::string args, bool
 bool createFolder(const char* name);
 
 void createEmptyFile(const char* name);
+
+int folderCount(const String& path);
 
 double NDotOmegaCoeff(int l);
 

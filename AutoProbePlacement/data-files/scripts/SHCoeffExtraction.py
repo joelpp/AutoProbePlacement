@@ -87,7 +87,7 @@ def extractCoefficients(irradianceImage, normalImage, positionImage, depthImage,
 			domegasum += domega;
 			# logfile.write(repr((h,w,u,v,phi,theta,domega)) + "\n");
 
-			radiance = [helper.sRGBToRGBVal(x /255.0) for x in irradianceImage[h][w]];
+			radiance = [x/255.0 for x in irradianceImage[h][w]];
 			# print(radiance)
 			if ((radiance[0] == 0) and (radiance[1] == 0) and (radiance[2] == 0)):
 				continue;

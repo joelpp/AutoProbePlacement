@@ -1088,12 +1088,12 @@ void ProbeStructure::applyOffsetToProbes(std::vector<float>& displacements)
 
 void ProbeStructure::displaceProbesWithGradient(std::vector<float>& displacements)
 {
-	for (int counter = 0; counter < displacements.size(); counter += 3)
+	for (int counter = 0; counter < probeList.size(); counter++)
 	{
 		G3D::Vector3& displacement = G3D::Vector3(displacements[counter * 3 + 0],
 												  displacements[counter * 3 + 1],
 												  displacements[counter * 3 + 2]);
-        displacement /= 5.f;
+        //displacement /= 5.f;
 		Probe* probe = probeList[counter];
 
 		// Start by sending the probe to its new location

@@ -171,10 +171,12 @@ void App::loadScene(String sceneName)
 
 	m_scene = new JScene(sceneName);
 
-
-    GApp::loadScene((String)"C:\\git\\AutoProbePlacement\\AutoProbePlacement\\data-files\\Scenes\\" + sceneName + "\\" + sceneName + ".Scene.Any");
+    String basePath = "C:\\git\\AutoProbePlacement\\AutoProbePlacement\\data-files\\Scenes\\" + sceneName + "\\";
+    GApp::loadScene(basePath + sceneName + ".Scene.Any");
     setActiveCamera(m_debugCamera);
 
+    m_currentOptimization = folderCount(basePath + "Optimizations\\") - 1;
+    debugPrintf("%d\n", m_currentOptimization);
 }
 
 void App::initializeProbeStructure(String sceneName, String probeStructureName)
@@ -336,7 +338,7 @@ void App::drawScene(RenderDevice* rd)
 
         args = Args();
         args.setUniform("multiplier", sceneTextureIntensity);
-		if (String(scenePane.selectedSceneList->selectedValue()) == "crytek-sponza")
+		if (selectedSceneName() == "crytek-sponza")
 		{
 			//args.setUniform("uSampler", sceneTextures[0][i], Sampler());
 			//drawModel(rd, "texture.*", sceneModels[i], CFrame(), args);
@@ -402,7 +404,24 @@ void App::onGraphics3D(RenderDevice* rd, Array<shared_ptr<Surface> >& surface3D)
 
 	rd->clear();
     m_film->exposeAndRender(rd, activeCamera()->filmSettings(), m_framebuffer->texture(0), 0, 0);
- 
+
+    if (numPassesLeft > 0)
+    {
+    	const shared_ptr<Image> screen(rd->screenshotPic());
+
+    	FileSystem::ListSettings ls;
+    	ls.includeParentPath = false;
+    	ls.recursive = false;
+    	G3D::Array<G3D::String> screenshotList;
+    	FileSystem::list(currentOptimizationFolderPath() + "/screens/*", screenshotList, ls);
+    	int num = screenshotList.size();
+
+    	String filename = currentOptimizationFolderPath() + "/screens/" + String(std::to_string(num).c_str()) + ".jpg";
+    	debugPrintf("%s", filename.c_str());
+    	screen->save(filename);
+
+    	debugPrintf("%d optimization passes left \n", numPassesLeft);
+    }
 }
 
 void App::drawModel(RenderDevice* rd, String shaderName, shared_ptr<ArticulatedModel> model, CFrame frame, Args args){
@@ -593,7 +612,7 @@ void App::switchEditProbeStructure()
 
 void App::updateProbeStructure()
 {
-    G3D::String selectedScene = scenePane.selectedSceneList->selectedValue();
+    G3D::String selectedScene = selectedSceneName();
     G3D::String probeStructureName = scenePane.probeStructureList->selectedValue();
     initializeProbeStructure(selectedScene, probeStructureName);
     updateProbeStructurePane();
@@ -603,7 +622,7 @@ void App::loadPreviousProbeStructure()
 {
     if (previousProbeStructure != "")
     {
-        initializeProbeStructure(scenePane.selectedSceneList->selectedValue(), previousProbeStructure);
+        initializeProbeStructure(selectedSceneName(), previousProbeStructure);
     }
     if (sampleSet)
     {
@@ -613,7 +632,7 @@ void App::loadPreviousProbeStructure()
 
 void App::updateSampleSet()
 {
-    G3D::String selectedScene = scenePane.selectedSceneList->selectedValue();
+    G3D::String selectedScene = selectedSceneName();
     G3D::String sampleSetName = scenePane.sampleSetList->selectedValue();
 
     //loadSurfaceSamples(selectedScene, sampleSetName);
@@ -804,13 +823,43 @@ void App::makeGui() {
 
 	tab->beginRow();
 	tab->addCheckBox("Interpolate Coefficients", &interpolateCoefficients);
-	tab->addButton("displace", GuiControl::Callback(this, &App::displaceProbes), GuiTheme::TOOL_BUTTON_STYLE);
+    tab->addButton("displace", GuiControl::Callback(this, &App::displaceProbes), GuiTheme::TOOL_BUTTON_STYLE);
+    tab->addButton("New optimization", [this]()
+    {
+        const G3D::String sceneName = selectedSceneName();
+        const G3D::String basePath = "../data-files/Scenes/" + sceneName + "/Optimizations/";
+        FileSystem::clearCache("");
+        const String folderName(generateFolderNameBaseAnySuffix(basePath));
+
+        m_currentOptimization++;
+        
+        createFolder(folderName.c_str());
+        createFolder((folderName + "/screens").c_str());
+        createEmptyFile((folderName + "/samplesRGB.txt").c_str());
+        createEmptyFile((folderName + "/samplesRGB_ref.txt").c_str());
+        createEmptyFile((folderName + "/errorlog.txt").c_str());
+        createEmptyFile((folderName + "/dplog.txt").c_str());
+        createEmptyFile((folderName + "/triplets.txt").c_str());
+    }
+    , GuiTheme::TOOL_BUTTON_STYLE);
 
 	tab->endRow();
 
 	tab->beginRow();
-	tab->addButton("Compute samplesRGB", GuiControl::Callback(this, &App::computeSamplesRGB), GuiTheme::TOOL_BUTTON_STYLE);
-	tab->addButton("Compute samplesRGB_ref", GuiControl::Callback(this, &App::computeSamplesRGBRef), GuiTheme::TOOL_BUTTON_STYLE);
+    tab->addButton("Compute samplesRGB", [this]() {
+        int numSamples = std::atoi(numOptimizationSamples.c_str());
+        String outputFile = currentOptimizationFolderPath() + "/samplesRGB.txt";
+        sampleSet->generateRGBValuesFromProbes(numSamples, outputFile, 0);
+    }
+    , GuiTheme::TOOL_BUTTON_STYLE);
+
+	tab->addButton("Compute samplesRGB_ref", [this]() {
+        int numSamples = std::atoi(numOptimizationSamples.c_str());
+        String outputFile = currentOptimizationFolderPath() + "/samplesRGB_ref.txt";
+        sampleSet->generateRGBValuesFromProbes(numSamples, outputFile, 0);
+    }
+
+    , GuiTheme::TOOL_BUTTON_STYLE);
 	tab->addButton("Compute triplets", GuiControl::Callback(this, &App::computeTriplets), GuiTheme::TOOL_BUTTON_STYLE);
 	tab->addCheckBox("MATLAB", &useMatlabOptimization);
 	tab->addButton("Optimization pass", GuiControl::Callback(this, &App::startOptimizationPasses), GuiTheme::TOOL_BUTTON_STYLE);
@@ -898,8 +947,8 @@ void App::makeGui() {
 
 void App::generateSampleSetList()
 {
-	G3D::String selectedScene = scenePane.selectedSceneList->selectedValue();
-	G3D::Array<G3D::String> sampleSetList = getFoldersInFolder("../data-files/Scenes/" + selectedScene + "/SampleSets");
+	G3D::String selectedScene = selectedSceneName();
+	G3D::Array<G3D::String> sampleSetList = getFoldersInFolder(sampleSetFoldersPath());
 
 	scenePane.sampleSetList->setList(sampleSetList);
 }
@@ -908,7 +957,7 @@ void App::updateProbeStructurePane()
 {
 	probeStructurePane->removeAllChildren();
 
-	G3D::String selectedScene = scenePane.selectedSceneList->selectedValue();
+	G3D::String selectedScene = selectedSceneName();
 
 	probeStructurePane->beginRow();
 
@@ -983,14 +1032,14 @@ void App::addSampleSetPane(GuiTabPane* tabPane)
 {
 	GuiPane* tab = tabPane->addTab("Scene");
 
-	G3D::Array<G3D::String> sceneList = getFoldersInFolder("../data-files/Scenes");
+	G3D::Array<G3D::String> sceneList = getFoldersInFolder(scenesPath());
 
 	scenePane.selectedSceneList = tab->addDropDownList("Scene", sceneList, NULL, GuiControl::Callback(this, &App::updateSelectedScenePane));
 
-	G3D::String selectedScene = scenePane.selectedSceneList->selectedValue();
+	G3D::String selectedScene = selectedSceneName();
 
 	tab->beginRow();
-	G3D::Array<G3D::String> sampleSetList = getFoldersInFolder("../data-files/Scenes/" + selectedScene + "/SampleSets");
+	G3D::Array<G3D::String> sampleSetList = getFoldersInFolder(sampleSetFoldersPath());
 
 	scenePane.sampleSetList = tab->addDropDownList("SampleSet", sampleSetList, NULL, GuiControl::Callback(this, &App::updateSampleSet));
 	tab->addButton(GuiText("New"), [this]() { windowNewSampleSet->setVisible(true); }, GuiTheme::TOOL_BUTTON_STYLE);
@@ -1007,15 +1056,15 @@ void App::addSampleSetPane(GuiTabPane* tabPane)
 
 void App::updateSelectedScenePane()
 {
-	G3D::String selectedScene = scenePane.selectedSceneList->selectedValue();
+    G3D::String selectedScene = selectedSceneName();
 	debugPrintf("update ldofgio");
 
 	loadScene(selectedScene);
 
-	G3D::Array<G3D::String> probeStructureList = getFoldersInFolder("../data-files/Scenes/" + selectedScene + "/ProbeStructures");
+	G3D::Array<G3D::String> probeStructureList = getFoldersInFolder(probeStructureFoldersPath());
 	scenePane.probeStructureList->setList(probeStructureList);
 
-	G3D::Array<G3D::String> sampleSetList = getFoldersInFolder("../data-files/Scenes/" + selectedScene + "/SampleSets");
+	G3D::Array<G3D::String> sampleSetList = getFoldersInFolder(sampleSetFoldersPath());
 	scenePane.sampleSetList->setList(sampleSetList);
 }
 
@@ -1027,4 +1076,34 @@ void App::onUserInput(UserInput* userInput)
     {
         updateProbeStructurePane();
     }
+}
+
+G3D::String App::scenesPath()
+{
+    return "../data-files/Scenes";
+}
+
+G3D::String App::selectedSceneName()
+{
+    return scenePane.selectedSceneList->selectedValue();
+}
+
+G3D::String App::optimizationFolderPath()
+{
+    return "../data-files/Scenes/" + selectedSceneName() + "/Optimizations";
+}
+
+G3D::String App::currentOptimizationFolderPath()
+{
+    return optimizationFolderPath() + "/" + String(std::to_string(m_currentOptimization));
+}
+
+G3D::String App::probeStructureFoldersPath()
+{
+    return "../data-files/Scenes/" + selectedSceneName() + "/ProbeStructures";
+}
+
+G3D::String App::sampleSetFoldersPath()
+{
+    return "../data-files/Scenes/" + selectedSceneName() + "/SampleSets";
 }

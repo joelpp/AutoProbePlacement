@@ -111,6 +111,13 @@ private:
 	void loadPreviousProbeStructure();
 	void loadScene(String sceneName);
 
+    G3D::String scenesPath();
+    G3D::String selectedSceneName();
+    G3D::String optimizationFolderPath();
+    G3D::String currentOptimizationFolderPath();
+    G3D::String probeStructureFoldersPath();
+    G3D::String sampleSetFoldersPath();
+
 	/**
 	* Interpolation
 	*/
@@ -147,7 +154,7 @@ private:
 	void computeTriplets();
 	void tryOptimization();
 	void startOptimizationPasses();
-	float computeError(std::string logFilePath);
+	float computeError();
 	void createTempProbeStructure(G3D::Array<G3D::Vector3>& probePositions);
 	G3D::Array<G3D::Vector3> generateRandomPositions(int NumberOfPositions);
 	void findBestInitialConditions();
@@ -358,6 +365,8 @@ public:
 
 	G3D::Array<G3D::String> integratorList;
 	G3D::Array<G3D::String> filmTypeList;
+
+    int m_currentOptimization;
 
 };
 

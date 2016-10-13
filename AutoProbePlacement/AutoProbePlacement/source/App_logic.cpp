@@ -105,18 +105,19 @@ void App::startOptimizationPasses()
 	}
 	
 }
-float App::computeError(std::string logFilePath)
+float App::computeError()
 {
-	std::fstream currentFile, referenceFile;
+	std::fstream currentFile, referenceFile, logFile;
+    String errorLogPath = currentOptimizationFolderPath() + "/errorlog.txt";
 
-	currentFile.open("C:/temp/samplesRGB.txt", std::fstream::in);
-	referenceFile.open("C:/temp/samplesRGB_ref.txt", std::fstream::in);
-
-	std::string currentLine, referenceLine;
+	currentFile.open(   (currentOptimizationFolderPath() + "/samplesRGB.txt"    ).c_str(), std::fstream::in);
+	referenceFile.open( (currentOptimizationFolderPath() + "/samplesRGB_ref.txt").c_str(), std::fstream::in);
+    logFile.open(       errorLogPath.c_str(),                                     std::fstream::out | std::fstream::app);
 
 	float error = 0;
 
-	while (std::getline(currentFile, currentLine))
+    std::string currentLine, referenceLine;
+    while (std::getline(currentFile, currentLine))
 	{
 		std::getline(referenceFile, referenceLine);
 		float currentValue = std::stof(currentLine.c_str());
@@ -128,17 +129,11 @@ float App::computeError(std::string logFilePath)
 	currentFile.close();
 	referenceFile.close();
 
-	std::fstream logFile;
-	logFile.open(logFilePath.c_str(), std::fstream::out | std::fstream::app);
-	//if (!logFile)
-	//{
-	//	// create file because it does not exist
-	//	logFile.open(logFilePath.c_str(),  std::fstream::in | std::fstream::out | std::fstream::trunc);
-	//}
     if (!logFile.is_open())
     {
-        debugPrintf("Couldn't open error log file at %s\n", logFilePath);
+        debugPrintf("Couldn't open error log file at %s\n", errorLogPath);
     }
+
 	logFile.precision(20);
 	logFile << error << std::endl;
 	logFile.close();
@@ -221,7 +216,7 @@ void App::findBestInitialConditions()
 		
 		computeSamplesRGB();
 
-		float error = computeError("C:/temp/errorlog.txt");
+		float error = computeError();
 
 		if (error < bestError)
 		{
@@ -259,32 +254,13 @@ void App::tryOptimization()
 	G3D::String probeStructureName = scenePane.probeStructureList->selectedValue();
 
 	int numSamples = std::atoi(numOptimizationSamples.c_str());
-	//sampleSet->generateRGBValuesFromProbes(numSamples, false, 0);
 
 	std::stringstream ss;
 	std::vector<float> displacements;
-	if (useMatlabOptimization)
-	{
-		computeSamplesRGB();
-		computeTriplets();
-		ss << "set PATH=%PATH%;C:\\Program Files\\MATLAB\\MATLAB Runtime\\v85\\runtime\\win64";
-		ss << " && C:\\libraries\\sparsematrixfitting_onecolumn\\for_testing\\sparsematrixfitting_onecolumn.exe";
-		system(ss.str().c_str());
 
-		std::fstream file;
-		file.open("C:/temp/dp.txt", std::fstream::in);
-		std::string line;
-		while(std::getline(file, line))
-		{
-			displacements.push_back(std::stof(line.c_str()));
-		}
-	}
-	else
-	{
-        float error = computeError("C:\\temp\\CurrentOptimization\\errorlog.txt");
-        debugPrintf("error : %f \n", error);
-		displacements = sampleSet->tryOptimizationPass(numSamples, false);
-	}
+    float error = computeError();
+	displacements = sampleSet->tryOptimizationPass(numSamples, false, currentOptimizationFolderPath());
+
 	sw.after("Performed optimization step");
 	if (displacements.size() > 0)
 	{
@@ -298,18 +274,20 @@ void App::tryOptimization()
 void App::computeSamplesRGB()
 {
 	int numSamples = std::atoi(numOptimizationSamples.c_str());
-	sampleSet->generateRGBValuesFromProbes(numSamples, false, 0);
+    String outputFile = currentOptimizationFolderPath() + "/samplesRGB.txt";
+    sampleSet->generateRGBValuesFromProbes(numSamples, outputFile, 0);
 }
 void App::computeSamplesRGBRef()
 {
 	int numSamples = std::atoi(numOptimizationSamples.c_str());
-	sampleSet->generateRGBValuesFromProbes(numSamples, true, 0);
+    String outputFile = currentOptimizationFolderPath() + "/samplesRGB_ref.txt";
+	sampleSet->generateRGBValuesFromProbes(numSamples, outputFile, 0);
 }
 
 void App::computeTriplets()
 {
 	int numSamples = std::atoi(numOptimizationSamples.c_str());
-	sampleSet->generateTriplets(numSamples, 0);
+	sampleSet->generateTriplets(numSamples, currentOptimizationFolderPath() + "triplets.txt", 0);
 }
 
 void App::addOneActor()

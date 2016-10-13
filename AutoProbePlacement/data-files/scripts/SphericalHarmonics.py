@@ -10,6 +10,7 @@ def computeSHGradients(dir):
 	y = dir[1];
 	z = dir[2];
 	x2pz2 = (x ** 2 + z ** 2);
+	epsilon = 1e-5;
 
 	for i in xrange(9):
 		(l,m) = kToLM_new(i);
@@ -25,7 +26,7 @@ def computeSHGradients(dir):
 			legendrePLy = legendreP(l, 0, y);
 			legendreP1Ly = legendreP(l + 1, 0, y);
 
-			if ((x**2 + z** 2) != 0):
+			if ((x**2 + z** 2) > epsilon):
 				dYdx[i] = -( (1 + l) * sqrt1Plus2l * x * y * (y * legendrePLy - legendreP1Ly) ) / (2. * sqrtPi * x2pz2);
 				dYdz[i] = -( (1 + l) * sqrt1Plus2l * y * z * (y * legendrePLy - legendreP1Ly) ) / (2. * sqrtPi * x2pz2);
 			else:
@@ -38,7 +39,7 @@ def computeSHGradients(dir):
 			legendreP1Lmy = legendreP(l + 1, m, y);
 			legendrePlmy = legendreP(l, m, y);
 			
-			if ((x**2 + z** 2) != 0):
+			if ((x**2 + z** 2) > epsilon):
 				dYdx[i] = ( (sqrt1Plus2l * factLminusAbsM) / factLplusAbsM ) * ( (1 + l - m) * x * y * cosMaXZ * legendreP1Lmy + legendrePlmy * ( -((1 + l) * x * y ** 2 * cosMaXZ) + m * z * sinMaXZ) ) / (sqrt2Pi * x2pz2);
 				dYdz[i] = -( (sqrt1Plus2l * factLminusAbsM) / factLplusAbsM) * ( (-1 - l + m) * y * z * cosMaXZ * legendreP1Lmy +  legendrePlmy * ( (1 + l) * z * y ** 2 * cosMaXZ + m * x  * sinMaXZ) ) / (sqrt2Pi * x2pz2);
 			else:
@@ -51,7 +52,7 @@ def computeSHGradients(dir):
 			legendreP1Lminusmy = legendreP(l + 1, -m, y);
 			legendrePlminusmy = legendreP(l, -m, y);
 
-			if ((x**2 + z** 2) != 0):
+			if ((x**2 + z** 2) > epsilon):
 				dYdx[i] = ( (sqrt1Plus2l * factLminusAbsM) / factLplusAbsM ) * ( -((1 + l + m) * x * y * legendreP1Lminusmy * sinMaXZ ) + legendrePlminusmy * ( m * z  * cosMaXZ + (1 + l) * x * y ** 2 * sinMaXZ) ) / (sqrt2Pi * x2pz2);
 				dYdz[i] = ( (sqrt1Plus2l * factLminusAbsM) / factLplusAbsM ) * ( -( (1 + l + m) * y * z * legendreP1Lminusmy * sinMaXZ ) + legendrePlminusmy * (-(m * x  * cosMaXZ) + (1 + l) * y ** 2 * z * sinMaXZ)) / (sqrt2Pi * x2pz2)
 			else:

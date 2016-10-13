@@ -28,14 +28,12 @@ void main()
     float pi = 3.14159;
     vec3 normal = normalize(tNormal);
 
-    //normal.x *= -1;
     float u = ( 1 - ( atan(normal.z, normal.x) / (2 * pi) ) );
     float v = ( acos(normal.y) / pi );
 
 	ProbeInterpolationRecord iRec = findInterpolatingProbes(wsPos, normal, probeStructure.step);
 	vec3 finalValue;
 
-	
 	vec3 translationVector = -(wsPos - getProbePosition(int(iRec.probeIndices[0])));
     // translationVector.x *= -1;
 

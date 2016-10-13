@@ -6,6 +6,37 @@
 #include "Helpers.h"
 #include "SH.h"
 
+String generateFolderNameBaseAnySuffix(const String& prefix) 
+{
+    Array<String> exist;
+    String templat = prefix;
+    FileSystem::getDirectories(templat + "*", exist, true);
+
+    int num = 0;
+    String result;
+    templat += "%d";
+    bool done;
+    do {
+        result = format(templat.c_str(), num);
+        ++num;
+        done = true;
+        for (int f = 0; f < exist.length(); ++f) {
+            if (beginsWith(exist[f], result)) {
+                done = false;
+                break;
+            }
+        }
+    } while (!done);
+    return result;
+}
+
+int folderCount(const String& path)
+{
+    Array<String> exist;
+
+    FileSystem::getDirectories(path + "*", exist, true);
+    return exist.size();
+}
 
 bool runCommand(std::string command)
 {

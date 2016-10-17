@@ -33,4 +33,7 @@ double NDotOmegaCoeff(int l);
 float phongCoeffs(int l, float r);
 
 Color3 sRGBtoRGB(const Color3& source);
-//G3D::Array<G3D::String> getFoldersInFolder(const G3D::String& path);
+
+void dumpToFile(std::fstream& file, const Array<Vector3>& arr);
+
+Vector3 StringToVector3(G3D::String& s);

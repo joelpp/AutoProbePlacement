@@ -48,6 +48,8 @@ void App::onInit() {
     renderDevice->setSwapBuffersAutomatically(true);
     
 	createNewSampleSetWindow();
+	createNewProbeWindow();
+
 	probeStructurePane = NULL;	
 	m_probeStructure = NULL;
     m_scene = NULL;
@@ -790,8 +792,31 @@ void App::createNewSampleSet(String& sceneName, String& newSampleSetName)
 	createFolder((newSSPath + "/irradiance").c_str());
 	createEmptyFile((newSSPath + "/SamplePositions.txt").c_str());
 	createEmptyFile((newSSPath + "/IrradianceResults2.txt").c_str());
-	windowNewSampleSet->setVisible(false);
-	generateSampleSetList();
+}
+
+
+void App::createNewProbeWindow()
+{
+	windowNewProbe = GuiWindow::create("New probe");
+
+	GuiPane* pane = windowNewProbe->pane();
+	pane->addTextBox("Name: ", &sNewProbePosition);
+	pane->addButton("Ok", [this]()
+	{
+		Vector3 newPosition = StringToVector3(sNewProbePosition);
+
+		m_probeStructure->addProbe(newPosition);
+		windowNewProbe->setVisible(false);
+	});
+	pane->addButton("Cancel", [this]()
+	{
+		sNewProbePosition = "";
+		windowNewProbe->setVisible(false);
+	});
+	windowNewProbe->pack();
+	addWidget(windowNewProbe);
+	windowNewProbe->moveTo(Point2(500, 500));
+	windowNewProbe->setVisible(false);
 }
 
 void App::createNewSampleSetWindow()
@@ -802,6 +827,9 @@ void App::createNewSampleSetWindow()
 	pane->addButton("Ok", [this]()
 	{
 		createNewSampleSet(m_scene->m_name, sNewSampleSetName);
+		windowNewSampleSet->setVisible(false);
+		generateSampleSetList();
+		sNewSampleSetName = "";
 	});
 	pane->addButton("Cancel", [this]()
 	{
@@ -967,11 +995,15 @@ void App::updateProbeStructurePane()
 
     probeStructurePane->addButton(GuiText("Switch Back"), GuiControl::Callback(this, &App::loadPreviousProbeStructure), GuiTheme::TOOL_BUTTON_STYLE);
 	probeStructurePane->addButton(GuiText("Edit mode"), GuiControl::Callback(this, &App::switchEditProbeStructure), GuiTheme::TOOL_BUTTON_STYLE);
+	probeStructurePane->addButton(GuiText("Add probe"), [this]()
+	{
+		windowNewProbe->setVisible(true);
+	}
+	, GuiTheme::TOOL_BUTTON_STYLE);
 
     probeStructurePane->addButton(GuiText("Save positions"), [this]() 
     { 	
         m_probeStructure->savePositions();
-        updateProbeStructure(); 
     } 
     , GuiTheme::TOOL_BUTTON_STYLE);
 
@@ -981,6 +1013,10 @@ void App::updateProbeStructurePane()
     probeStructurePane->addButton(GuiText("Update Probes (normals)"), [this]() { m_probeStructure->generateProbes("Normals"); }, GuiTheme::TOOL_BUTTON_STYLE);
 	probeStructurePane->addButton(GuiText("Extract coeffs"), [this]() { m_probeStructure->extractSHCoeffs(); }, GuiTheme::TOOL_BUTTON_STYLE);
     probeStructurePane->addCheckBox("Use gradients", &useSHGradients);
+	probeStructurePane->endRow();
+
+	probeStructurePane->beginRow();
+	
 
 	probeStructurePane->endRow();
 

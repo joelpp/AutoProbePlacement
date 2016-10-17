@@ -7,8 +7,7 @@ class ProbeManipulator;
 
 typedef Array<Array<float>> SHGradient;
 typedef Array<Array<Vector3>> CoeffGradients;
-
-
+typedef Array<Vector3> TProbeCoefficients;
 
 enum EResource
 {
@@ -34,7 +33,7 @@ public:
 	shared_ptr<Texture>		texture;
 	shared_ptr<Texture>		irr_texture;
 	Point3					position;
-	Array<Vector3>			coeffs;
+	TProbeCoefficients		coeffs;
 	Array<Array<Vector3> >	coeffGradients;
 	Vector3					gradient;
 	Vector3					normal;

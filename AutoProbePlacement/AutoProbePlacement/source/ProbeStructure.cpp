@@ -31,6 +31,8 @@ ProbeStructure::ProbeStructure(String sceneName, String probeStructureName, int 
 	this->m_name = probeStructureName;
 	this->probeStructurePath = "../data-files/Scenes/" + sceneName + "/ProbeStructures/" + probeStructureName;;
 	this->m_dimensions.push_back(numProbes);
+	
+	m_NumCoefficients = 9;
 
 	for (int i = 0; i < numProbes; ++i)
 	{
@@ -171,7 +173,6 @@ void ProbeStructure::makeProbeList()
         aTestProbe = new Probe(i, probeStructurePath);
 		
         String filename;
-        String irr_filename = probeStructurePath + "/renders/Render_";
                 
         char str[16];
         sprintf(str, "%d", i);
@@ -1120,10 +1121,34 @@ void ProbeStructure::displaceProbesWithGradient(std::vector<float>& displacement
 }
 
 
+TProbeCoefficients ProbeStructure::interpolatedCoefficients(const G3D::Vector3& position, const G3D::Vector3& normal)
+{
+	ProbeInterpolationRecord record = getInterpolationProbeIndicesAndWeights(position);
+
+	TProbeCoefficients interpolatedCoeffs;
+
+	for (int p = 0; p < record.probeIndices.size(); ++p)
+	{
+		int index = record.probeIndices[p];
+		float weight = record.weights[p];
+
+		TProbeCoefficients& probeCoeffs = probeList[index]->coeffs;
+		for (int c = 0; c < m_NumCoefficients; ++c)
+		{
+			Vector3& coeffs = probeCoeffs[c];
+			interpolatedCoeffs[c].x += weight * coeffs.x;
+			interpolatedCoeffs[c].y += weight * coeffs.y;
+			interpolatedCoeffs[c].z += weight * coeffs.z;
+		}
+	}
+	
+
+	return interpolatedCoeffs;
+}
+
 G3D::Vector3 ProbeStructure::reconstructSH(const G3D::Vector3& position, const G3D::Vector3& normal)
 {
     ProbeInterpolationRecord record = getInterpolationProbeIndicesAndWeights(position);
-    int NumberOfCoefficientsPerProbe = 9;
     Vector3 rgb = Vector3(0, 0, 0);
 
     for (int i = 0; i < record.weights.size(); ++i)
@@ -1144,7 +1169,7 @@ G3D::Vector3 ProbeStructure::reconstructSH(const G3D::Vector3& position, const G
         //}
 
         // For all SH bands
-        for (int coeff = 0; coeff < NumberOfCoefficientsPerProbe; ++coeff)
+        for (int coeff = 0; coeff < m_NumCoefficients; ++coeff)
         {
             std::pair<int, int> lm = SH::kToLM(coeff);
 
@@ -1200,6 +1225,9 @@ void ProbeStructure::extractSHCoeffs()
         Probe* p = probeList[i];
 
         p->computeCoefficientsFromTexture(true);
+
+
+		p->bNeedsUpdate = false;
     }
 
     uploadToGPU();
@@ -1307,4 +1335,25 @@ void ProbeStructure::saveInfoFile()
 	infoFile << "sampleCount"	<< " " << 128									<< std::endl;
 	infoFile << "width"			<< " " << 128									<< std::endl;
 	infoFile << "height"		<< " " << 64									<< std::endl;
+}
+
+void ProbeStructure::addProbe(G3D::Vector3& position)
+{
+	Probe* probe = new Probe(probeCount(), probeStructurePath);
+
+	probe->position = position;
+	probe->bNeedsUpdate = true;
+	probe->m_sphere = Sphere(position, 0.1f);
+
+
+	probe->frame = CFrame::fromXYZYPRDegrees(position.x, position.y, position.z, 0, 0, 0);
+
+
+	probe->manipulator = ProbeManipulator::create();
+	probe->manipulator->setFrame(probe->frame);
+	probe->manipulator->setControlFrame(probe->frame);
+	probe->manipulator->p = probe;
+
+	probeList.push_back(probe);
+
 }

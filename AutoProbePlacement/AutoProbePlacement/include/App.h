@@ -81,7 +81,9 @@ private:
 	void drawModel(RenderDevice* rd, String shaderName, shared_ptr<ArticulatedModel> model, CFrame frame,Args args);
 
 	virtual void makeGui();
+	void createNewProbeWindow();
 	void createNewSampleSetWindow();
+	void createNewProbe(String& sceneName, String& probeStructureName, G3D::Vector3& position);
 	void createNewSampleSet(String& sceneName, String& sNewSampleSetName);
 	void createNewProbeStructureWindow();
 
@@ -355,9 +357,11 @@ public:
 
 	// There CERTAINLY has to be a better way to handle this stuff than keeping the new sample set window and nmae as globals
 	G3D::String sNewSampleSetName;
+	G3D::String sNewProbePosition;
 	SProbeStructureCreationOptions newProbeStructureOptions;
 
 
+	shared_ptr<GuiWindow> windowNewProbe;
 	shared_ptr<GuiWindow> windowNewSampleSet;
 	shared_ptr<GuiWindow> windowNewProbeStructure;
 	SOfflineRenderingOptions offlineRenderingOptions;

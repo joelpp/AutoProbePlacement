@@ -6,6 +6,10 @@
 #include "Helpers.h"
 #include "SH.h"
 
+#define HOME_PC
+
+//#define LIGUM_PC
+
 String generateFolderNameBaseAnySuffix(const String& prefix) 
 {
     Array<String> exist;
@@ -73,8 +77,11 @@ bool runPythonScriptFromDataFiles(std::string scriptName, std::string args, bool
 {
 	std::stringstream ss;
 
-	//ss << "cmd /c \"cd C:\\git\\AutoProbePlacement\\AutoProbePlacement\\data-files\\scripts && C:\\Users\\Joel\\Anaconda2\\python.exe ";
+#if defined(HOME_PC)
+	ss << "cmd /c \"cd C:\\git\\AutoProbePlacement\\AutoProbePlacement\\data-files\\scripts && C:\\Users\\Joel\\Anaconda2\\python.exe ";
+#elif defined(LIGUM_PC)
 	ss << "cmd /c \"cd C:\\git\\AutoProbePlacement\\AutoProbePlacement\\data-files\\scripts && python ";
+#endif
 	ss << scriptName << " ";
 	ss << args << "\"";
 
@@ -176,4 +183,21 @@ float sRGBtoRGB(float source)
 Color3 sRGBtoRGB(const Color3& source)
 {
     return Color3(sRGBtoRGB(source.r), sRGBtoRGB(source.g), sRGBtoRGB(source.b));
+}
+
+void dumpToFile(std::fstream& file, const Array<Vector3>& arr)
+{
+	for (int i = 0; i < arr.size(); ++i)
+	{
+		for (int i = 0; i < arr.size(); ++i)
+			file << arr[i].x << std::endl;
+			file << arr[i].y << std::endl;
+			file << arr[i].z << std::endl;
+	}
+}
+
+Vector3 StringToVector3(G3D::String& s)
+{
+	Array<String> split = stringSplit(s, ' ');
+	return Vector3(std::stof(split[0].c_str()), std::stof(split[1].c_str()), std::stof(split[2].c_str()));
 }

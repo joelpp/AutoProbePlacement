@@ -117,7 +117,11 @@ public:
 	std::fstream probeListFileHandle(bool reading);
 	std::fstream infoFileHandle(bool reading);
 
+	TProbeCoefficients interpolatedCoefficients(const G3D::Vector3& position, const G3D::Vector3& normal);
+
     G3D::Vector3 reconstructSH(const G3D::Vector3& position, const G3D::Vector3& normal);
+
+	void addProbe(G3D::Vector3& position);
 
     void generateProbes(std::string type);
 
@@ -146,6 +150,7 @@ public:
 	float m_gamma;
 	String m_integrator;
 
+	int m_NumCoefficients;
 };
 
 #endif

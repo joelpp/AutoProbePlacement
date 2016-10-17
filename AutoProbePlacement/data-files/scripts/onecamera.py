@@ -7,17 +7,17 @@ import os, sys
 
 # Ensure that Python will be able to find the Mitsuba core libraries
 
-# if (True):
-# sys.path.append('C:/git/mitsuba/dist/python/2.7/')
+# if (os.environ['COMPUTERNAME'] ==):
+sys.path.append('C:/git/mitsuba/dist/python/2.7/')
 # 	# Ensure that Python will be able to find the Mitsuba core libraries
-# os.environ['PATH'] = 'C:/git/mitsuba/dist/' + os.pathsep + os.environ['PATH']
+os.environ['PATH'] = 'C:/git/mitsuba/dist/' + os.pathsep + os.environ['PATH']
 # else:
 	# sys.path.append('C:/Users/Joel/Downloads/mitsuba-c7aac473729a/mitsuba-c7aac473729a/dist/python/2.7/')
 # 	os.environ['PATH'] = 'C:/Users/Joel/Downloads/mitsuba-c7aac473729a/mitsuba-c7aac473729a/dist/' + os.pathsep + os.environ['PATH']
 
-sys.path.append('C:/Users/polardpj.artichaut/Downloads/mitsuba-eaff1cd989f3/mitsuba-eaff1cd989f3/dist/python/2.7/')
+# sys.path.append('C:/Users/polardpj.artichaut/Downloads/mitsuba-eaff1cd989f3/mitsuba-eaff1cd989f3/dist/python/2.7/')
 # Ensure that Python will be able to find the Mitsuba core libraries
-os.environ['PATH'] = 'C:/Users/polardpj.artichaut/Downloads/mitsuba-eaff1cd989f3/mitsuba-eaff1cd989f3/dist/' + os.pathsep + os.environ['PATH']
+# os.environ['PATH'] = 'C:/Users/polardpj.artichaut/Downloads/mitsuba-eaff1cd989f3/mitsuba-eaff1cd989f3/dist/' + os.pathsep + os.environ['PATH']
 
 
 from mitsuba.core import *

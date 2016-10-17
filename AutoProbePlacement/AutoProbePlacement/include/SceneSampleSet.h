@@ -27,7 +27,8 @@ public:
 	void generateTriplets(int NumberOfSamples, String outputPath, std::vector<Eigen::Triplet<float>>* eigenTriplets);
 	void generateRGBValuesFromProbes(int NumberOfSamples, String savePath, Eigen::VectorXd* eigenVector);
     void generateRGBValuesFromProbes(int NumberOfSamples);
-    void save();
+	void generateInterpolatedCoefficientsFromProbes(int NumberOfSamples, String savePath, Eigen::VectorXd* eigenVector = 0);
+	void save();
 	void load(int maxSamples);
 	std::vector<float> tryOptimizationPass(int NumberOfSamples, bool ref, String optimizationFolderPath);
 	bool probeOptimizationPass(WeightMatrixType& A, Eigen::VectorXd& b, Eigen::VectorXd* result);

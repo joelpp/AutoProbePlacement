@@ -255,6 +255,39 @@ void SceneSampleSet::generateRGBValuesFromProbes(int NumberOfSamples)
     file.close();
 }
 
+void SceneSampleSet::generateInterpolatedCoefficientsFromProbes(int NumberOfSamples, String savePath, Eigen::VectorXd* eigenVector)
+{
+	int NumberOfCoefficientsPerProbe = 9;
+	int NumberOfProbes = probeStructure->probeCount();
+	int NumberOfElements = NumberOfProbes * NumberOfCoefficientsPerProbe;
+
+	//	// Scene (probe structure) Parameters
+	std::fstream samplesRGBFile;
+	std::fstream logFile;
+
+	samplesRGBFile.open(savePath.c_str(), std::ios::out);
+	samplesRGBFile.precision(20);
+
+	for (int i = 0; i < NumberOfSamples; ++i)
+	{
+		const SceneSample& ss = m_samples[i];
+
+		TProbeCoefficients interpolatedCoeffs = probeStructure->interpolatedCoefficients(ss.position, ss.normal);
+
+		dumpToFile(samplesRGBFile, interpolatedCoeffs);
+
+		if (eigenVector)
+		{
+			for (int j = 0; j < interpolatedCoeffs.size(); ++i)
+			{
+				(*eigenVector)(i * 3 + j) = interpolatedCoeffs[j][0];
+				(*eigenVector)(i * 3 + j) = interpolatedCoeffs[j][1];
+				(*eigenVector)(i * 3 + j) = interpolatedCoeffs[j][2];
+			}
+		}
+	}
+}
+
 void SceneSampleSet::generateRGBValuesFromProbes(int NumberOfSamples, String savePath, Eigen::VectorXd* eigenVector = 0)
 {
 	int NumberOfCoefficientsPerProbe = 9;

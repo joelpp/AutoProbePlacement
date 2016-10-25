@@ -19,6 +19,7 @@
 #define AXIS_Y 1
 #define AXIS_Z 2
 
+
 #define WEIGHTS_TRILERP 0
 #define WEIGHTS_CLOSEST 1
 #define WEIGHTS_TETRAHEDRAL 0
@@ -89,15 +90,18 @@ void SceneSampleSet::load(int maxSamples)
 
 			if (!std::getline(irradianceFile, irradianceLine))
 			{
-				break;
-			}
+                ss.irradiance = Color3::zero();
+            }
+            else
+            {
+                Array<String> splitLine = stringSplit(String(irradianceLine.c_str()), ' ');
 
-			Array<String> splitLine = stringSplit(String(irradianceLine.c_str()), ' ');
-
-			float divider = 1.f;
-			ss.irradiance = Color3(std::stof(splitLine[0].c_str()) / divider,
-								   std::stof(splitLine[1].c_str()) / divider,
-								   std::stof(splitLine[2].c_str()) / divider);
+                float divider = 1.f;
+                ss.irradiance = Color3(std::stof(splitLine[0].c_str()) / divider,
+                                       std::stof(splitLine[1].c_str()) / divider,
+                                       std::stof(splitLine[2].c_str()) / divider);
+            }
+			
 		}
 
 		if (currentLine == 2)
@@ -182,11 +186,31 @@ std::string generateUniqueName(int NumberOfProbes, G3D::Vector3 baseProbePositio
 	return ss.str();
 }
 
-void SceneSampleSet::generateTriplets(int NumberOfSamples, String outputPath, std::vector<Eigen::Triplet<float>>* eigenTriplets = 0)
+//float SceneSampleSet::generateTriplet(int row, int col, const ProbeInterpolationRecord* iRec)
+//{
+//	float element = 0;
+//
+//	for (int coeff = 0; coeff < NumberOfCoefficientsPerProbe; ++coeff)
+//	{
+//		float gradient = probeStructure->getProbe(probeIndex)->coeffGradients[coeff][color][axis];
+//
+//		std::pair<int, int> lm = SH::kToLM(coeff);
+//		float weight = iRec.weights[i];
+//		float phong = phongCoeffs(lm.first, 1.0f);
+//		float sh = SH::SHxyz_yup(lm.first, lm.second, SampleNormal);
+//		element += gradient * phong * sh;
+//	}
+//	element *= iRec.weights[i];
+//}
+void SceneSampleSet::generateTriplets(int NumberOfSamples, String outputPath, std::vector<Eigen::Triplet<float>>* eigenTriplets, bool optimizeForCoeffs)
 {
-	std::fstream outputFile;
-	outputFile.open(outputPath.c_str(), std::fstream::out);
-
+    std::fstream outputFile;
+    bool output = !(outputPath.empty());
+    if (output)
+    {
+        outputFile.open(outputPath.c_str(), std::fstream::out);
+    }
+	
 	int NumberOfCoefficientsPerProbe = 9;
 	int NumberOfProbes = probeStructure->probeCount();
 	int NumberOfElements = NumberOfProbes * NumberOfCoefficientsPerProbe;
@@ -237,8 +261,12 @@ void SceneSampleSet::generateTriplets(int NumberOfSamples, String outputPath, st
 			}
 		}
 	}
-	outputFile << counter << " " << probeStructure->probeCount()*3-1 << " " << 0 << std::endl;
+    if (output)
+    {
+        outputFile << counter << " " << probeStructure->probeCount() * 3 - 1 << " " << 0 << std::endl;
+    }
 }
+
 
 void SceneSampleSet::generateRGBValuesFromProbes(int NumberOfSamples)
 {
@@ -288,6 +316,30 @@ void SceneSampleSet::generateInterpolatedCoefficientsFromProbes(int NumberOfSamp
 	}
 }
 
+void SceneSampleSet::generateRGBValuesFromSamples(int NumberOfSamples, String savePath, Eigen::VectorXd* eigenVector)
+{
+    std::fstream samplesRGBFile(savePath.c_str(), std::ios::out);;
+    samplesRGBFile.precision(20);
+
+    for (int i = 0; i < NumberOfSamples; ++i)
+    {
+        const SceneSample& ss = m_samples[i];
+        Vector3 rgb = Vector3(ss.irradiance);
+        samplesRGBFile << rgb.x << std::endl;
+        samplesRGBFile << rgb.y << std::endl;
+        samplesRGBFile << rgb.z << std::endl;
+
+        if (eigenVector)
+        {
+            (*eigenVector)(i * 3 + 0) = rgb.x;
+            (*eigenVector)(i * 3 + 1) = rgb.y;
+            (*eigenVector)(i * 3 + 2) = rgb.z;
+        }
+    }
+
+    samplesRGBFile.close();
+}
+
 void SceneSampleSet::generateRGBValuesFromProbes(int NumberOfSamples, String savePath, Eigen::VectorXd* eigenVector = 0)
 {
 	int NumberOfCoefficientsPerProbe = 9;
@@ -295,21 +347,25 @@ void SceneSampleSet::generateRGBValuesFromProbes(int NumberOfSamples, String sav
 	int NumberOfElements = NumberOfProbes * NumberOfCoefficientsPerProbe;
 
 	//	// Scene (probe structure) Parameters
-	std::fstream samplesRGBFile;
-	std::fstream logFile;
-
-    samplesRGBFile.open(savePath.c_str(), std::ios::out);
-    samplesRGBFile.precision(20);
+    std::fstream samplesRGBFile;
+    bool output = !(savePath.empty());
+    if (output)
+    {
+        samplesRGBFile.open(savePath.c_str(), std::ios::out);;
+        samplesRGBFile.precision(20);
+    }
 
     for (int i = 0; i < NumberOfSamples; ++i)
 	{
         const SceneSample& ss = m_samples[i];
 
         Vector3 rgb = probeStructure->reconstructSH(ss.position, ss.normal);
-
-        samplesRGBFile << rgb.x << std::endl;
-		samplesRGBFile << rgb.y << std::endl;
-		samplesRGBFile << rgb.z << std::endl;
+        if (output)
+        {
+            samplesRGBFile << rgb.x << std::endl;
+            samplesRGBFile << rgb.y << std::endl;
+            samplesRGBFile << rgb.z << std::endl;
+        }
 
 		if (eigenVector)
 		{
@@ -324,7 +380,7 @@ void SceneSampleSet::createbVector(Eigen::VectorXd* bVector, const Eigen::Vector
 {
 	// this should not pull from a file but rather straight up use the values in the scenesamples
 	std::fstream refFile;
-	refFile.open((optimizationFolderPath + "/samplesRGB_ref.txt").c_str(), std::ios::in);
+	refFile.open((optimizationFolderPath + "/ref_values.txt").c_str(), std::ios::in);
 	std::string line;
 	int counter = 0;
 	while (std::getline(refFile, line))
@@ -385,10 +441,57 @@ void SceneSampleSet::clearPositions()
 	m_points.clear();
 }
 
+WeightMatrixType SceneSampleSet::generateWeightsMatrix(int NumberOfSamples)
+{
+    int NumElementsPerRow = probeStructure->probeCount() * 3;
 
+    std::vector<Eigen::Triplet<float>>* eigenTriplets = new std::vector<Eigen::Triplet<float>>;
+    eigenTriplets->reserve(NumberOfSamples * 3 * NumElementsPerRow);
 
+    generateTriplets(NumberOfSamples, "", eigenTriplets, false);
 
-std::vector<float> SceneSampleSet::tryOptimizationPass(int NumberOfSamples, bool ref, String optimizationFolderPath)
+    WeightMatrixType A(NumberOfSamples * 3, NumElementsPerRow);
+    A.setFromTriplets(eigenTriplets->begin(), eigenTriplets->end());
+
+    return A;
+}
+
+Eigen::VectorXd SceneSampleSet::generatebVector(int NumberOfSamples, String optimizationFolderPath)
+{
+	Eigen::VectorXd* rgbColumn = new Eigen::VectorXd(NumberOfSamples * 3);
+	generateRGBValuesFromProbes(NumberOfSamples, "", rgbColumn);
+
+	Eigen::VectorXd bVector(NumberOfSamples * 3);
+	createbVector(&bVector, rgbColumn, optimizationFolderPath);
+
+	return bVector;
+}
+
+void SceneSampleSet::outputWeightsMatrixToFile(int NumberOfSamples, String optimizationFolderPath)
+{
+    std::fstream outputFile((optimizationFolderPath + "/A.txt").c_str(), std::fstream::out);
+
+    WeightMatrixType A = generateWeightsMatrix(NumberOfSamples);
+    outputFile << A;
+
+    outputFile.close();
+}
+
+void SceneSampleSet::outputBVectorToFile(int NumberOfSamples, String optimizationFolderPath)
+{
+    std::fstream outputFile((optimizationFolderPath + "/b.txt").c_str(), std::fstream::out);
+
+    Eigen::VectorXd* rgbColumn = new Eigen::VectorXd(NumberOfSamples * 3);
+    generateRGBValuesFromProbes(NumberOfSamples, "", rgbColumn);
+
+    Eigen::VectorXd bVector(NumberOfSamples * 3);
+    createbVector(&bVector, rgbColumn, optimizationFolderPath);
+
+	outputFile << bVector;
+    outputFile.close();
+}
+
+std::vector<float> SceneSampleSet::tryOptimizationPass(int NumberOfSamples, bool optimizeForMitsubaSamples, String optimizationFolderPath)
 {
 	// todo: this is dependant on the interpolation method...
 	int NumElementsPerRow = probeStructure->probeCount() * 3;
@@ -399,8 +502,8 @@ std::vector<float> SceneSampleSet::tryOptimizationPass(int NumberOfSamples, bool
 
 	Eigen::VectorXd* rgbColumn = new Eigen::VectorXd(NumberOfSamples * 3);
 
-	generateTriplets(NumberOfSamples, optimizationFolderPath + "/triplets.txt", eigenTriplets);
-	generateRGBValuesFromProbes(NumberOfSamples, optimizationFolderPath + "/samplesRGB.txt", rgbColumn);
+	generateTriplets(NumberOfSamples, optimizationFolderPath + "/triplets.txt", eigenTriplets, optimizeForMitsubaSamples);
+    generateRGBValuesFromProbes(NumberOfSamples, optimizationFolderPath + "/values.txt", rgbColumn);
 
 	Eigen::VectorXd bVector(NumberOfSamples * 3);
 	createbVector(&bVector, rgbColumn, optimizationFolderPath);
@@ -413,13 +516,14 @@ std::vector<float> SceneSampleSet::tryOptimizationPass(int NumberOfSamples, bool
 	Eigen::VectorXd optimizationResult(NumberOfProbes * 3);
 	bool success = probeOptimizationPass(A, bVector, &optimizationResult);
 
-	//std::fstream logFile;
-	//logFile.open("C:/temp/log.txt", std::ios::app);
-	//logFile << "After optimization \n";
-	//logFile << A << "\n";
-	//logFile << bVector << "\n";
-	//logFile << optimizationResult << "\n";
-	//logFile.close();
+	std::fstream logFile;
+	logFile.open((optimizationFolderPath + "/log.txt").c_str(), std::ios::app);
+	logFile << "After optimization \n";
+	logFile << "A\n" << A << "\n";
+	logFile << "b\n" << bVector << "\n";
+    logFile << "x\n" << optimizationResult << "\n";
+    logFile << "A*x\n" << A*optimizationResult << "\n";
+	logFile.close();
 
 	std::vector<float> toReturn;
 	if (success)
@@ -438,12 +542,13 @@ std::vector<float> SceneSampleSet::tryOptimizationPass(int NumberOfSamples, bool
 		std::fstream dpLogFile;
 		dpLogFile.open((optimizationFolderPath + "/dplog.txt").c_str(), std::fstream::out | std::fstream::app | std::fstream::in);
 
-		if (!dpLogFile)
+		if (!dpLogFile.is_open())
 		{
 			// create file because it does not exist
 			dpLogFile.open((optimizationFolderPath + "/dplog.txt").c_str(),  std::fstream::in | std::fstream::out | std::fstream::trunc);
 		}
-		dpLogFile << optimizationResult;
+
+        dpLogFile << optimizationResult << "\n\n";
 	}
 
 

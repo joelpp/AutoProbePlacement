@@ -49,6 +49,9 @@ void App::onInit() {
     
 	createNewSampleSetWindow();
 	createNewProbeWindow();
+    createNewProbeStructureWindow();
+    createCopyProbeStructureWindow();
+    createRenameOptimizationWindow();
 
 	probeStructurePane = NULL;	
 	m_probeStructure = NULL;
@@ -112,17 +115,20 @@ void App::onInit() {
 	useSHGradients = false;
 	bManipulateProbesEnabled = false;
 	hideActors = false;
-	useMatlabOptimization = false;
+    bOptimizeForCoeffs = false;
 	bRenderDirect = true;
 	bRenderIndirect = true;
 	bRenderMultiplyIndirectByBRDF = false;
+    bShouldUpdateProbeStructurePane = true;
+    bKeepRefValuesOnNewOptimization = false;
+    bTakeRefScreenshot = false;
 
     //Decide how many bands we want to use for the interpolation
     numBands = 2;
     totalNumberOfCoeffs = 0;
     maxDrawBand = 8;
     shadingMultiplier = 1.0f;
-    sampleMultiplier = 1.0f;
+    sampleMultiplier = 4.0f;
     lightIntensity = 1;
     sceneTextureIntensity = 1.0;
     extrapolationT = 0;
@@ -179,6 +185,7 @@ void App::loadScene(String sceneName)
 
     m_currentOptimization = folderCount(basePath + "Optimizations\\") - 1;
     debugPrintf("%d\n", m_currentOptimization);
+
 }
 
 void App::initializeProbeStructure(String sceneName, String probeStructureName)
@@ -328,7 +335,7 @@ void App::drawSurfaceSamples(RenderDevice* rd)
 {
 	int numOfsamplesToShow = atoi(maxSamplesPointsToDraw.c_str());
 
-	Draw::points(sampleSet->m_points, rd, sampleSet->m_colors, 4.0f);
+	Draw::points(sampleSet->m_points, rd, sampleSet->m_colors, sampleMultiplier);
 }
 
 void App::drawScene(RenderDevice* rd)
@@ -364,6 +371,7 @@ void App::drawProbeLineSegments(RenderDevice* rd)
         Draw::lineSegment(LineSegment::fromTwoPoints(p->position, p->position+ p->normal*50.), rd, Color3::brown());
     }
 }
+
 
 /**
  * [App::onGraphics3D Test]
@@ -423,6 +431,16 @@ void App::onGraphics3D(RenderDevice* rd, Array<shared_ptr<Surface> >& surface3D)
     	screen->save(filename);
 
     	debugPrintf("%d optimization passes left \n", numPassesLeft);
+    }
+
+    if (bTakeRefScreenshot)
+    {
+        String filename = currentOptimizationFolderPath() + "/ref_probes.jpg";
+
+        const shared_ptr<Image> screen(rd->screenshotPic());
+        screen->save(filename);
+
+        bTakeRefScreenshot = false;
     }
 }
 
@@ -581,7 +599,7 @@ void App::generateSampleSetPositions()
 void App::generateSampleSetValues()
 {
     std::stringstream args;
-    runPythonScriptFromDataFiles("IrradianceSensorRender.py", std::string(m_scene->m_name.c_str()) + " " + sampleSet->m_sampleSetName + " " + std::string((*samplesToSave).c_str()), false);
+    runPythonScriptFromDataFiles("IrradianceSensorRender.py", std::string(m_scene->m_name.c_str()) + " " + sampleSet->m_sampleSetName + " " + std::string((*samplesToSave).c_str()), true, true);
     sampleSet->load(std::stoi((*samplesToSave).c_str()));
 }
 
@@ -617,7 +635,7 @@ void App::updateProbeStructure()
     G3D::String selectedScene = selectedSceneName();
     G3D::String probeStructureName = scenePane.probeStructureList->selectedValue();
     initializeProbeStructure(selectedScene, probeStructureName);
-    updateProbeStructurePane();
+    bShouldUpdateProbeStructurePane = true;
 }
 
 void App::loadPreviousProbeStructure()
@@ -653,6 +671,12 @@ void App::updateSampleSet()
 void App::onAI(){
     GApp::onAI();
 
+    if (bShouldUpdateProbeStructurePane)
+    {
+        updateProbeStructurePane();
+        bShouldUpdateProbeStructurePane = false;
+    }
+
 	if (actors.size() > 0)
 	{
 		screenPrintf("Actor pos: %s", actors[0].getPosition().toString().c_str());
@@ -662,6 +686,11 @@ void App::onAI(){
 	{
 		tryOptimization();
         numPassesLeft--;
+
+        if (numPassesLeft == 0)
+        {
+            popNotification("Optimization complete", "Finished all job!", 15);
+        }
 	}
 
 	if (m_probeStructure)
@@ -746,7 +775,7 @@ void App::offlineRender()
 
 	debugPrintf("%s\n", command.str().c_str());
 
-	runPythonScriptFromDataFiles("CreateSceneRender.py", command.str(), true);
+	runPythonScriptFromDataFiles("CreateSceneRender.py", command.str(), true, true);
 }
 
 /*
@@ -765,18 +794,80 @@ G3D::Array<G3D::String> getFoldersInFolder(const G3D::String& path)
 	return folderList;
 }
 
+void App::copyProbeStructure(String& sceneName, String& sourceProbeStructureName, String& dstProbeStructureName)
+{
+    String srcPath = probeStructureFoldersPath() + "/" + sourceProbeStructureName;
+    String dstPath = probeStructureFoldersPath() + "/" + dstProbeStructureName;
+
+    copyDir(srcPath, dstPath);
+}
+
+void App::createNewProbeStructure(String& sceneName, String& newProbeStructureName)
+{
+    String probeStructurePath = "../data-files/Scenes/" + sceneName + "/ProbeStructures/" + newProbeStructureName;
+
+    createFolder(probeStructurePath);
+    createFolder(probeStructurePath + "/Probes");
+    createFolder(probeStructurePath + "/Normals");
+    createFolder(probeStructurePath + "/Positions");
+    createFolder(probeStructurePath + "/Coefficients");
+    createEmptyFile(probeStructurePath + "/info.txt");
+
+    std::fstream infoFile( (probeStructurePath + "/info.txt").c_str() , std::fstream::out);
+    infoFile << "type wNN"     << std::endl;
+    infoFile << "dimensions 0" << std::endl;
+    infoFile << "width 128"    << std::endl;
+    infoFile << "height 64"    << std::endl;
+    infoFile << "gamma 1"      << std::endl;
+    infoFile << "type wNN"     << std::endl;
+
+    createEmptyFile(probeStructurePath + "/probeList.txt");
+}
+
+void App::createCopyProbeStructureWindow()
+{
+    windowCopyProbeStructure = GuiWindow::create("Copy probe structure");
+    GuiPane* pane = windowCopyProbeStructure->pane();
+
+    pane->beginRow();
+    pane->addTextBox("Name: ", &newProbeStructureOptions.name);
+    pane->endRow();
+
+    pane->addButton("Ok", [this]()
+    {
+        copyProbeStructure(m_scene->m_name, m_probeStructure->m_name, newProbeStructureOptions.name);
+        newProbeStructureOptions.name = "";
+        windowCopyProbeStructure->setVisible(false);
+    });
+    pane->addButton("Cancel", [this]()
+    {
+        newProbeStructureOptions.name = "";
+        windowCopyProbeStructure->setVisible(false);
+    });
+    windowCopyProbeStructure->pack();
+    addWidget(windowCopyProbeStructure);
+    windowCopyProbeStructure->moveTo(Point2(500, 500));
+    windowCopyProbeStructure->setVisible(false);
+}
+
 void App::createNewProbeStructureWindow()
 {
 	windowNewProbeStructure = GuiWindow::create("New probe structure");
 	GuiPane* pane = windowNewProbeStructure->pane();
-	pane->addTextBox("Name: ", &newProbeStructureOptions.name);
+    
+    pane->beginRow();
+    pane->addTextBox("Name: ", &newProbeStructureOptions.name);
+    pane->endRow();
+
 	pane->addButton("Ok", [this]()
 	{
-		createNewSampleSet(m_scene->m_name, sNewSampleSetName);
-	});
+		createNewProbeStructure(m_scene->m_name, newProbeStructureOptions.name);
+        newProbeStructureOptions.name = "";
+        windowNewProbeStructure->setVisible(false);
+    });
 	pane->addButton("Cancel", [this]()
 	{
-		sNewSampleSetName = "";
+        newProbeStructureOptions.name = "";
 		windowNewProbeStructure->setVisible(false);
 	});
 	windowNewProbeStructure->pack();
@@ -800,24 +891,53 @@ void App::createNewProbeWindow()
 	windowNewProbe = GuiWindow::create("New probe");
 
 	GuiPane* pane = windowNewProbe->pane();
-	pane->addTextBox("Name: ", &sNewProbePosition);
+	pane->addTextBox("Position: ", &sNewProbePosition);
+
 	pane->addButton("Ok", [this]()
 	{
 		Vector3 newPosition = StringToVector3(sNewProbePosition);
 
 		m_probeStructure->addProbe(newPosition);
 		windowNewProbe->setVisible(false);
+        bShouldUpdateProbeStructurePane = true;
+
 	});
+
 	pane->addButton("Cancel", [this]()
 	{
 		sNewProbePosition = "";
 		windowNewProbe->setVisible(false);
 	});
+
 	windowNewProbe->pack();
 	addWidget(windowNewProbe);
 	windowNewProbe->moveTo(Point2(500, 500));
 	windowNewProbe->setVisible(false);
 }
+
+void App::createRenameOptimizationWindow()
+{
+    windowRenameOptimization = GuiWindow::create("New sample set");
+    GuiPane* pane = windowRenameOptimization->pane();
+    pane->addTextBox("Name: ", &sCurrentOptimizationName);
+    pane->addButton("Ok", [this]()
+    {
+        String currentOptimizationPath = currentOptimizationFolderPath();
+
+        String newName = g3dString(m_currentOptimization) + " - " + sCurrentOptimizationName;
+        String newOptimizationPath = optimizationFolderPath() + "/" + newName;
+        std::rename(currentOptimizationPath.c_str(), newOptimizationPath.c_str());
+    });
+    pane->addButton("Cancel", [this]()
+    {
+        windowRenameOptimization->setVisible(false);
+    });
+    windowRenameOptimization->pack();
+    addWidget(windowRenameOptimization);
+    windowRenameOptimization->moveTo(Point2(500, 500));
+    windowRenameOptimization->setVisible(false);
+}
+
 
 void App::createNewSampleSetWindow()
 {
@@ -842,6 +962,35 @@ void App::createNewSampleSetWindow()
 	windowNewSampleSet->setVisible(false);
 }
 
+void App::createNewOptimizationSettings()
+{
+    String currentOptimizationPath = currentOptimizationFolderPath();
+    const G3D::String sceneName = selectedSceneName();
+    const G3D::String basePath = optimizationFolderPath() + "/";
+    FileSystem::clearCache("");
+    const String folderName(generateFolderNameBaseAnySuffix(basePath));
+
+    m_currentOptimization++;
+
+    createFolder(folderName.c_str());
+    createFolder((folderName + "/screens").c_str());
+    createEmptyFile((folderName + "/samples.txt").c_str());
+    createEmptyFile((folderName + "/values.txt").c_str());
+
+    //if (bKeepRefValuesOnNewOptimization)
+    //{
+    //    copyFile(currentOptimizationPath + "/ref_values.txt", currentOptimizationPath + "/ref_values.txt");
+    //}
+    //else
+    {
+        createEmptyFile((folderName + "/ref_values.txt").c_str());
+    }
+    createEmptyFile((folderName + "/errorlog.txt").c_str());
+    createEmptyFile((folderName + "/dplog.txt").c_str());
+    createEmptyFile((folderName + "/triplets.txt").c_str());
+    createEmptyFile((folderName + "/log.txt").c_str());
+}
+
 void App::makeGui() {
 	shared_ptr<GuiWindow> gui = GuiWindow::create("Parameters");
 	GuiPane* pane = gui->pane();
@@ -854,43 +1003,91 @@ void App::makeGui() {
     tab->addButton("displace", GuiControl::Callback(this, &App::displaceProbes), GuiTheme::TOOL_BUTTON_STYLE);
     tab->addButton("New optimization", [this]()
     {
-        const G3D::String sceneName = selectedSceneName();
-        const G3D::String basePath = "../data-files/Scenes/" + sceneName + "/Optimizations/";
-        FileSystem::clearCache("");
-        const String folderName(generateFolderNameBaseAnySuffix(basePath));
-
-        m_currentOptimization++;
-        
-        createFolder(folderName.c_str());
-        createFolder((folderName + "/screens").c_str());
-        createEmptyFile((folderName + "/samplesRGB.txt").c_str());
-        createEmptyFile((folderName + "/samplesRGB_ref.txt").c_str());
-        createEmptyFile((folderName + "/errorlog.txt").c_str());
-        createEmptyFile((folderName + "/dplog.txt").c_str());
-        createEmptyFile((folderName + "/triplets.txt").c_str());
+        createNewOptimizationSettings();
+    }
+    , GuiTheme::TOOL_BUTTON_STYLE);
+    tab->addCheckBox("Keep ref values", &bKeepRefValuesOnNewOptimization);
+    tab->addButton("Rename current optimization", [this]()
+    {
+        windowRenameOptimization->setVisible(true);
     }
     , GuiTheme::TOOL_BUTTON_STYLE);
 
 	tab->endRow();
 
 	tab->beginRow();
-    tab->addButton("Compute samplesRGB", [this]() {
+    tab->addButton("Compute samplesRGB", [this]() 
+    {
         int numSamples = std::atoi(numOptimizationSamples.c_str());
-        String outputFile = currentOptimizationFolderPath() + "/samplesRGB.txt";
+        String outputFile = currentOptimizationFolderPath() + "/values.txt";
         sampleSet->generateRGBValuesFromProbes(numSamples, outputFile, 0);
     }
     , GuiTheme::TOOL_BUTTON_STYLE);
 
-	tab->addButton("Compute samplesRGB_ref", [this]() {
+	tab->addButton("Compute ref_values", [this]() 
+    {
         int numSamples = std::atoi(numOptimizationSamples.c_str());
-        String outputFile = currentOptimizationFolderPath() + "/samplesRGB_ref.txt";
-        sampleSet->generateRGBValuesFromProbes(numSamples, outputFile, 0);
+        String outputFile = currentOptimizationFolderPath() + "/ref_values.txt";
+        if (bOptimizeWithMitsubaSamples)
+        {
+            sampleSet->generateRGBValuesFromSamples(numSamples, outputFile, 0);
+        }
+        else
+        {
+            sampleSet->generateRGBValuesFromProbes(numSamples, outputFile, 0);
+        }
+        bTakeRefScreenshot = true;
     }
+    ,GuiTheme::TOOL_BUTTON_STYLE);
 
+    tab->addButton("Compute triplets", GuiControl::Callback(this, &App::computeTriplets), GuiTheme::TOOL_BUTTON_STYLE);
+
+    tab->addButton("A", [this]() 
+	{
+		int numSamples = std::atoi(numOptimizationSamples.c_str());
+		sampleSet->outputWeightsMatrixToFile(numSamples, currentOptimizationFolderPath());
+    }
     , GuiTheme::TOOL_BUTTON_STYLE);
-	tab->addButton("Compute triplets", GuiControl::Callback(this, &App::computeTriplets), GuiTheme::TOOL_BUTTON_STYLE);
-	tab->addCheckBox("MATLAB", &useMatlabOptimization);
-	tab->addButton("Optimization pass", GuiControl::Callback(this, &App::startOptimizationPasses), GuiTheme::TOOL_BUTTON_STYLE);
+
+    tab->addButton("b", [this]() 
+	{
+		int numSamples = std::atoi(numOptimizationSamples.c_str());
+		sampleSet->outputBVectorToFile(numSamples, currentOptimizationFolderPath());
+    }
+    , GuiTheme::TOOL_BUTTON_STYLE);
+
+	tab->addButton("A*x", [this]()
+	{
+		int numSamples = std::atoi(numOptimizationSamples.c_str());
+		
+		WeightMatrixType A = sampleSet->generateWeightsMatrix(numSamples);
+
+		String xPath = currentOptimizationFolderPath() + "/x.txt";
+		std::fstream xFile(xPath.c_str(), std::fstream::in);
+		std::string line;
+
+		int numProbes = m_probeStructure->probeCount();
+		Eigen::VectorXd x(numProbes * 3);
+		int i = 0;
+		while (std::getline(xFile, line))
+		{
+			x(i) = std::stof(line);
+			i++;
+		}
+		xFile.close();
+
+		Eigen::VectorXd b = A * x;
+
+		String outputPath = currentOptimizationFolderPath() + "/AtimesX.txt";
+		std::fstream output(outputPath.c_str(), std::fstream::out);
+		output << b;
+		output.close();
+
+	}
+	, GuiTheme::TOOL_BUTTON_STYLE);
+
+	tab->addCheckBox("Path traced samples", &bOptimizeWithMitsubaSamples);
+	tab->addButton("Optimization pass (GO!)", GuiControl::Callback(this, &App::startOptimizationPasses), GuiTheme::TOOL_BUTTON_STYLE);
     tab->addTextBox("Num passes", &tbNumPassesLeft);
     tab->addTextBox("Num samples", &numOptimizationSamples);
 	tab->addCheckBox("log", &logSampleSet);
@@ -914,7 +1111,7 @@ void App::makeGui() {
 	tab->addCheckBox("Show", &showSamples);
 	tab->addCheckBox("Show normals", &showSampleNormals);
 	tab->addCheckBox("Show dark samples", &showDarkSamples);
-	tab->addSlider("F", &sampleMultiplier, 1.0f, 5.f);
+	tab->addSlider("F", &sampleMultiplier, 1.0f, 50.f);
 	tab->endRow();
 
 	tab->beginRow();
@@ -966,7 +1163,6 @@ void App::makeGui() {
 	addSampleSetPane(tabPane);
 
 	probeStructurePane = tabPane->addTab("Probes");
-	updateProbeStructurePane();
 
 	gui->pack();
 	addWidget(gui);
@@ -992,6 +1188,23 @@ void App::updateProbeStructurePane()
 	G3D::Array<G3D::String> probeStructureList = getFoldersInFolder("../data-files/Scenes/" + selectedScene + "/ProbeStructures");
 	scenePane.probeStructureList = probeStructurePane->addDropDownList("ProbeStructure", probeStructureList, NULL, GuiControl::Callback(this, &App::updateProbeStructure));
 
+    probeStructurePane->addButton(GuiText("New"), [this]() 
+    {
+        windowNewProbeStructure->setVisible(true);
+        bShouldUpdateProbeStructurePane = true;
+    }
+    , GuiTheme::TOOL_BUTTON_STYLE);
+
+    probeStructurePane->addButton(GuiText("New from copy..."), [this]()
+    {
+        if (!probeStructureLoaded())
+        {
+            return;
+        }
+
+        windowCopyProbeStructure->setVisible(true);
+    }
+    , GuiTheme::TOOL_BUTTON_STYLE);
 
     probeStructurePane->addButton(GuiText("Switch Back"), GuiControl::Callback(this, &App::loadPreviousProbeStructure), GuiTheme::TOOL_BUTTON_STYLE);
 	probeStructurePane->addButton(GuiText("Edit mode"), GuiControl::Callback(this, &App::switchEditProbeStructure), GuiTheme::TOOL_BUTTON_STYLE);
@@ -1003,7 +1216,7 @@ void App::updateProbeStructurePane()
 
     probeStructurePane->addButton(GuiText("Save positions"), [this]() 
     { 	
-        m_probeStructure->savePositions();
+        m_probeStructure->savePositions(true);
     } 
     , GuiTheme::TOOL_BUTTON_STYLE);
 
@@ -1033,9 +1246,18 @@ void App::updateProbeStructurePane()
 		const G3D::String type = "Type : " + m_probeStructure->type();
 		probeStructurePane->addLabel(type);
 		probeStructurePane->addLabel("Number of probes : " + String(std::to_string(m_probeStructure->probeCount())));
+        probeStructurePane->endRow();
 
-		probeStructurePanelOptions.gamma = String(std::to_string(m_probeStructure->gamma()));
-		probeStructurePane->addTextBox("Gamma", &(probeStructurePanelOptions.gamma));
+        probeStructurePanelOptions.gamma      = g3dString(m_probeStructure->gamma()     );
+        probeStructurePanelOptions.numSamples = g3dString(m_probeStructure->numSamples());
+        probeStructurePanelOptions.width      = g3dString(m_probeStructure->width()     );
+        probeStructurePanelOptions.height     = g3dString(m_probeStructure->height()    );
+        
+        probeStructurePane->beginRow();
+        probeStructurePane->addTextBox("Gamma",      &(probeStructurePanelOptions.gamma));
+        probeStructurePane->addTextBox("Width",      &(probeStructurePanelOptions.width));
+        probeStructurePane->addTextBox("Height",     &(probeStructurePanelOptions.height));
+        probeStructurePane->addTextBox("NumSamples", &(probeStructurePanelOptions.numSamples));
 
 		int currentIntegratorIndex = integratorList.findIndex(m_probeStructure->m_integrator);
 		G3D::GuiDropDownList* list = probeStructurePane->addDropDownList("Integrator", integratorList, &(probeStructurePanelOptions.integratorIndex), [this]() 
@@ -1047,7 +1269,10 @@ void App::updateProbeStructurePane()
 
 		probeStructurePane->addButton(GuiText("Save infos"), [this]() 
 		{
-			m_probeStructure->setGamma(std::stof(probeStructurePanelOptions.gamma.c_str()));
+            m_probeStructure->setGamma(     std::stof(probeStructurePanelOptions.gamma.c_str()));
+            m_probeStructure->setWidth(     std::stoi(probeStructurePanelOptions.width.c_str()));
+            m_probeStructure->setHeight(    std::stoi(probeStructurePanelOptions.height.c_str()));
+            m_probeStructure->setNumSamples(std::stoi(probeStructurePanelOptions.numSamples.c_str()));
 			m_probeStructure->saveInfoFile(); 
 		}, GuiTheme::TOOL_BUTTON_STYLE);
 
@@ -1110,7 +1335,15 @@ void App::onUserInput(UserInput* userInput)
 
     if (userInput->keyDown(GKey('u')))
     {
-        updateProbeStructurePane();
+        bShouldUpdateProbeStructurePane = true;
+    }
+    else if (userInput->keyDown(GKey('0')))
+    {
+        numPassesLeft = 0;
+    }
+    else if (userInput->keyDown(GKey('p')))
+    {
+        showAllProbes = true;
     }
 }
 
@@ -1131,7 +1364,7 @@ G3D::String App::optimizationFolderPath()
 
 G3D::String App::currentOptimizationFolderPath()
 {
-    return optimizationFolderPath() + "/" + String(std::to_string(m_currentOptimization));
+    return optimizationFolderPath() + "/" + g3dString(m_currentOptimization);
 }
 
 G3D::String App::probeStructureFoldersPath()
@@ -1142,4 +1375,15 @@ G3D::String App::probeStructureFoldersPath()
 G3D::String App::sampleSetFoldersPath()
 {
     return "../data-files/Scenes/" + selectedSceneName() + "/SampleSets";
+}
+
+G3D::String App::loadedProbeStructurePath()
+{
+    String name = m_probeStructure->m_name;
+    return probeStructureFoldersPath() + "/" + name;
+}
+
+bool App::probeStructureLoaded()
+{
+    return m_probeStructure != NULL;
 }

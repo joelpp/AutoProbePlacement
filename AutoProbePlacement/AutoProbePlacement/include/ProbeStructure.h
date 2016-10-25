@@ -108,6 +108,20 @@ public:
 
 	float gamma() { return m_gamma; }
 
+    void setGamma(float gamma);
+
+    int width() { return m_width; }
+
+    void setWidth(int w) { m_width = w; }
+
+    int height() { return m_height; }
+
+    void setHeight(int h) { m_height = h; }
+
+    int numSamples() { return m_NumSamples; }
+
+    void setNumSamples(int n) { m_NumSamples = n; }
+
 	//void coefficientInterpolation(G3D::Vector3 position, std::vector<G3D::Vector3> interpolatedCoefficients, std::vector<int>& probeIndices, std::vector<float> weights);
 	ProbeInterpolationRecord getInterpolationProbeIndicesAndWeights(const G3D::Vector3& position);
 	G3D::Array<G3D::Vector3> ProbeStructure::getInterpolatingProbesCoords(const G3D::Vector3& pos, int step);
@@ -116,6 +130,8 @@ public:
 
 	std::fstream probeListFileHandle(bool reading);
 	std::fstream infoFileHandle(bool reading);
+    std::fstream probeCoefficientsFileHandle(int i, bool reading);
+    std::fstream probeCoefficientsGradientsFileHandle(int i, bool reading);
 
 	TProbeCoefficients interpolatedCoefficients(const G3D::Vector3& position, const G3D::Vector3& normal);
 
@@ -129,28 +145,34 @@ public:
 
 	void loadProbeStructureInfo();
 
-    void savePositions();
+    void savePositions(bool useManipulator);
 
     void uploadToGPU();
 
 	void setIntegrator(String& integrator);
 
-	void setGamma(float gamma);
-
 	void setType(String& type);
 
 	void saveInfoFile();
 
-	float m_step;
+    bool hasProbes();
+
+	void saveCoefficients();
 	std::vector<int> m_dimensions;
-	float m_firstProbePosition[3];
 	Array<Probe*> probeList;
 	String m_name;
 	String m_sceneName;
-	float m_gamma;
 	String m_integrator;
 
-	int m_NumCoefficients;
+    float m_step;
+    float m_firstProbePosition[3];
+    float m_gamma;
+
+    int m_NumCoefficients;
+    int m_NumColors;
+    int m_width;
+    int m_height;
+    int m_NumSamples;
 };
 
 #endif

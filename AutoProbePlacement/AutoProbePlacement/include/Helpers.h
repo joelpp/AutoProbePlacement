@@ -18,13 +18,22 @@
 
 String generateFolderNameBaseAnySuffix(const String& prefix);
 
-bool runCommand(std::string command);
+bool runCommand(std::string command, bool waitForCompletion);
+bool runShellCommand(std::string command, bool showOutput, bool waitForCompletion);
 
-bool runPythonScriptFromDataFiles(std::string scriptName, std::string args, bool showOutput);
+bool runPythonScriptFromDataFiles(std::string scriptName, std::string args, bool showOutput, bool waitForCompletion);
 
 bool createFolder(const char* name);
+bool createFolder(String& name);
 
 void createEmptyFile(const char* name);
+void createEmptyFile(String name);
+
+void copyDir(const char* srcPath, const char* dstPath);
+void copyDir(const String& srcPath, const String& dstPath);
+
+void copyFile(const char* srcPath, const char* dstPath);
+void copyFile(const String& srcPath, const String& dstPath);
 
 int folderCount(const String& path);
 
@@ -36,4 +45,17 @@ Color3 sRGBtoRGB(const Color3& source);
 
 void dumpToFile(std::fstream& file, const Array<Vector3>& arr);
 
-Vector3 StringToVector3(G3D::String& s);
+void dumpZerosToFile(std::fstream& file, int amt);
+
+Vector3 StringToVector3(const G3D::String& s);
+Vector3 StringToVector3(const std::string& s);
+
+template<typename T>
+String g3dString(T s)
+{
+    return String(std::to_string(s).c_str());
+};
+
+void popNotification(std::string title, std::string message, int timeInSeconds);
+
+void normalize(G3D::Vector3& v);

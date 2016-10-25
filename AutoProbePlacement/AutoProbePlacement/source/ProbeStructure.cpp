@@ -31,8 +31,7 @@ ProbeStructure::ProbeStructure(String sceneName, String probeStructureName, int 
 	this->m_name = probeStructureName;
 	this->probeStructurePath = "../data-files/Scenes/" + sceneName + "/ProbeStructures/" + probeStructureName;;
 	this->m_dimensions.push_back(numProbes);
-	
-	m_NumCoefficients = 9;
+
 
 	for (int i = 0; i < numProbes; ++i)
 	{
@@ -60,6 +59,9 @@ ProbeStructure::ProbeStructure(String sceneName, String probeStructureName)
 
 	loadProbeStructureInfo();
 	makeProbeList();
+
+    m_NumCoefficients = 9;
+    m_NumColors = 3;
 
 	if (m_type == EProbeStructureType::Tetrahedral)
 	{
@@ -113,11 +115,23 @@ void ProbeStructure::loadProbeStructureInfo()
 			this->m_firstProbePosition[1] = std::stof(splitLine[1].c_str());
 			this->m_firstProbePosition[2] = std::stof(splitLine[2].c_str());
 		}
-		else if (param == "gamma")
-		{
-			this->m_gamma = std::stof(splitLine[0].c_str());
-		}
-		else if (param == "integrator")
+        else if (param == "gamma")
+        {
+            this->m_gamma = std::stof(splitLine[0].c_str());
+        }
+        else if (param == "sampleCount")
+       { 
+            this->m_NumSamples = std::stoi(splitLine[0].c_str());
+        }
+        else if (param == "width")
+        {
+            this->m_width = std::stoi(splitLine[0].c_str());
+        }
+        else if (param == "height")
+        {
+            this->m_height = std::stoi(splitLine[0].c_str());
+        }
+        else if (param == "integrator")
 		{
 			this->m_integrator = splitLine[0];
 		}
@@ -127,7 +141,7 @@ void ProbeStructure::loadProbeStructureInfo()
 	}
 }
 
-std::fstream openFile(String path)
+std::fstream openFile(String& path)
 {
 	std::fstream returnFile;
 
@@ -240,7 +254,7 @@ void ProbeStructure::makeProbeList()
 					std::getline(coeffFile, line2);
 					std::getline(coeffFile, line3);
 					temporaryArray.push_back(Vector3(std::stof(line.c_str()), std::stof(line2.c_str()), std::stof(line3.c_str())));
-					//temporaryArray.push_back(Vector3(Random::common().uniform(1.f,5.f), Random::common().uniform(1.f,5.f), Random::common().uniform(1.f,5.f)));
+					//temporaryArray.push_back(Vector3(Random::common().uniform(-0.15f, 0.15f), Random::common().uniform(-0.15f, 0.15f), Random::common().uniform(-0.15f, 0.15f)));
 
 					if (++counter == 3)
 					{
@@ -958,6 +972,50 @@ std::fstream ProbeStructure::infoFileHandle(bool reading)
 	return file;
 }
 
+std::fstream ProbeStructure::probeCoefficientsFileHandle(int i, bool reading)
+{
+    int operation = reading ? std::fstream::in : std::fstream::out;
+    String id = String(std::to_string(i).c_str());
+    std::fstream file((probeStructurePath + "/Coefficients/Coefficients_" + id + ".txt").c_str(), operation);
+
+    if (!file || !file.is_open())
+    {
+        if (reading)
+        {
+            debugPrintf("Failed to open coeff file for reading.");
+
+        }
+        else
+        {
+            debugPrintf("Failed to open coeff file for writing.");
+        }
+    }
+
+    return file;
+}
+
+std::fstream ProbeStructure::probeCoefficientsGradientsFileHandle(int i, bool reading)
+{
+    int operation = reading ? std::fstream::in : std::fstream::out;
+    String id = String(std::to_string(i).c_str());
+    std::fstream file((probeStructurePath + "/Coefficients/CoefficientsGradients_" + id + ".txt").c_str(), operation);
+
+    if (!file || !file.is_open())
+    {
+        if (reading)
+        {
+            debugPrintf("Failed to open coeff gradients file for reading.");
+
+        }
+        else
+        {
+            debugPrintf("Failed to open coeff gradients file for writing.");
+        }
+    }
+
+    return file;
+}
+
 
 void ProbeStructure::updateProbes(bool updateAll)
 {
@@ -994,7 +1052,7 @@ void ProbeStructure::updateProbes(bool updateAll)
 		std::stringstream args;
 		args << m_sceneName.c_str() << " " << m_name.c_str() << " Probes";
 
-		runPythonScriptFromDataFiles("onecamera.py", args.str(), true);
+		runPythonScriptFromDataFiles("onecamera.py", args.str(), true, true);
 	}
 
 	for (int i = 0; i < probeList.size(); ++i)
@@ -1094,7 +1152,13 @@ void ProbeStructure::displaceProbesWithGradient(std::vector<float>& displacement
 		G3D::Vector3& displacement = G3D::Vector3(displacements[counter * 3 + 0],
 												  displacements[counter * 3 + 1],
 												  displacements[counter * 3 + 2]);
-        //displacement /= 5.f;
+        float maxLength = 0.1f;
+        float length = displacement.length();
+        if (length > maxLength)
+        {
+            float factor = sqrtf(length / maxLength);
+            displacement /= factor;
+        }
 		Probe* probe = probeList[counter];
 
 		// Start by sending the probe to its new location
@@ -1136,6 +1200,8 @@ TProbeCoefficients ProbeStructure::interpolatedCoefficients(const G3D::Vector3& 
 		for (int c = 0; c < m_NumCoefficients; ++c)
 		{
 			Vector3& coeffs = probeCoeffs[c];
+
+            interpolatedCoeffs.push_back(Vector3());
 			interpolatedCoeffs[c].x += weight * coeffs.x;
 			interpolatedCoeffs[c].y += weight * coeffs.y;
 			interpolatedCoeffs[c].z += weight * coeffs.z;
@@ -1197,7 +1263,7 @@ G3D::Vector3 ProbeStructure::reconstructSH(const G3D::Vector3& position, const G
 
         }
     }
-    //rgb /= 3.141592654f;
+    rgb /= 3.141592654f;
 
     return rgb;
 }
@@ -1208,7 +1274,7 @@ void ProbeStructure::generateProbes(std::string type)
     std::stringstream args;
     args << m_sceneName.c_str() << " " << m_name.c_str() << " " << type;
 
-    runPythonScriptFromDataFiles("onecamera.py", args.str(), true);
+    runPythonScriptFromDataFiles("onecamera.py", args.str(), true, true);
 
     for (Probe* p : probeList)
     {
@@ -1225,7 +1291,7 @@ void ProbeStructure::extractSHCoeffs()
         Probe* p = probeList[i];
 
         p->computeCoefficientsFromTexture(true);
-
+		p->saveCoefficients();
 
 		p->bNeedsUpdate = false;
     }
@@ -1233,19 +1299,45 @@ void ProbeStructure::extractSHCoeffs()
     uploadToGPU();
 }
 
-void ProbeStructure::savePositions()
+void ProbeStructure::savePositions(bool useManipulator)
 {
     std::fstream probeListFile = probeListFileHandle(false);
 
     for (int i = 0; i < probeList.size(); ++i)
     {
         Probe* p = probeList[i];
-
+        G3D::Vector3 probePosition;
         // todo: ugh :(
-        G3D::Vector3 probePosition = p->manipulator->frame().translation;
+        if (useManipulator)
+        {
+            probePosition = p->manipulator->frame().translation;
+            p->setPosition(probePosition);
+        }
+        else
+        {
+            probePosition = p->getPosition();
+        }
 
         std::string toWrite = std::to_string(probePosition[0]) + " " + std::to_string(probePosition[1]) + " " + std::to_string(probePosition[2]) + "\n";
         probeListFile << toWrite;
+
+        // check if coeff file exists
+        std::fstream coeffFile = probeCoefficientsFileHandle(i, true);
+        if (!(coeffFile.is_open()))
+        {
+            std::fstream newCoeffFile = probeCoefficientsFileHandle(i, false);
+            dumpZerosToFile(newCoeffFile, m_NumCoefficients * m_NumColors);
+            newCoeffFile.close();
+
+            std::fstream newCoeffGradientFile = probeCoefficientsGradientsFileHandle(i, false);
+            dumpZerosToFile(newCoeffGradientFile, m_NumCoefficients * m_NumColors * 3);
+            newCoeffGradientFile.close();
+        }
+        else
+        {
+            coeffFile.close();
+        }
+
     }
 
     probeListFile.close();
@@ -1332,9 +1424,9 @@ void ProbeStructure::saveInfoFile()
 	infoFile << "dimensions"	<< " " << probeCount()							<< std::endl;
 	infoFile << "integrator"	<< " " << std::string(m_integrator.c_str())		<< std::endl;
 	infoFile << "gamma"			<< " " << m_gamma								<< std::endl;
-	infoFile << "sampleCount"	<< " " << 128									<< std::endl;
-	infoFile << "width"			<< " " << 128									<< std::endl;
-	infoFile << "height"		<< " " << 64									<< std::endl;
+	infoFile << "sampleCount"	<< " " << m_NumSamples							<< std::endl;
+	infoFile << "width"			<< " " << m_width								<< std::endl;
+	infoFile << "height"		<< " " << m_height								<< std::endl;
 }
 
 void ProbeStructure::addProbe(G3D::Vector3& position)
@@ -1345,9 +1437,7 @@ void ProbeStructure::addProbe(G3D::Vector3& position)
 	probe->bNeedsUpdate = true;
 	probe->m_sphere = Sphere(position, 0.1f);
 
-
 	probe->frame = CFrame::fromXYZYPRDegrees(position.x, position.y, position.z, 0, 0, 0);
-
 
 	probe->manipulator = ProbeManipulator::create();
 	probe->manipulator->setFrame(probe->frame);
@@ -1355,5 +1445,18 @@ void ProbeStructure::addProbe(G3D::Vector3& position)
 	probe->manipulator->p = probe;
 
 	probeList.push_back(probe);
+}
 
+
+bool ProbeStructure::hasProbes()
+{
+    return probeCount() > 0;
+}
+
+void ProbeStructure::saveCoefficients()
+{
+	for (int i = 0; i < probeList.size(); ++i)
+	{
+		probeList[i]->saveCoefficients();
+	}
 }

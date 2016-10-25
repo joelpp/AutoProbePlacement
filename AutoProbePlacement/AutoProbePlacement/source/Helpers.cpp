@@ -1,14 +1,14 @@
 #define WIN32_LEAN_AND_MEAN
 #include <Windows.h>
+#include <shellapi.h>
 #include <sstream>
 #include <iostream>
 #include <fstream>
 #include "Helpers.h"
 #include "SH.h"
 
-#define HOME_PC
-
-//#define LIGUM_PC
+//#define HOME_PC
+#define LIGUM_PC
 
 String generateFolderNameBaseAnySuffix(const String& prefix) 
 {
@@ -42,7 +42,7 @@ int folderCount(const String& path)
     return exist.size();
 }
 
-bool runCommand(std::string command)
+bool runCommand(std::string command, bool waitForCompletion)
 {
 	//std::stringstream args;
 	//args << "cmd /c \"" << command <<" \"";
@@ -63,7 +63,7 @@ bool runCommand(std::string command)
 		DWORD err = GetLastError();
 		std::cout << "ERROR:" << err << std::endl;
 	}
-	else if (result == true)
+	else if (result == true && waitForCompletion)
 	{
 		WaitForSingleObject(pi.hProcess, INFINITE);
 		CloseHandle(pi.hProcess);
@@ -73,7 +73,24 @@ bool runCommand(std::string command)
 	return result;
 }
 
-bool runPythonScriptFromDataFiles(std::string scriptName, std::string args, bool showOutput)
+bool runShellCommand(std::string command, bool showOutput, bool waitForCompletion)
+{
+    std::stringstream ss;
+    ss << "cmd /c \"";
+    ss << command;
+    ss << "\"";
+
+    if (!showOutput)
+    {
+        ss << " > nul";
+    }
+
+    std::cout << ss.str();
+    
+    return runCommand(ss.str(), waitForCompletion);
+}
+
+bool runPythonScriptFromDataFiles(std::string scriptName, std::string args, bool showOutput, bool waitForCompletion)
 {
 	std::stringstream ss;
 
@@ -91,7 +108,7 @@ bool runPythonScriptFromDataFiles(std::string scriptName, std::string args, bool
 	}
 
 	std::cout << ss.str();
-	return runCommand(ss.str());
+	return runCommand(ss.str(), waitForCompletion);
 }
 
 bool createFolder(const char* name)
@@ -100,9 +117,64 @@ bool createFolder(const char* name)
 	return ERROR_ALREADY_EXISTS == GetLastError();
 }
 
+bool createFolder(String& name)
+{
+    return createFolder(name.c_str());
+}
+
 void createEmptyFile(const char* name)
 {
 	std::fstream file(name, std::fstream::out);
+}
+
+void createEmptyFile(String name)
+{
+    std::fstream file(name.c_str(), std::fstream::out);
+}
+
+void copyDir(const char* srcPath, const char* dstPath)
+{
+    std::stringstream command;
+    command << "xcopy \"" << srcPath << "\" \"" << dstPath << "\" /e /i /y /s";
+    runShellCommand(command.str(), true, true);
+}
+
+void copyDir(const String& srcPath, const String& dstPath)
+{
+    copyDir(srcPath.c_str(), dstPath.c_str());
+}
+
+void copyFile(const char* srcPath, const char* dstPath)
+{
+    std::stringstream command;
+    command << "copy \"" << srcPath << "\" \"" << dstPath << "\"";
+    runShellCommand(command.str(), true, true);
+}
+
+void copyFile(const String& srcPath, const String& dstPath)
+{
+    copyFile(srcPath.c_str(), dstPath.c_str());
+}
+
+void notify(const char* message)
+{
+    //DWORD dwMessage;
+    //PNOTIFYICONDATA lpdata;
+    //ZeroMemory(&lpdata, sizeof(PNOTIFYICONDATA));
+
+    //ULONGLONG ullVersion =
+    //    GetDllVersion(_T("Shell32.dll"));
+
+    //if (ullVersion >= MAKEDLLVERULL(6, 0, 0, 0))
+    //    niData.cbSize = sizeof(NOTIFYICONDATA);
+
+    //else if (ullVersion >= MAKEDLLVERULL(5, 0, 0, 0))
+    //    niData.cbSize = NOTIFYICONDATA_V2_SIZE;
+
+    //else niData.cbSize = NOTIFYICONDATA_V1_SIZE;
+
+    //BOOL b = Shell_NotifyIcon(dwMessage,lpdata);
+
 }
 //
 //
@@ -196,8 +268,33 @@ void dumpToFile(std::fstream& file, const Array<Vector3>& arr)
 	}
 }
 
-Vector3 StringToVector3(G3D::String& s)
+void dumpZerosToFile(std::fstream& file, int amt)
+{
+    for (int j = 0; j < amt; ++j)
+    {
+        file << 0 << std::endl;
+    }
+}
+Vector3 StringToVector3(const std::string& s)
+{
+    return StringToVector3(String(s.c_str()));
+}
+
+
+Vector3 StringToVector3(const G3D::String& s)
 {
 	Array<String> split = stringSplit(s, ' ');
 	return Vector3(std::stof(split[0].c_str()), std::stof(split[1].c_str()), std::stof(split[2].c_str()));
+}
+
+void popNotification(std::string title, std::string message, int timeInSeconds)
+{
+    runShellCommand("C:/bin/notifu/notifu.exe /p \"" + title + "\" /m \"" + message + "\" /d " + std::to_string(timeInSeconds), true, false);
+}
+
+void normalize(G3D::Vector3& v)
+{
+    float l = v.length();
+
+    v /= l;
 }

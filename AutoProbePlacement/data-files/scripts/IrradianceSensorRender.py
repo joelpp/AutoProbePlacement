@@ -165,7 +165,7 @@ for sampleNumber in xrange(numberOfSamples):
 	resultsFile = open(sampleSetPath + '/IrradianceResults2.txt', 'a');
 	result = renderResult[0][0];
 	print result;
-	resultsFile.write( repr(helper.sRGBToRGBVal(result[0]/255.)) + " " + repr(helper.sRGBToRGBVal(result[1]/255.)) + " " + repr(helper.sRGBToRGBVal(result[2]/255.)) + "\n");
-	# resultsFile.write( repr(result[0]/255.) + " " + repr(result[1]/255.) + " " + repr(result[2]/255.) + "\n");
+	# resultsFile.write( repr(helper.sRGBToRGBVal(result[0]/255.)) + " " + repr(helper.sRGBToRGBVal(result[1]/255.)) + " " + repr(helper.sRGBToRGBVal(result[2]/255.)) + "\n");
+	resultsFile.write( repr(result[0]/255.) + " " + repr(result[1]/255.) + " " + repr(result[2]/255.) + "\n");
 
 samplesFile.close();

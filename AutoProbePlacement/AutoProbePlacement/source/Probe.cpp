@@ -93,6 +93,11 @@ Point3 Probe::getPosition()
 	return this->frame.translation;
 }
 
+void Probe::setPosition(G3D::Vector3& pos)
+{
+    this->frame.translation = pos;
+}
+
 
 CoeffGradients CreateCoeffGradients(int NumCoefficients)
 {
@@ -238,6 +243,15 @@ void Probe::computeCoefficientsFromTexture(bool alsoSet)
 	//this->coeffs = tempCoeffs;
 	//this->coeffGradients = tempCoeffGradients;
 
+	if (alsoSet)
+	{
+		this->coeffs = tempCoeffs;
+		this->coeffGradients = tempCoeffGradients;
+	}
+}
+
+void Probe::saveCoefficients()
+{
 	String coeffFilePath = buildPath(EResource::Coefficients);
 	String gradientFilePath = buildPath(EResource::CoefficientGradients);
 
@@ -248,32 +262,26 @@ void Probe::computeCoefficientsFromTexture(bool alsoSet)
 	coeffFile.precision(20);
 	gradientFile.precision(20);
 
-    char channels[3] = {'R', 'G', 'B'};
+	char channels[3] = { 'R', 'G', 'B' };
 
-	for (int i = 0 ; i < NumCoeffs; ++i)
+	for (int i = 0; i < coeffs.size(); ++i)
 	{
-        gradientFile << "// Coeff #" << i << std::endl;
+		gradientFile << "// Coeff #" << i << std::endl;
 
-        coeffFile << tempCoeffs[i][0] << std::endl;
-		coeffFile << tempCoeffs[i][1] << std::endl;
-		coeffFile << tempCoeffs[i][2] << std::endl;
+		coeffFile << coeffs[i][0] << std::endl;
+		coeffFile << coeffs[i][1] << std::endl;
+		coeffFile << coeffs[i][2] << std::endl;
 
 		for (int channel = 0; channel < 3; ++channel)
 		{
-            gradientFile << "// Channel " << channels[channel] << std::endl;
+			gradientFile << "// Channel " << channels[channel] << std::endl;
 			for (int axis = AXIS_X; axis <= AXIS_Z; ++axis)
 			{
-				gradientFile << tempCoeffGradients[i][channel][axis] << std::endl;
+				gradientFile << coeffGradients[i][channel][axis] << std::endl;
 			}
 		}
 	}
 
 	coeffFile.close();
 	gradientFile.close();
-
-	if (alsoSet)
-	{
-		this->coeffs = tempCoeffs;
-		this->coeffGradients = tempCoeffGradients;
-	}
 }

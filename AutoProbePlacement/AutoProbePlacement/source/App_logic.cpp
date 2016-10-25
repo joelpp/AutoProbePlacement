@@ -110,9 +110,9 @@ float App::computeError()
 	std::fstream currentFile, referenceFile, logFile;
     String errorLogPath = currentOptimizationFolderPath() + "/errorlog.txt";
 
-	currentFile.open(   (currentOptimizationFolderPath() + "/samplesRGB.txt"    ).c_str(), std::fstream::in);
-	referenceFile.open( (currentOptimizationFolderPath() + "/samplesRGB_ref.txt").c_str(), std::fstream::in);
-    logFile.open(       errorLogPath.c_str(),                                     std::fstream::out | std::fstream::app);
+	currentFile.open(   (currentOptimizationFolderPath() + "/values.txt"    ).c_str(), std::fstream::in);
+	referenceFile.open( (currentOptimizationFolderPath() + "/ref_values.txt").c_str(), std::fstream::in);
+    logFile.open(       errorLogPath.c_str(),                                          std::fstream::out | std::fstream::app);
 
 	float error = 0;
 
@@ -258,14 +258,15 @@ void App::tryOptimization()
 	std::stringstream ss;
 	std::vector<float> displacements;
 
+    sampleSet->generateRGBValuesFromProbes(numSamples, currentOptimizationFolderPath() + "/values.txt", 0);
     float error = computeError();
-	displacements = sampleSet->tryOptimizationPass(numSamples, false, currentOptimizationFolderPath());
+	displacements = sampleSet->tryOptimizationPass(numSamples, bOptimizeWithMitsubaSamples, currentOptimizationFolderPath());
 
 	sw.after("Performed optimization step");
 	if (displacements.size() > 0)
 	{
 		m_probeStructure->displaceProbesWithGradient(displacements);
-        m_probeStructure->savePositions();
+        m_probeStructure->savePositions(false);
         m_probeStructure->updateProbes("all");
         m_probeStructure->extractSHCoeffs();
 	}
@@ -274,20 +275,20 @@ void App::tryOptimization()
 void App::computeSamplesRGB()
 {
 	int numSamples = std::atoi(numOptimizationSamples.c_str());
-    String outputFile = currentOptimizationFolderPath() + "/samplesRGB.txt";
+    String outputFile = currentOptimizationFolderPath() + "/values.txt";
     sampleSet->generateRGBValuesFromProbes(numSamples, outputFile, 0);
 }
 void App::computeSamplesRGBRef()
 {
 	int numSamples = std::atoi(numOptimizationSamples.c_str());
-    String outputFile = currentOptimizationFolderPath() + "/samplesRGB_ref.txt";
+    String outputFile = currentOptimizationFolderPath() + "/ref_values.txt";
 	sampleSet->generateRGBValuesFromProbes(numSamples, outputFile, 0);
 }
 
 void App::computeTriplets()
 {
 	int numSamples = std::atoi(numOptimizationSamples.c_str());
-	sampleSet->generateTriplets(numSamples, currentOptimizationFolderPath() + "triplets.txt", 0);
+	sampleSet->generateTriplets(numSamples, currentOptimizationFolderPath() + "triplets.txt", 0, false);
 }
 
 void App::addOneActor()
@@ -312,7 +313,17 @@ void App::addOneActorSq()
 
 void App::displaceProbes()
 {
+	G3D::Vector3 displacementV = Vector3(0.1, 0, 0).unit();
 
+	std::vector<float> displacement;
+	displacement.push_back(displacementV.x);
+	displacement.push_back(displacementV.y);
+	displacement.push_back(displacementV.z);
+
+	m_probeStructure->displaceProbesWithGradient(displacement);
+	m_probeStructure->saveCoefficients();
+
+	return;
 	std::vector<G3D::Vector3> originalPositions;
 
 	for (int i = 0 ; i < m_probeStructure->probeCount(); ++i)
@@ -327,10 +338,13 @@ void App::displaceProbes()
 
 		for (int j = 0 ; j < m_probeStructure->probeCount(); ++j)
 		{
-			m_probeStructure->getProbe(j)->frame.translation = originalPositions[j];
+			m_probeStructure->getProbe(j)->setPosition(originalPositions[j]);
 		}
-		m_probeStructure->updateProbes(true);
-		updateProbeStructure();
+		//m_probeStructure->updateProbes(true);
+        m_probeStructure->savePositions(false);
+        m_probeStructure->generateProbes("all");
+        m_probeStructure->extractSHCoeffs();
+		//updateProbeStructure();
 
 		G3D::Vector3 displacementV = Vector3(1,1,1).unit();
 
@@ -342,13 +356,16 @@ void App::displaceProbes()
 		Array<G3D::Vector3> renderedCoeffs, optimCoeffs;
 
 		m_probeStructure->displaceProbesWithGradient(displacement);
-		computeSamplesRGB();
+        m_probeStructure->savePositions(false);
+		//computeSamplesRGB();
 		//computeError("C:/temp/errorlog.txt");
 		optimCoeffs = m_probeStructure->getProbe(0)->coeffs;
 
-		m_probeStructure->updateProbes(true);
-		updateProbeStructure();
-		computeSamplesRGB();
+		//m_probeStructure->updateProbes(true);
+		//updateProbeStructure();
+        m_probeStructure->generateProbes("all");
+        m_probeStructure->extractSHCoeffs();
+		//computeSamplesRGB();
 		//computeError("C:/temp/errorlog2.txt");
 		renderedCoeffs = m_probeStructure->getProbe(0)->coeffs;
 

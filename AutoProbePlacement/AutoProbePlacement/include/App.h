@@ -26,7 +26,13 @@ classes and use G3D::Sky to handle the skybox.
 class SceneSampleSet;
 
 
+struct SProbeOptimization
+{
+    int id;
+    std::vector<float> errors;
+    std::vector<float> dp;
 
+};
 struct ScenePane
 {
 	G3D::GuiDropDownList* selectedSceneList;
@@ -59,7 +65,10 @@ struct SProbeStructurePanel
 {
 	int typeIndex;
 	int integratorIndex;
-	String gamma;
+    String gamma;
+    String width;
+    String height;
+    String numSamples;
 };
 
 
@@ -81,11 +90,16 @@ private:
 	void drawModel(RenderDevice* rd, String shaderName, shared_ptr<ArticulatedModel> model, CFrame frame,Args args);
 
 	virtual void makeGui();
-	void createNewProbeWindow();
+    void createRenameOptimizationWindow();
+    void createNewProbeWindow();
 	void createNewSampleSetWindow();
 	void createNewProbe(String& sceneName, String& probeStructureName, G3D::Vector3& position);
 	void createNewSampleSet(String& sceneName, String& sNewSampleSetName);
 	void createNewProbeStructureWindow();
+    void createNewProbeStructure(String& sceneName, String& newSampleSetName);
+    void createCopyProbeStructureWindow();
+    void copyProbeStructure(String& sceneName, String& sourceProbeStructureName, String& newProbeStructureName);
+    void createNewOptimizationSettings();
 
 	ScenePane scenePane;
 	GuiPane* probeStructurePane;
@@ -119,6 +133,9 @@ private:
     G3D::String currentOptimizationFolderPath();
     G3D::String probeStructureFoldersPath();
     G3D::String sampleSetFoldersPath();
+    G3D::String loadedProbeStructurePath();
+
+    bool probeStructureLoaded();
 
 	/**
 	* Interpolation
@@ -201,6 +218,7 @@ private:
 	/**
 	* Models
 	*/
+
 	shared_ptr<ArticulatedModel>        dragonModel;
 	shared_ptr<ArticulatedModel>        sceneModel;
 	shared_ptr<ArticulatedModel>        sphereModel;
@@ -280,7 +298,7 @@ private:
 	bool saveSample;
 	bool useBakedSceneTextures;
 	bool interpolateCoefficients;
-
+    
 
 	std::string tetgenString;
 
@@ -309,7 +327,7 @@ private:
 	bool showDarkSamples;
 	bool showSamples;
 	bool useSHGradients;
-	bool useMatlabOptimization;
+	bool bOptimizeForCoeffs;
 	TriTree triTree;
 	//Index* trisIndex;
 
@@ -363,7 +381,9 @@ public:
 
 	shared_ptr<GuiWindow> windowNewProbe;
 	shared_ptr<GuiWindow> windowNewSampleSet;
-	shared_ptr<GuiWindow> windowNewProbeStructure;
+    shared_ptr<GuiWindow> windowNewProbeStructure;
+    shared_ptr<GuiWindow> windowCopyProbeStructure;
+    shared_ptr<GuiWindow> windowRenameOptimization;
 	SOfflineRenderingOptions offlineRenderingOptions;
 	SProbeStructurePanel probeStructurePanelOptions;
 
@@ -371,7 +391,13 @@ public:
 	G3D::Array<G3D::String> filmTypeList;
 
     int m_currentOptimization;
+    String sCurrentOptimizationName;
+    SProbeOptimization currentOptimization;
 
+    bool bShouldUpdateProbeStructurePane;
+    bool bKeepRefValuesOnNewOptimization; 
+    bool bTakeRefScreenshot;
+    bool bOptimizeWithMitsubaSamples;
 };
 
 #endif

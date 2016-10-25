@@ -3,8 +3,8 @@ from PIL import Image
 from PIL import ImageFont
 from PIL import ImageDraw
 
-def label():
-	root = "C:/temp/CurrentOptimization/"
+def label(sceneName, ID):
+	root = "../Scenes/" + sceneName + "/Optimizations/" + ID + "/";
 	errorLogFile = open(root + "errorlog.txt",'r');
 
 	errorlines = errorLogFile.readlines();
@@ -12,7 +12,7 @@ def label():
 	for i in xrange(len(errorlines)):
 		
 		try:
-			path = root + "screens/" + repr(i) + ".jpg"
+			path = root + "screens/" + repr(i+1) + ".jpg"
 			
 			image = Image.open(path);
 			draw = ImageDraw.Draw(image)

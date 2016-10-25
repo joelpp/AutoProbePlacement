@@ -24,13 +24,20 @@ public:
 	SceneSampleSet(std::string sceneName, std::string sampleSetName, float scale, int numSamplesToLoad);
 	
 	void addSample(SceneSample sample);
-	void generateTriplets(int NumberOfSamples, String outputPath, std::vector<Eigen::Triplet<float>>* eigenTriplets);
+    WeightMatrixType generateWeightsMatrix(int NumberOfSamples);
+	Eigen::VectorXd generatebVector(int NumberOfSamples, String optimizationFolderPath);
+	void outputWeightsMatrixToFile(int NumberOfSamples, String optimizationFolderPath);
+    void outputBVectorToFile(int NumberOfSamples, String optimizationFolderPath);
+
+	float generateTriplet(int row, int col, const ProbeInterpolationRecord* iRec);
+	void generateTriplets(int NumberOfSamples, String outputPath, std::vector<Eigen::Triplet<float>>* eigenTriplets, bool optimizeForCoeffs);
 	void generateRGBValuesFromProbes(int NumberOfSamples, String savePath, Eigen::VectorXd* eigenVector);
     void generateRGBValuesFromProbes(int NumberOfSamples);
-	void generateInterpolatedCoefficientsFromProbes(int NumberOfSamples, String savePath, Eigen::VectorXd* eigenVector = 0);
+    void generateRGBValuesFromSamples(int NumberOfSamples, String savePath, Eigen::VectorXd* eigenVector = 0);
+    void generateInterpolatedCoefficientsFromProbes(int NumberOfSamples, String savePath, Eigen::VectorXd* eigenVector = 0);
 	void save();
 	void load(int maxSamples);
-	std::vector<float> tryOptimizationPass(int NumberOfSamples, bool ref, String optimizationFolderPath);
+	std::vector<float> tryOptimizationPass(int NumberOfSamples, bool optimizeForMitsubaSamples, String optimizationFolderPath);
 	bool probeOptimizationPass(WeightMatrixType& A, Eigen::VectorXd& b, Eigen::VectorXd* result);
     void createbVector(Eigen::VectorXd* bVector, const Eigen::VectorXd* rgbColumn, String& optimizationFolderPath);
 
@@ -38,7 +45,6 @@ public:
 	void clearPositions();
 
     std::fstream SceneSampleSet::openFile(ESSFile type, bool reading);
-
 	/*
 		Member variables
 	*/

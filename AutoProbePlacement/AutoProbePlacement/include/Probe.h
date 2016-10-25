@@ -29,6 +29,7 @@ public:
 	shared_ptr<Texture> getTexture(int texID);
 	void computeCoefficientsFromTexture(bool alsoSet);
 	String buildPath(EResource res);
+	void saveCoefficients();
 
 	shared_ptr<Texture>		texture;
 	shared_ptr<Texture>		irr_texture;
@@ -44,7 +45,8 @@ public:
 	shared_ptr<ProbeManipulator> manipulator;
 	shared_ptr<ProbeManipulator> getManipulator();
 	Point3 getPosition();
-	CFrame frame;
+    void setPosition(G3D::Vector3& pos);
+    CFrame frame;
 
 
 	bool bNeedsUpdate;

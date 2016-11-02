@@ -44,7 +44,20 @@ public:
 	void clearValues();
 	void clearPositions();
 
-    std::fstream SceneSampleSet::openFile(ESSFile type, bool reading);
+	float distanceToProbe(const G3D::Vector3& position, int p);
+	float w(const G3D::Vector3& position, const G3D::Vector3& normal, int m, int n, int axis, int color);
+	float A(const G3D::Vector3& position, const G3D::Vector3& normal, int m, int n, int axis, int color);
+	float dWeightMdProbeN(const G3D::Vector3& position, const G3D::Vector3& normal, int m, int n, int axis, int color);
+	float dRdX(const G3D::Vector3& position, const G3D::Vector3& normal, int m, int axis, int color);
+	float R(const G3D::Vector3& position, const G3D::Vector3& normal, int m, int axis, int color);
+	float B(const G3D::Vector3& position, const G3D::Vector3& normal, int m, int n, int axis, int color);
+	float dInverseSquaredSumdProbeN(const G3D::Vector3& position, const G3D::Vector3& normal, int m, int n, int axis, int color);
+
+	float D(const G3D::Vector3& position, const G3D::Vector3& normal, int m, int n, int axis, int color);
+	float InverseSumOf1OverSquaredProbeDistances(const G3D::Vector3& position);
+	float SumOfInverseSquaredProbeDistances(const G3D::Vector3& position);
+	float dInverseDistanceSquaredMdProbeN(const G3D::Vector3& position, const G3D::Vector3& normal, int m, int n, int axis, int color);
+    std::fstream openFile(ESSFile type, bool reading);
 	/*
 		Member variables
 	*/

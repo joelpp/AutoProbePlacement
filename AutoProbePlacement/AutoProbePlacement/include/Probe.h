@@ -27,6 +27,7 @@ public:
 	Probe();
 	Probe(int i, String probeStructurePath);
 	shared_ptr<Texture> getTexture(int texID);
+	void reconstructSH(const G3D::Vector3& normal);
 	void computeCoefficientsFromTexture(bool alsoSet);
 	String buildPath(EResource res);
 	void saveCoefficients();

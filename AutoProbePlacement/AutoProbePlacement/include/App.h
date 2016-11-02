@@ -398,6 +398,10 @@ public:
     bool bKeepRefValuesOnNewOptimization; 
     bool bTakeRefScreenshot;
     bool bOptimizeWithMitsubaSamples;
+
+	String maxProbeStepLength;
+
+	bool sampleSetLoaded();
 };
 
 #endif

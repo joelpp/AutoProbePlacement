@@ -84,7 +84,7 @@ void App::clearAllActors(){
 
 void App::startOptimizationPasses()
 {
-	if (sampleSet)
+	if (sampleSetLoaded() && probeStructureLoaded())
 	{
 		std::fstream infoFile;
 		infoFile.open("C:/temp/CurrentOptimization/InitialConditions.txt", std::fstream::out | std::fstream::app | std::fstream::in);
@@ -265,9 +265,9 @@ void App::tryOptimization()
 	sw.after("Performed optimization step");
 	if (displacements.size() > 0)
 	{
-		m_probeStructure->displaceProbesWithGradient(displacements);
+		m_probeStructure->displaceProbesWithGradient(displacements, std::stof(maxProbeStepLength.c_str()));
         m_probeStructure->savePositions(false);
-        m_probeStructure->updateProbes("all");
+        m_probeStructure->generateProbes("all");
         m_probeStructure->extractSHCoeffs();
 	}
 }
@@ -320,7 +320,7 @@ void App::displaceProbes()
 	displacement.push_back(displacementV.y);
 	displacement.push_back(displacementV.z);
 
-	m_probeStructure->displaceProbesWithGradient(displacement);
+	m_probeStructure->displaceProbesWithGradient(displacement, 0.1f);
 	m_probeStructure->saveCoefficients();
 
 	return;
@@ -355,7 +355,7 @@ void App::displaceProbes()
 
 		Array<G3D::Vector3> renderedCoeffs, optimCoeffs;
 
-		m_probeStructure->displaceProbesWithGradient(displacement);
+		m_probeStructure->displaceProbesWithGradient(displacement, 0.1f);
         m_probeStructure->savePositions(false);
 		//computeSamplesRGB();
 		//computeError("C:/temp/errorlog.txt");

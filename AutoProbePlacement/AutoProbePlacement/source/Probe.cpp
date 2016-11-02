@@ -285,3 +285,11 @@ void Probe::saveCoefficients()
 	coeffFile.close();
 	gradientFile.close();
 }
+
+void Probe::reconstructSH(const G3D::Vector3& normal)
+{
+	for (int i = 0; i < coeffs.size(); ++i)
+	{
+
+	}
+}

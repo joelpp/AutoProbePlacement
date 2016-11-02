@@ -99,7 +99,7 @@ public:
 	void updateProbes(bool updateAll);
 	void applyOffsetToProbes(std::vector<float>& displacements);
 	bool isOutsideSceneBounds(G3D::Vector3 pos, float tolerance);
-	void displaceProbesWithGradient(std::vector<float>& displacements);
+	void displaceProbesWithGradient(std::vector<float>& displacements, float maxStepLength);
 
 
 	String name() { return m_name; }

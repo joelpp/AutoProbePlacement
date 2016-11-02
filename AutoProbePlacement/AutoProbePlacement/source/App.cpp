@@ -135,6 +135,7 @@ void App::onInit() {
     smallestBaryCoord = -1;
     numPassesLeft = 0;
     timer = 0;
+	maxProbeStepLength = "0.1";
 
     numOptimizationSamples = "0";
     maxSamplesPointsToDraw = "0";
@@ -1012,6 +1013,7 @@ void App::makeGui() {
         windowRenameOptimization->setVisible(true);
     }
     , GuiTheme::TOOL_BUTTON_STYLE);
+	tab->addTextBox("Max probe step", &maxProbeStepLength);
 
 	tab->endRow();
 
@@ -1386,4 +1388,10 @@ G3D::String App::loadedProbeStructurePath()
 bool App::probeStructureLoaded()
 {
     return m_probeStructure != NULL;
+}
+
+
+bool App::sampleSetLoaded()
+{
+	return sampleSet != NULL;
 }

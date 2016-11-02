@@ -888,7 +888,7 @@ ProbeInterpolationRecord ProbeStructure::getInterpolationProbeIndicesAndWeights(
 	{
 		G3D::Array<int> probeIndices;
 		G3D::Array<float> weights;
-		int p = 4;
+		int p = 2;
 		float SumOfInverseDistances = 0;
 		for (int i = 0 ; i < probeList.size(); ++i)
 		{
@@ -1145,14 +1145,14 @@ void ProbeStructure::applyOffsetToProbes(std::vector<float>& displacements)
 	//offsetFile.close();
 }
 
-void ProbeStructure::displaceProbesWithGradient(std::vector<float>& displacements)
+void ProbeStructure::displaceProbesWithGradient(std::vector<float>& displacements, float maxStepLength)
 {
 	for (int counter = 0; counter < probeList.size(); counter++)
 	{
 		G3D::Vector3& displacement = G3D::Vector3(displacements[counter * 3 + 0],
 												  displacements[counter * 3 + 1],
 												  displacements[counter * 3 + 2]);
-        float maxLength = 0.1f;
+        float maxLength = maxStepLength;
         float length = displacement.length();
         if (length > maxLength)
         {

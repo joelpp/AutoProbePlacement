@@ -149,7 +149,6 @@ std::fstream openFile(String& path)
 	if (!returnFile.is_open())
 	{
 		debugPrintf("Could not open file: %s", path.c_str());
-		exit(1);
 	}
 	return returnFile;
 }
@@ -894,7 +893,7 @@ ProbeInterpolationRecord ProbeStructure::getInterpolationProbeIndicesAndWeights(
 		{
 			Probe* probe = probeList[i];
 			G3D::Vector3& probePosition = probe->getPosition();
-			float distanceToProbe = (probePosition - position).squaredMagnitude();
+			float distanceToProbe = (probePosition - position).length();
 			float sumDenominator = 1.f / pow( distanceToProbe, p / 2.f);
 			SumOfInverseDistances += sumDenominator;
 
@@ -1152,13 +1151,13 @@ void ProbeStructure::displaceProbesWithGradient(std::vector<float>& displacement
 		G3D::Vector3& displacement = G3D::Vector3(displacements[counter * 3 + 0],
 												  displacements[counter * 3 + 1],
 												  displacements[counter * 3 + 2]);
-        float maxLength = maxStepLength;
         float length = displacement.length();
-        if (length > maxLength)
+        if (length > maxStepLength)
         {
-            float factor = sqrtf(length / maxLength);
-            displacement /= factor;
+            displacement /= length;
+			displacement *= maxStepLength;
         }
+
 		Probe* probe = probeList[counter];
 
 		// Start by sending the probe to its new location
@@ -1459,4 +1458,28 @@ void ProbeStructure::saveCoefficients()
 	{
 		probeList[i]->saveCoefficients();
 	}
+}
+
+void ProbeStructure::updateAll()
+{
+	saveInfoFile();
+	savePositions(false);
+	generateProbes("all");
+	extractSHCoeffs();
+}
+
+void ProbeStructure::deleteAllProbes()
+{
+	probeList.clear();
+
+	saveInfoFile();
+	savePositions(false);
+}
+
+void ProbeStructure::removeProbe(int i)
+{
+	probeList.remove(i);
+
+	saveInfoFile();
+	savePositions(false);
 }

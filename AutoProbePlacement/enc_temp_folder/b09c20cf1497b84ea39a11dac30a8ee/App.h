@@ -351,7 +351,6 @@ public:
 	G3D::String previousProbeStructure;
 	G3D::String tbNumPassesLeft;
     G3D::String numOptimizationSamples;
-	G3D::String shadingSHBand;
 
 	int numPassesLeft;
 	bool logSampleSet;

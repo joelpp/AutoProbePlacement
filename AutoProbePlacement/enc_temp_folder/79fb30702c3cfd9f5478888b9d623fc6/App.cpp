@@ -1125,17 +1125,6 @@ void App::makeGui() {
 	tab->addCheckBox("Indirect (probes)", &(bRenderIndirect));
 	tab->addCheckBox("* BRDF", &(bRenderMultiplyIndirectByBRDF));
 	tab->addSlider("Mutiplier", &shadingMultiplier, 0.0f, 5.0f);
-	tab->addCheckBox("Show Interp Probes", &showInterpolationProbes);
-	tab->addCheckBox("Show ALL Probes", &showAllProbes);
-	tab->addCheckBox("CPUInterpolation", &CPUInterpolation);
-	tab->addCheckBox("highlight probes", &highlightProbes);
-	tab->addTextBox("SH band (-1 = all)", &shadingSHBand);
-
-	tab->endRow();
-
-	tab->beginRow();
-
-
 	tab->addCheckBox("AOF", &(bRenderAO));
 	tab->addCheckBox("Shadow Maps", &(bRenderShadowMaps));
 	tab->addTextBox("NumSamples", &maxSamplesPointsToDraw);
@@ -1143,6 +1132,13 @@ void App::makeGui() {
 	tab->addCheckBox("Show normals", &showSampleNormals);
 	tab->addCheckBox("Show dark samples", &showDarkSamples);
 	tab->addSlider("F", &sampleMultiplier, 1.0f, 50.f);
+	tab->endRow();
+
+	tab->beginRow();
+	tab->addCheckBox("Show Interp Probes", &showInterpolationProbes);
+	tab->addCheckBox("Show ALL Probes", &showAllProbes);
+	tab->addCheckBox("CPUInterpolation", &CPUInterpolation);
+	tab->addCheckBox("highlight probes", &highlightProbes);
 	tab->endRow();
 
 	tab = tabPane->addTab("Actors");

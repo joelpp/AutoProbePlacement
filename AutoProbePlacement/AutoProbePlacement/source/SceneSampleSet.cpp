@@ -269,7 +269,7 @@ float SceneSampleSet::dInverseDistanceSquaredMdProbeN(const G3D::Vector3& positi
 
 float SceneSampleSet::dWeightMdProbeN(const G3D::Vector3& position, const G3D::Vector3& normal, int m, int n, int axis, int color)
 {
-	return dInverseSquaredSumdProbeN(position, normal, m, n, axis, color) * D(position, normal, m, n, axis, color) + C(position) * dDdPn(position, normal, m, n, axis, color);
+	return dInverseSquaredSumdProbeN(position, normal, m, n, axis, color) * powf(distanceToProbe(position, m), -2) + InverseSumOf1OverSquaredProbeDistances(position) * dInverseDistanceSquaredMdProbeN(position, normal, m, n, axis, color);
 }
 
 float SceneSampleSet::dRdX(const G3D::Vector3& position, const G3D::Vector3& normal, int m, int axis, int color)
@@ -353,7 +353,7 @@ void SceneSampleSet::generateTriplets(int NumberOfSamples, String outputPath, st
 		//		bool increment = true;
 		const SceneSample& ss = m_samples[sampleNumber];
 		const G3D::Vector3& SamplePosition = ss.position;
-		const G3D::Vector3& SampleNormal = invertNormal? -ss.normal : ss.normal;
+		const G3D::Vector3& SampleNormal = invertNormal ? -ss.normal : ss.normal;
 
 		ProbeInterpolationRecord iRec = probeStructure->getInterpolationProbeIndicesAndWeights(SamplePosition);
 		//float weightDenum = C(SamplePosition);
@@ -364,7 +364,7 @@ void SceneSampleSet::generateTriplets(int NumberOfSamples, String outputPath, st
 			for (int pn = 0; pn < NumberOfProbes; ++pn)
 			{
 				float dRGB_color_axis = 0;
-				
+
 				for (int axis = 0; axis <= AXIS_Z; ++axis)
 				{
 					int probeIndex = iRec.probeIndices[pn];
@@ -381,56 +381,22 @@ void SceneSampleSet::generateTriplets(int NumberOfSamples, String outputPath, st
 						float Rval = R(SamplePosition, SampleNormal, pm, axis, color);
 						float Bval = B(SamplePosition, SampleNormal, pm, pn, axis, color);
 
+						
+						float computedWeights = InverseSumOf1OverSquaredProbeDistances(SamplePosition) * powf(distanceToProbe(SamplePosition, pm), -2);
 						//dRGB_color_axis += Wval * Rval + C(SamplePosition) * D(SamplePosition, SampleNormal, pm, pn, axis, color) * Bval;
-						dRGB_color_axis += iRec.weights[pm] * Bval;
+						dRGB_color_axis += Wval * Rval + computedWeights * Bval;
 					}
-				
-					eigenTriplets->push_back(Eigen::Triplet<float>(row, col, dRGB_color_axis));
+
+					if (eigenTriplets)
+					{
+						eigenTriplets->push_back(Eigen::Triplet<float>(row, col, dRGB_color_axis));
+					}
 					col++;
 				}
-
-
 			}
 			row++;
-
 		}
-		// For all interpolated probes
-		//for (int i = 0; i < iRec.weights.size(); ++i)
-		//{
-		//	int probeIndex = iRec.probeIndices[i];
-		//	int startIndex = probeIndex * 3;
-			//for (int color = COLOR_RED; color <= COLOR_BLUE; ++color)
-			//{
-			//	counter = sampleNumber * 3 + color;
-			//	for (int axis = AXIS_X; axis <= AXIS_Z; ++axis)
-			//	{
-			//		float element = 0;
-			//
-			//		for (int coeff = 0; coeff < NumberOfCoefficientsPerProbe; ++coeff)
-			//		{
-			//			float gradient = probeStructure->getProbe(probeIndex)->coeffGradients[coeff][color][axis];
-			//
-			//			std::pair<int, int> lm = SH::kToLM(coeff);
-			//			float weight = iRec.weights[i]; 
-			//			float phong = phongCoeffs(lm.first, 1.0f);
-			//			float sh = SH::SHxyz_yup(lm.first, lm.second, SampleNormal);
-			//			element += gradient * phong * sh;
-			//		}
-			//		element *= iRec.weights[i];
-			//		int col = startIndex + axis;
-			//		outputFile << counter << " " << col << " " << element << std::endl;
-			//		if (eigenTriplets)
-			//		{
-			//			eigenTriplets->push_back(Eigen::Triplet<float>(counter, col, element));
-			//		}
-			//	}
-			//}
-		//}
 	}
-    //if (output)
-    //{
-    //    outputFile << counter << " " << probeStructure->probeCount() * 3 - 1 << " " << 0 << std::endl;
-    //}
 }
 
 

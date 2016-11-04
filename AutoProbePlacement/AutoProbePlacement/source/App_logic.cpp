@@ -105,7 +105,7 @@ void App::startOptimizationPasses()
 	}
 	
 }
-float App::computeError()
+float App::computeError(bool outputToLog)
 {
 	std::fstream currentFile, referenceFile, logFile;
     String errorLogPath = currentOptimizationFolderPath() + "/errorlog.txt";
@@ -134,8 +134,12 @@ float App::computeError()
         debugPrintf("Couldn't open error log file at %s\n", errorLogPath);
     }
 
-	logFile.precision(20);
-	logFile << error << std::endl;
+	if (outputToLog)
+	{
+		logFile.precision(20);
+		logFile << error << std::endl;
+	}
+
 	logFile.close();
 
 
@@ -199,24 +203,40 @@ G3D::Array<G3D::Vector3> App::generateRandomPositions(int NumberOfPositions)
 
 void App::findBestInitialConditions()
 {
-	int NumberOfProbes = std::atoi(m_sNumICProbes.c_str());
+	debugPrintf("Attempting to add probe...");
+
+	int NumberOfProbes = 1;
 	int NumberOfTries = std::atoi(m_sNumICTries.c_str());
 
 	float bestError = 99999;
 	G3D::Array<G3D::Vector3> bestPositions;
 	bestPositions.resize(NumberOfProbes);
 
+	m_probeStructure->setGamma(1.0f);
+	m_probeStructure->setHeight(64);
+	m_probeStructure->setWidth(128);
+	m_probeStructure->setIntegrator(String("path_samples"));
+	m_probeStructure->setNumSamples(128);
+	m_probeStructure->setType(String("wNN"));
+
 	for (int tryNumber = 0; tryNumber < NumberOfTries; ++tryNumber)
 	{
 		G3D::Array<G3D::Vector3> positions = generateRandomPositions(NumberOfProbes);
 
-		createTempProbeStructure(positions);
+		//createTempProbeStructure(positions);
 
-		initializeProbeStructure(m_scene->m_name, "temp");
-		
+		//initializeProbeStructure(m_scene->m_name, "temp");
+
+
+		for (G3D::Vector3& v : positions)
+		{
+			m_probeStructure->addProbe(v);
+		}
+		m_probeStructure->updateAll();
+
 		computeSamplesRGB();
 
-		float error = computeError();
+		float error = computeError(false);
 
 		if (error < bestError)
 		{
@@ -231,23 +251,28 @@ void App::findBestInitialConditions()
 			positionsFile << positions[i] << std::endl;
 		}
 		positionsFile.close();
+
+		m_probeStructure->removeProbe(m_probeStructure->probeCount() - 1);
+
 	}
 	debugPrintf("error: %f \n", bestError);
 
 	for (G3D::Vector3& v : bestPositions)
 	{
 		debugPrintf("v: %s \n", v.toString().c_str());
+		m_probeStructure->addProbe(v);
 
 	}
+	m_probeStructure->updateAll();
 	// generate 
 
-	createTempProbeStructure(bestPositions);
+	//createTempProbeStructure(bestPositions);
 	//exit(0);
-	initializeProbeStructure(m_scene->m_name, "temp");
+	//initializeProbeStructure(m_scene->m_name, "temp");
 }
 
 
-void App::tryOptimization()
+bool App::tryOptimization()
 {
 	G3D::StopWatch sw;
 	G3D::String sceneName = scenePane.selectedSceneList->selectedValue();
@@ -259,17 +284,40 @@ void App::tryOptimization()
 	std::vector<float> displacements;
 
     sampleSet->generateRGBValuesFromProbes(numSamples, currentOptimizationFolderPath() + "/values.txt", 0);
-    float error = computeError();
+    float error = computeError(true);
+
+	if (currentOptimization.errors.size())
+	{
+		if (error > currentOptimization.errors[currentOptimization.errors.size() - 1])
+		{
+			currentOptimization.consecutiveFailures++;
+
+		}
+		else
+		{
+			currentOptimization.consecutiveFailures = 0;
+		}
+	}
+
+	if (currentOptimization.consecutiveFailures == 3)
+	{
+		return false;
+	}
+
+	currentOptimization.errors.push_back(error);
+
 	displacements = sampleSet->tryOptimizationPass(numSamples, bOptimizeWithMitsubaSamples, currentOptimizationFolderPath());
 
 	sw.after("Performed optimization step");
 	if (displacements.size() > 0)
 	{
 		m_probeStructure->displaceProbesWithGradient(displacements, std::stof(maxProbeStepLength.c_str()));
-        m_probeStructure->savePositions(false);
-        m_probeStructure->generateProbes("all");
-        m_probeStructure->extractSHCoeffs();
+
+		m_probeStructure->updateAll();
+
 	}
+
+	return true;
 }
 
 void App::computeSamplesRGB()
@@ -356,6 +404,7 @@ void App::displaceProbes()
 		Array<G3D::Vector3> renderedCoeffs, optimCoeffs;
 
 		m_probeStructure->displaceProbesWithGradient(displacement, 0.1f);
+
         m_probeStructure->savePositions(false);
 		//computeSamplesRGB();
 		//computeError("C:/temp/errorlog.txt");

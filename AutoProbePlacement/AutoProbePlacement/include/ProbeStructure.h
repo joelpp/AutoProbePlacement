@@ -158,6 +158,13 @@ public:
     bool hasProbes();
 
 	void saveCoefficients();
+
+	void updateAll();
+
+	void deleteAllProbes();
+
+	void removeProbe(int i);
+
 	std::vector<int> m_dimensions;
 	Array<Probe*> probeList;
 	String m_name;

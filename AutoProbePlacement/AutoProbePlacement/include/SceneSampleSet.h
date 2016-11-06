@@ -24,20 +24,20 @@ public:
 	SceneSampleSet(std::string sceneName, std::string sampleSetName, float scale, int numSamplesToLoad);
 	
 	void addSample(SceneSample sample);
-    WeightMatrixType generateWeightsMatrix(int NumberOfSamples);
-	Eigen::VectorXd generatebVector(int NumberOfSamples, String optimizationFolderPath);
-	void outputWeightsMatrixToFile(int NumberOfSamples, String optimizationFolderPath);
-    void outputBVectorToFile(int NumberOfSamples, String optimizationFolderPath);
+    WeightMatrixType generateWeightsMatrix(int NumberOfSamples, int NumberOfCoeffs);
+	Eigen::VectorXd generatebVector(int NumberOfSamples, int NumberOfCoeffs, String optimizationFolderPath);
+	void outputWeightsMatrixToFile(int NumberOfSamples, int NumberOfCoeffs, String optimizationFolderPath);
+    void outputBVectorToFile(int NumberOfSamples, int NumberOfCoeffs, String optimizationFolderPath);
 
 	float generateTriplet(int row, int col, const ProbeInterpolationRecord* iRec);
-	void generateTriplets(int NumberOfSamples, String outputPath, std::vector<Eigen::Triplet<float>>* eigenTriplets, bool optimizeForCoeffs);
-	void generateRGBValuesFromProbes(int NumberOfSamples, String savePath, Eigen::VectorXd* eigenVector);
-    void generateRGBValuesFromProbes(int NumberOfSamples);
+	void generateTriplets(int NumberOfSamples, int NumberOfCoeffs, String outputPath, std::vector<Eigen::Triplet<float>>* eigenTriplets, bool optimizeForCoeffs);
+	void generateRGBValuesFromProbes(int NumberOfSamples, int NumberOfCoeffs, String savePath, Eigen::VectorXd* eigenVector);
+    void generateRGBValuesFromProbes(int NumberOfSamples, int NumberOfCoeffs);
     void generateRGBValuesFromSamples(int NumberOfSamples, String savePath, Eigen::VectorXd* eigenVector = 0);
-    void generateInterpolatedCoefficientsFromProbes(int NumberOfSamples, String savePath, Eigen::VectorXd* eigenVector = 0);
+    void generateInterpolatedCoefficientsFromProbes(int NumberOfSamples, int NumberOfCoeffs, String savePath, Eigen::VectorXd* eigenVector = 0);
 	void save();
 	void load(int maxSamples);
-	std::vector<float> tryOptimizationPass(int NumberOfSamples, bool optimizeForMitsubaSamples, String optimizationFolderPath);
+	std::vector<float> tryOptimizationPass(int NumberOfSamples, int NumberOfCoeffs, bool optimizeForMitsubaSamples, String optimizationFolderPath);
 	bool probeOptimizationPass(WeightMatrixType& A, Eigen::VectorXd& b, Eigen::VectorXd* result);
     void createbVector(Eigen::VectorXd* bVector, const Eigen::VectorXd* rgbColumn, String& optimizationFolderPath);
 
@@ -48,9 +48,9 @@ public:
 	float w(const G3D::Vector3& position, const G3D::Vector3& normal, int m, int n, int axis, int color);
 	float A(const G3D::Vector3& position, const G3D::Vector3& normal, int m, int n, int axis, int color);
 	float dWeightMdProbeN(const G3D::Vector3& position, const G3D::Vector3& normal, int m, int n, int axis, int color);
-	float dRdX(const G3D::Vector3& position, const G3D::Vector3& normal, int m, int axis, int color);
-	float R(const G3D::Vector3& position, const G3D::Vector3& normal, int m, int axis, int color);
-	float B(const G3D::Vector3& position, const G3D::Vector3& normal, int m, int n, int axis, int color);
+	float dRdX(const G3D::Vector3& position, const G3D::Vector3& normal, int NumberOfCoeffs, int m, int axis, int color);
+	float R(const G3D::Vector3& position, const G3D::Vector3& normal, int NumberOfCoeffs, int m, int axis, int color);
+	float B(const G3D::Vector3& position, const G3D::Vector3& normal, int NumberOfCoeffs, int m, int n, int axis, int color);
 	float dInverseSquaredSumdProbeN(const G3D::Vector3& position, const G3D::Vector3& normal, int m, int n, int axis, int color);
 
 	float D(const G3D::Vector3& position, const G3D::Vector3& normal, int m, int n, int axis, int color);

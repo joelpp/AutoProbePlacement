@@ -145,7 +145,8 @@ void App::onInit() {
     actorSpawnY = String("0");
     actorSpawnZ = String("0");
     tbNumPassesLeft = String("1");
-
+	shadingSHBand = "9";
+	optimizationSHBand = "9";
 	m_activeCamera->setPosition(Point3(0,3,3));
 	sampleDropDownIndex = 0;
 	tetgenString = "../data-files/tetgen/44/";
@@ -160,7 +161,6 @@ void App::onInit() {
 
     //Add sliders for rendering parameters
 	addOneActor();
-    makeGui();
 
     //Load the textures containing the SH coefficient values
     //loadSHTextures();
@@ -172,6 +172,8 @@ void App::onInit() {
 
 	setActiveCamera(m_debugCamera);
 
+	loadOptions();
+	makeGui();
 }//end of onInit 
 
 void App::loadScene(String sceneName)
@@ -181,7 +183,14 @@ void App::loadScene(String sceneName)
 	m_scene = new JScene(sceneName);
 
     String basePath = "C:\\git\\AutoProbePlacement\\AutoProbePlacement\\data-files\\Scenes\\" + sceneName + "\\";
-    GApp::loadScene(basePath + sceneName + ".Scene.Any");
+	try
+	{
+		GApp::loadScene(basePath + sceneName + ".Scene.Any");
+	}
+	catch (std::exception e)
+	{
+		throw e;
+	}
     setActiveCamera(m_debugCamera);
 
     m_currentOptimization = folderCount(basePath + "Optimizations\\") - 1;
@@ -205,7 +214,14 @@ void App::initializeProbeStructure(String sceneName, String probeStructureName)
 		delete(m_probeStructure);
 	}
 
-	m_probeStructure = new ProbeStructure(sceneName, probeStructureName);
+	try
+	{
+		m_probeStructure = new ProbeStructure(sceneName, probeStructureName);
+	}
+	catch (std::exception e)
+	{
+		throw e;
+	}
 
 	if (sampleSet)
 	{
@@ -413,7 +429,7 @@ void App::onGraphics3D(RenderDevice* rd, Array<shared_ptr<Surface> >& surface3D)
 	rd->clear();
     m_film->exposeAndRender(rd, activeCamera()->filmSettings(), m_framebuffer->texture(0), 0, 0);
 
-    if (numPassesLeft > 0)
+    if (optimizing || numPassesLeft > 0)
     {
     	const shared_ptr<Image> screen(rd->screenshotPic());
 
@@ -603,8 +619,9 @@ void App::generateSampleSetValues()
 
 void App::generateSampleSetValuesFromProbes()
 {
+    int numCoeffs = std::atoi(optimizationSHBand.c_str());
     int numSamples = std::stoi((*samplesToSave).c_str());
-    sampleSet->generateRGBValuesFromProbes(numSamples);
+    sampleSet->generateRGBValuesFromProbes(numSamples, numCoeffs);
 }
 
 void App::switchEditProbeStructure()
@@ -666,7 +683,8 @@ void App::updateSampleSet()
 	}
 }
 
-void App::onAI(){
+void App::onAI()
+{
     GApp::onAI();
 
     if (bShouldUpdateProbeStructurePane)
@@ -690,6 +708,24 @@ void App::onAI(){
             popNotification("Optimization complete", "Finished all job!", 15);
         }
 	}
+
+    if (optimizing)
+    {
+        if (shouldAddAProbe)
+        {
+            findBestInitialConditions();
+            shouldAddAProbe = false;
+        }
+        else
+        {
+            shouldAddAProbe = !tryOptimization();
+        }
+
+        if (m_probeStructure->probeCount() == 4)
+        {
+            optimizing = false;
+        }
+    }
 
 	if (m_probeStructure)
 	{
@@ -786,6 +822,7 @@ G3D::Array<G3D::String> getFoldersInFolder(const G3D::String& path)
 	FileSystem::ListSettings ls;
 	ls.includeParentPath = false;
 	ls.recursive = false;
+	FileSystem::clearCache("");
 
 	FileSystem::list(path + "/*", folderList, ls);
 
@@ -1011,21 +1048,24 @@ void App::makeGui() {
     }
     , GuiTheme::TOOL_BUTTON_STYLE);
 	tab->addTextBox("Max probe step", &maxProbeStepLength);
-
+	tab->addTextBox("SHBand", &optimizationSHBand);
+	tab->addCheckBox("Update probes", &bUpdateProbesOnOptimizationPass);
 	tab->endRow();
 
 	tab->beginRow();
     tab->addButton("Compute samplesRGB", [this]() 
     {
         int numSamples = std::atoi(numOptimizationSamples.c_str());
+        int numCoeffs = std::atoi(optimizationSHBand.c_str());
         String outputFile = currentOptimizationFolderPath() + "/values.txt";
-        sampleSet->generateRGBValuesFromProbes(numSamples, outputFile, 0);
+        sampleSet->generateRGBValuesFromProbes(numSamples, numCoeffs, outputFile, 0);
     }
     , GuiTheme::TOOL_BUTTON_STYLE);
 
 	tab->addButton("Compute ref_values", [this]() 
     {
         int numSamples = std::atoi(numOptimizationSamples.c_str());
+        int numCoeffs = std::atoi(optimizationSHBand.c_str());
         String outputFile = currentOptimizationFolderPath() + "/ref_values.txt";
         if (bOptimizeWithMitsubaSamples)
         {
@@ -1033,7 +1073,7 @@ void App::makeGui() {
         }
         else
         {
-            sampleSet->generateRGBValuesFromProbes(numSamples, outputFile, 0);
+            sampleSet->generateRGBValuesFromProbes(numSamples, numCoeffs, outputFile, 0);
         }
         bTakeRefScreenshot = true;
     }
@@ -1044,22 +1084,25 @@ void App::makeGui() {
     tab->addButton("A", [this]() 
 	{
 		int numSamples = std::atoi(numOptimizationSamples.c_str());
-		sampleSet->outputWeightsMatrixToFile(numSamples, currentOptimizationFolderPath());
+        int numCoeffs = std::atoi(optimizationSHBand.c_str());
+        sampleSet->outputWeightsMatrixToFile(numSamples, numCoeffs, currentOptimizationFolderPath());
     }
     , GuiTheme::TOOL_BUTTON_STYLE);
 
     tab->addButton("b", [this]() 
 	{
 		int numSamples = std::atoi(numOptimizationSamples.c_str());
-		sampleSet->outputBVectorToFile(numSamples, currentOptimizationFolderPath());
+        int numCoeffs = std::atoi(optimizationSHBand.c_str());
+        sampleSet->outputBVectorToFile(numSamples, numCoeffs, currentOptimizationFolderPath());
     }
     , GuiTheme::TOOL_BUTTON_STYLE);
 
 	tab->addButton("A*x", [this]()
 	{
 		int numSamples = std::atoi(numOptimizationSamples.c_str());
-		
-		WeightMatrixType A = sampleSet->generateWeightsMatrix(numSamples);
+        int numCoeffs = std::atoi(optimizationSHBand.c_str());
+
+		WeightMatrixType A = sampleSet->generateWeightsMatrix(numSamples, numCoeffs);
 
 		String xPath = currentOptimizationFolderPath() + "/x.txt";
 		std::fstream xFile(xPath.c_str(), std::fstream::in);
@@ -1100,21 +1143,9 @@ void App::makeGui() {
 	{
 		
 		findBestInitialConditions();
-		bool shouldAddAProbe = false;
-		
-		while (true)
-		{
-			if (!tryOptimization())
-			{
-				
-				findBestInitialConditions();
-			}
+		shouldAddAProbe = false;
+        optimizing = true;
 
-			if (m_probeStructure->probeCount() == 9)
-			{
-				break;
-			}
-		}
 
 	}, GuiTheme::TOOL_BUTTON_STYLE);
 	tab->endRow();
@@ -1330,12 +1361,23 @@ void App::addSampleSetPane(GuiTabPane* tabPane)
 
 	scenePane.selectedSceneList = tab->addDropDownList("Scene", sceneList, NULL, GuiControl::Callback(this, &App::updateSelectedScenePane));
 
+	if (sceneLoaded())
+	{
+		scenePane.selectedSceneList->setSelectedValue(m_scene->m_name);
+	}
+
 	G3D::String selectedScene = selectedSceneName();
 
 	tab->beginRow();
 	G3D::Array<G3D::String> sampleSetList = getFoldersInFolder(sampleSetFoldersPath());
 
 	scenePane.sampleSetList = tab->addDropDownList("SampleSet", sampleSetList, NULL, GuiControl::Callback(this, &App::updateSampleSet));
+
+	if (sampleSetLoaded())
+	{
+		scenePane.sampleSetList->setSelectedValue(String(sampleSet->m_sampleSetName.c_str()));
+	}
+
 	tab->addButton(GuiText("New"), [this]() { windowNewSampleSet->setVisible(true); }, GuiTheme::TOOL_BUTTON_STYLE);
 	tab->addButton(GuiText("Clear values"), GuiControl::Callback(this, &App::clearSampleSetValues), GuiTheme::TOOL_BUTTON_STYLE);
 	tab->addButton(GuiText("Clear positions"), GuiControl::Callback(this, &App::clearSampleSetPositions), GuiTheme::TOOL_BUTTON_STYLE);
@@ -1422,7 +1464,149 @@ bool App::probeStructureLoaded()
 }
 
 
+bool App::sceneLoaded()
+{
+	return m_scene != NULL;
+}
+
 bool App::sampleSetLoaded()
 {
 	return sampleSet != NULL;
+}
+
+const char* optionFilePath()
+{
+	return "../data-files/options.txt";
+}
+void App::saveOptions()
+{
+	using json = nlohmann::json;
+	json optionJSON;
+
+	optionJSON["sceneName"] =						selectedSceneName().c_str();
+	optionJSON["optimizationSHBand"] =				optimizationSHBand.c_str();
+	optionJSON["numPassesLeft"] =					tbNumPassesLeft.c_str();
+	optionJSON["numOptimizationSamples"] =			numOptimizationSamples.c_str();
+	optionJSON["probeStructureName"] =				m_probeStructure->m_name.c_str();
+	optionJSON["sampleSetName"] =					sampleSet->m_sampleSetName.c_str();
+
+	optionJSON["bShowAllProbes"] =					showAllProbes;
+	optionJSON["bUpdateProbesOnOptimizationPass"] = bUpdateProbesOnOptimizationPass;
+	optionJSON["bRenderDirect"] =					bRenderDirect;
+	optionJSON["bRenderIndirect"] =					bRenderIndirect;
+
+	std::fstream optionFile(optionFilePath(), std::fstream::out);
+	optionFile << optionJSON;
+	optionFile.close();
+
+}
+
+using json = nlohmann::json;
+
+String App::loadStringOption(String name, nlohmann::json& optionJSON)
+{
+	try
+	{
+		json::string_t val = optionJSON[name.c_str()];
+		return String(val.c_str());
+	}
+	catch (std::exception e)
+	{
+		return "";
+	}
+}
+
+bool App::loadBoolOption(String name, nlohmann::json& optionJSON)
+{
+	try
+	{
+		json::boolean_t val = optionJSON[name.c_str()];
+		return val;
+	}
+	catch (std::exception e)
+	{
+		return false;
+	}
+}
+
+void App::loadOptions()
+{
+	json optionJSON;
+
+	std::fstream optionFile(optionFilePath(), std::fstream::in);
+	optionJSON << optionFile;
+	optionFile.close();
+
+
+	loadScene(loadStringOption("sceneName", optionJSON));
+	bUpdateProbesOnOptimizationPass = loadBoolOption("bUpdateProbesOnOptimizationPass", optionJSON);
+	showAllProbes = loadBoolOption("showAllProbes", optionJSON);
+	bRenderDirect = loadBoolOption("bRenderDirect", optionJSON);
+	bRenderIndirect = loadBoolOption("bRenderIndirect", optionJSON);
+
+	try
+	{
+		json::string_t probeStructureName = optionJSON["probeStructureName"];
+		initializeProbeStructure(m_scene->m_name, String(probeStructureName.c_str()));
+		bShouldUpdateProbeStructurePane = true;
+	}
+	catch (std::exception e)
+	{
+
+	}
+
+	try
+	{
+		json::string_t sampleSetName = optionJSON["sampleSetName"];
+		sampleSet = new SceneSampleSet(std::string(m_scene->m_name.c_str()), std::string(sampleSetName.c_str()), m_scene->m_scale, -1);
+		if (m_probeStructure != NULL)
+		{
+			sampleSet->probeStructure = m_probeStructure;
+		}
+	}
+	catch (std::exception e)
+	{
+
+	}
+
+	try
+	{
+		json::string_t val = optionJSON["optimizationSHBand"];
+		optimizationSHBand = String(val.c_str());
+	}
+	catch (std::exception e)
+	{
+
+	}
+
+	try
+	{
+		json::string_t val = optionJSON["numPassesLeft"];
+		tbNumPassesLeft = String(val.c_str());
+	}
+	catch (std::exception e)
+	{
+
+	}
+
+	try
+	{
+		json::string_t val = optionJSON["numOptimizationSamples"];
+		numOptimizationSamples = String(val.c_str());
+	}
+	catch (std::exception e)
+	{
+
+	}
+}
+
+bool App::onEvent(const GEvent& event)
+{
+	if (event.type == GEventType::QUIT)
+	{
+		saveOptions();
+		exit(0);
+	}
+
+	return false;
 }

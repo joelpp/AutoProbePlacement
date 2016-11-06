@@ -3,7 +3,6 @@
 #include "Helpers.h"
 
 
-
 Vector3 App::getRandomPointInScene(){
 	float x = Random::common().uniform(-5,5);
 	float y = Random::common().uniform(0,5);
@@ -279,11 +278,11 @@ bool App::tryOptimization()
 	G3D::String probeStructureName = scenePane.probeStructureList->selectedValue();
 
 	int numSamples = std::atoi(numOptimizationSamples.c_str());
-
+	int numCoeffs = std::atoi(optimizationSHBand.c_str());
 	std::stringstream ss;
 	std::vector<float> displacements;
 
-    sampleSet->generateRGBValuesFromProbes(numSamples, currentOptimizationFolderPath() + "/values.txt", 0);
+    sampleSet->generateRGBValuesFromProbes(numSamples, numCoeffs, currentOptimizationFolderPath() + "/values.txt", 0);
     float error = computeError(true);
 
 	if (currentOptimization.errors.size())
@@ -306,15 +305,24 @@ bool App::tryOptimization()
 
 	currentOptimization.errors.push_back(error);
 
-	displacements = sampleSet->tryOptimizationPass(numSamples, bOptimizeWithMitsubaSamples, currentOptimizationFolderPath());
+	displacements = sampleSet->tryOptimizationPass(numSamples, numCoeffs, bOptimizeWithMitsubaSamples, currentOptimizationFolderPath());
 
 	sw.after("Performed optimization step");
 	if (displacements.size() > 0)
 	{
 		m_probeStructure->displaceProbesWithGradient(displacements, std::stof(maxProbeStepLength.c_str()));
 
-		m_probeStructure->updateAll();
+		m_probeStructure->savePositions(false);
 
+		if (bUpdateProbesOnOptimizationPass)
+		{
+			m_probeStructure->generateProbes("all");
+			m_probeStructure->extractSHCoeffs();
+		}
+		else
+		{
+			m_probeStructure->uploadToGPU();
+		}
 	}
 
 	return true;
@@ -323,20 +331,23 @@ bool App::tryOptimization()
 void App::computeSamplesRGB()
 {
 	int numSamples = std::atoi(numOptimizationSamples.c_str());
+    int numCoeffs = std::atoi(optimizationSHBand.c_str());
     String outputFile = currentOptimizationFolderPath() + "/values.txt";
-    sampleSet->generateRGBValuesFromProbes(numSamples, outputFile, 0);
+    sampleSet->generateRGBValuesFromProbes(numSamples, numCoeffs, outputFile, 0);
 }
 void App::computeSamplesRGBRef()
 {
 	int numSamples = std::atoi(numOptimizationSamples.c_str());
+    int numCoeffs = std::atoi(optimizationSHBand.c_str());
     String outputFile = currentOptimizationFolderPath() + "/ref_values.txt";
-	sampleSet->generateRGBValuesFromProbes(numSamples, outputFile, 0);
+	sampleSet->generateRGBValuesFromProbes(numSamples, numCoeffs, outputFile, 0);
 }
 
 void App::computeTriplets()
 {
 	int numSamples = std::atoi(numOptimizationSamples.c_str());
-	sampleSet->generateTriplets(numSamples, currentOptimizationFolderPath() + "triplets.txt", 0, false);
+    int numCoeffs = std::atoi(optimizationSHBand.c_str());
+    sampleSet->generateTriplets(numSamples, numCoeffs, currentOptimizationFolderPath() + "triplets.txt", 0, false);
 }
 
 void App::addOneActor()

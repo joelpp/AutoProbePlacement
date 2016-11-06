@@ -16,6 +16,8 @@
 #define DEV4(v) debugPrintf(#v);debugPrintf(": (%f,\t%f,\t%f,\t%f)\n",v.x,v.y,v.z,v.w)
 #define DEC(v) debugPrintf(#v);debugPrintf(": (%f,\t%f,\t%f)\n",v.r,v.g,v.b)
 
+#define EMPTY_THROW(v) try { #v; } catch (std::exception e) { };
+
 String generateFolderNameBaseAnySuffix(const String& prefix);
 
 bool runCommand(std::string command, bool waitForCompletion);

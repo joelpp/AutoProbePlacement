@@ -133,9 +133,9 @@ public:
     std::fstream probeCoefficientsFileHandle(int i, bool reading);
     std::fstream probeCoefficientsGradientsFileHandle(int i, bool reading);
 
-	TProbeCoefficients interpolatedCoefficients(const G3D::Vector3& position, const G3D::Vector3& normal);
+	TProbeCoefficients interpolatedCoefficients(const G3D::Vector3& position, const G3D::Vector3& normal, int NumberOfCoeffs);
 
-    G3D::Vector3 reconstructSH(const G3D::Vector3& position, const G3D::Vector3& normal);
+    G3D::Vector3 reconstructSH(const G3D::Vector3& position, const G3D::Vector3& normal, int NumberOfCoeffs);
 
 	void addProbe(G3D::Vector3& position);
 

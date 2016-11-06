@@ -164,6 +164,7 @@
     <ClInclude Include="include\App.h" />
     <ClInclude Include="include\Helpers.h" />
     <ClInclude Include="include\JScene.h" />
+    <ClInclude Include="include\json.hpp" />
     <ClInclude Include="include\Probe.h" />
     <ClInclude Include="include\ProbeRenderer.h" />
     <ClInclude Include="include\ProbeStructure.h" />

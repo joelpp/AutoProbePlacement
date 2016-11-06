@@ -1161,7 +1161,7 @@ void ProbeStructure::displaceProbesWithGradient(std::vector<float>& displacement
 		Probe* probe = probeList[counter];
 
 		// Start by sending the probe to its new location
-		G3D::Vector3 newPosition = probe->frame.translation - displacement;
+		G3D::Vector3 newPosition = probe->frame.translation + displacement;
 		probe->frame.translation = newPosition;
 		probe->manipulator->frame().translation = probe->frame.translation;
 		probe->bNeedsUpdate = true;
@@ -1184,7 +1184,7 @@ void ProbeStructure::displaceProbesWithGradient(std::vector<float>& displacement
 }
 
 
-TProbeCoefficients ProbeStructure::interpolatedCoefficients(const G3D::Vector3& position, const G3D::Vector3& normal)
+TProbeCoefficients ProbeStructure::interpolatedCoefficients(const G3D::Vector3& position, const G3D::Vector3& normal, int NumberOfCoeffs)
 {
 	ProbeInterpolationRecord record = getInterpolationProbeIndicesAndWeights(position);
 
@@ -1196,7 +1196,7 @@ TProbeCoefficients ProbeStructure::interpolatedCoefficients(const G3D::Vector3& 
 		float weight = record.weights[p];
 
 		TProbeCoefficients& probeCoeffs = probeList[index]->coeffs;
-		for (int c = 0; c < m_NumCoefficients; ++c)
+		for (int c = 0; c < NumberOfCoeffs; ++c)
 		{
 			Vector3& coeffs = probeCoeffs[c];
 
@@ -1211,9 +1211,10 @@ TProbeCoefficients ProbeStructure::interpolatedCoefficients(const G3D::Vector3& 
 	return interpolatedCoeffs;
 }
 
-G3D::Vector3 ProbeStructure::reconstructSH(const G3D::Vector3& position, const G3D::Vector3& normal)
+G3D::Vector3 ProbeStructure::reconstructSH(const G3D::Vector3& position, const G3D::Vector3& normal, int NumberOfCoeffs)
 {
     ProbeInterpolationRecord record = getInterpolationProbeIndicesAndWeights(position);
+
     Vector3 rgb = Vector3(0, 0, 0);
 
     for (int i = 0; i < record.weights.size(); ++i)
@@ -1234,7 +1235,7 @@ G3D::Vector3 ProbeStructure::reconstructSH(const G3D::Vector3& position, const G
         //}
 
         // For all SH bands
-        for (int coeff = 0; coeff < m_NumCoefficients; ++coeff)
+        for (int coeff = 0; coeff < NumberOfCoeffs; ++coeff)
         {
             std::pair<int, int> lm = SH::kToLM(coeff);
 

@@ -8,6 +8,7 @@ classes and use G3D::Sky to handle the skybox.
 #ifndef App_h
 #define App_h
 
+#include "json.hpp"
 #include <G3D/G3DAll.h>
 #include <GLG3D/GLG3D.h>
 #include "Probe.h"
@@ -136,6 +137,8 @@ private:
     G3D::String loadedProbeStructurePath();
 
     bool probeStructureLoaded();
+	bool sceneLoaded();
+	bool sampleSetLoaded();
 
 	/**
 	* Interpolation
@@ -199,7 +202,8 @@ private:
 	void drawProbeLineSegments(RenderDevice* rd);
 	void setSHTexturesUniforms(Args& args);
 	void setProbeCoeffUniforms(Args& args, G3D::Array<G3D::Vector3>& coeffs);
-
+	void saveOptions();
+	void loadOptions();
 
 	/*
 	* GLOBAL VARIABLES
@@ -298,7 +302,7 @@ private:
 	bool saveSample;
 	bool useBakedSceneTextures;
 	bool interpolateCoefficients;
-    
+	bool bUpdateProbesOnOptimizationPass;
 
 	std::string tetgenString;
 
@@ -347,12 +351,13 @@ public:
 	virtual void onInit();
 	virtual void onGraphics3D(RenderDevice* rd, Array< shared_ptr<Surface> >& surface);
     virtual void onUserInput(UserInput* userInput);
+	virtual bool onEvent(const GEvent& event);
 	String m_scenePath;
 	G3D::String previousProbeStructure;
 	G3D::String tbNumPassesLeft;
     G3D::String numOptimizationSamples;
 	G3D::String shadingSHBand;
-
+	G3D::String optimizationSHBand;
 	int numPassesLeft;
 	bool logSampleSet;
 
@@ -402,10 +407,13 @@ public:
 
 	String maxProbeStepLength;
 
-	bool sampleSetLoaded();
 
 	bool optimizing = false;
-	bool findingConditions = false;
+	bool shouldAddAProbe = false;
+
+	String loadStringOption(String name, nlohmann::json& optionJSON);
+	bool loadBoolOption(String name, nlohmann::json& optionJSON);
+
 };
 
 #endif

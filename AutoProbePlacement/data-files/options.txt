@@ -1,0 +1,1 @@
+{"bRenderDirect":false,"bRenderIndirect":true,"bShowAllProbes":true,"bUpdateProbesOnOptimizationPass":true,"numOptimizationSamples":"10","numPassesLeft":"50","optimizationSHBand":"1","probeStructureName":"FITWNN666","sampleSetName":"1Band","sceneName":"zcbox"}

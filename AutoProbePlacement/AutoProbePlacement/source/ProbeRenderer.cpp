@@ -125,6 +125,7 @@ void ProbeRenderer::renderProbeShading(RenderDevice* rd, const shared_ptr<GBuffe
 			args.setMacro("WEIGHTS_TRILERP", app->m_probeStructure->m_type == EProbeStructureType::Trilinear);
 
 			args.setUniform("SHMultiplier", app->shadingMultiplier);
+			args.setUniform("singleBandShading", std::stoi(app->shadingSHBand.c_str()));
 		}
 
 		LAUNCH_SHADER("ProbeRenderer_deferredShade.pix", args);

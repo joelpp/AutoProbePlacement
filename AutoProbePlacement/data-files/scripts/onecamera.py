@@ -8,16 +8,16 @@ import os, sys
 # Ensure that Python will be able to find the Mitsuba core libraries
 
 # if (os.environ['COMPUTERNAME'] ==):
-# sys.path.append('C:/git/mitsuba/dist/python/2.7/')
+sys.path.append('C:/git/mitsuba/dist/python/2.7/')
 # 	# Ensure that Python will be able to find the Mitsuba core libraries
-# os.environ['PATH'] = 'C:/git/mitsuba/dist/' + os.pathsep + os.environ['PATH']
+os.environ['PATH'] = 'C:/git/mitsuba/dist/' + os.pathsep + os.environ['PATH']
 # else:
 	# sys.path.append('C:/Users/Joel/Downloads/mitsuba-c7aac473729a/mitsuba-c7aac473729a/dist/python/2.7/')
 # 	os.environ['PATH'] = 'C:/Users/Joel/Downloads/mitsuba-c7aac473729a/mitsuba-c7aac473729a/dist/' + os.pathsep + os.environ['PATH']
 
-sys.path.append('C:/Users/polardpj.artichaut/Downloads/mitsuba-eaff1cd989f3/mitsuba-eaff1cd989f3/dist/python/2.7/')
+# sys.path.append('C:/Users/polardpj.artichaut/Downloads/mitsuba-eaff1cd989f3/mitsuba-eaff1cd989f3/dist/python/2.7/')
 # Ensure that Python will be able to find the Mitsuba core libraries
-os.environ['PATH'] = 'C:/Users/polardpj.artichaut/Downloads/mitsuba-eaff1cd989f3/mitsuba-eaff1cd989f3/dist/' + os.pathsep + os.environ['PATH']
+# os.environ['PATH'] = 'C:/Users/polardpj.artichaut/Downloads/mitsuba-eaff1cd989f3/mitsuba-eaff1cd989f3/dist/' + os.pathsep + os.environ['PATH']
 
 
 from mitsuba.core import *
@@ -157,7 +157,55 @@ def makeProbe(x, y, z, probeCount, rootPath, pRenderType):
 
 	queue.waitLeft(0)
 	queue.join()
-	
+
+	# render the 6 surrounding probes
+	if (pRenderType == "Probes"):
+		for i in xrange(6):
+			(a,b,c) = (x,y,z);
+			dp = 0.1;
+			if (i < 2):
+				a += dp * ( (i % 2) * 2 - 1 )
+			elif (i < 4):
+				b += dp * ( (i % 2) * 2 - 1 )
+			else:
+				c += dp * ( (i % 2) * 2 - 1 )
+			print(a,b,c);
+			#Create sensor and transform for sensor
+			toWorld = Transform.lookAt(
+
+			    Point(a,b,c),
+			    Point(a+1,b,c),
+			    Vector(0, 1, 0)) #up direction after I fixed stuff
+				
+			sensorProps = Properties('spherical')
+			# sensorProps = Properties('perspective')
+			sensorProps['toWorld'] = toWorld
+			sensorProps['fov'] = 45.0
+			sensor = pmgr.createObject(sensorProps)
+			#format of a lookat transform: lookAt(origin, target, updirection)
+
+			#Make it all come together
+			sensor.addChild('film', film)
+			sensor.addChild('sampler', sampler)
+			sensor.configure();
+
+			scene.addSensor(sensor);
+			scene.setSensor(sensor);
+			scene.configure()
+
+			# Your custom destination goes here.
+			destination = rootPath + "/" + pRenderType + "/" + pRenderType[:-1] + "_"
+			destination += repr(probeCount)+'_' + repr(i) + '.png'
+			scene.setDestinationFile(destination)
+			print(destination)
+			#Render!
+			job = RenderJob('myRenderJob', scene, queue)
+			job.start()
+			# print(Statistics.getInstance().getStats())
+
+			queue.waitLeft(0)
+			queue.join()
+
 def createProbeStructure(rootPath):
 	
 	if not (os.path.exists(rootPath)):

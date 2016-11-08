@@ -12,10 +12,17 @@ typedef Array<Vector3> TProbeCoefficients;
 enum EResource
 {
 	Probes,
+	Probes_X_NEG,
+	Probes_X_POS,
+	Probes_Y_NEG,
+	Probes_Y_POS,
+	Probes_Z_NEG,
+	Probes_Z_POS,
 	Positions,
 	Normals,
 	Coefficients,
-	CoefficientGradients
+	CoefficientGradients,
+
 };
 class Probe {
 protected:
@@ -31,6 +38,8 @@ public:
 	void computeCoefficientsFromTexture(bool alsoSet);
 	String buildPath(EResource res);
 	void saveCoefficients();
+	void computeCoefficients(std::shared_ptr<G3D::Image> probeTexture, TProbeCoefficients& coeffs);
+	CoeffGradients computeProbeCoeffGradients();
 
 	shared_ptr<Texture>		texture;
 	shared_ptr<Texture>		irr_texture;

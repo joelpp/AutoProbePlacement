@@ -392,7 +392,7 @@ void SceneSampleSet::generateTriplets(int NumberOfSamples,
 
 						float computedWeights = InverseSumOf1OverSquaredProbeDistances(SamplePosition) * powf(distanceToProbe(SamplePosition, pm), -2);
 						
-						dRGB_color_axis += Wval * Rval - computedWeights * Bval;
+						dRGB_color_axis += Wval * Rval + computedWeights * Bval;
 					}
 
 					if (eigenTriplets)

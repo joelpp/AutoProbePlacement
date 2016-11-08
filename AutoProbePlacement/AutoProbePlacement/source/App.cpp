@@ -647,6 +647,11 @@ void App::switchEditProbeStructure()
 
 void App::updateProbeStructure()
 {
+	if (probeStructureLoaded() && bManipulateProbesEnabled)
+	{
+		switchEditProbeStructure();
+	}
+
     G3D::String selectedScene = selectedSceneName();
     G3D::String probeStructureName = scenePane.probeStructureList->selectedValue();
     initializeProbeStructure(selectedScene, probeStructureName);
@@ -721,7 +726,7 @@ void App::onAI()
             shouldAddAProbe = !tryOptimization();
         }
 
-        if (m_probeStructure->probeCount() == 4)
+        if (shouldAddAProbe && (m_probeStructure->probeCount() == 2))
         {
             optimizing = false;
         }
@@ -1540,7 +1545,7 @@ void App::loadOptions()
 
 	loadScene(loadStringOption("sceneName", optionJSON));
 	bUpdateProbesOnOptimizationPass = loadBoolOption("bUpdateProbesOnOptimizationPass", optionJSON);
-	showAllProbes = loadBoolOption("showAllProbes", optionJSON);
+	showAllProbes = loadBoolOption("bShowAllProbes", optionJSON);
 	bRenderDirect = loadBoolOption("bRenderDirect", optionJSON);
 	bRenderIndirect = loadBoolOption("bRenderIndirect", optionJSON);
 

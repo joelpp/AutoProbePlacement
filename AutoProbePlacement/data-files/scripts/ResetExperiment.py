@@ -16,6 +16,7 @@ if ((not save) and (raw_input('Do you really want to reset without saving? ENTER
 if (save):
 	
 	LabelScreenshots.label(sceneName, ID);
+
 	
 # 	if (len(sys.argv) == 3):
 # 		next = sys.argv[2];

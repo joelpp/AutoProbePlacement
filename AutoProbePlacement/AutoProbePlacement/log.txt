@@ -1,13 +1,13 @@
 Application Log
-Start: Tue Nov  8 16:35:12 2016
+Start: Wed Nov  9 14:47:14 2016
 
-Initializing System::findDataFile took 0.005253s
+Initializing System::findDataFile took 0.004357s
 WARNING: AudioDevice is not enabled. Set G3DSpecification::audio = true before invoking initGLG3D() to enable audio.
 
 Entering GApp::GApp()
 cwd = c:\git\AutoProbePlacement\AutoProbePlacement\AutoProbePlacement
 System::setAppDataDir("C:\git\AutoProbePlacement\data-files")
-Initializing System::findDataFile took 0.004455s
+Initializing System::findDataFile took 0.002499s
 Setting video mode
 wglSwapIntervalEXT(0);
 Setting initial rendering state.
@@ -575,39 +575,31 @@ lolFound scenes:
   "G3D Sports Car (White)" (C:\git\g3d\data10\research/scene/sportsCarWhite.Scene.Any)
   "G3D Transparency Test" (C:\git\g3d\data10\research/scene/transparencyTest.Scene.Any)
   "G3D Triangle" (C:\git\g3d\data10\research/scene/triangle.Scene.Any)
-НээээЭЭЭIљиTщЭ
-НээээЭЭЭ)љиTщЭ
-НээээЭЭЭy›иTщЭ
-НээээЭЭЭm›иTщЭ
+Нээээ
+Нээээ
+Нээээ
+Нээээ
 Vertex info
 -----------
 1(42) : warning C7050: "tex0" might be used before being initialized
 
-НээээЭЭЭA›иTщЭ
 Vertex info
 -----------
 1(42) : warning C7050: "tex0" might be used before being initialized
 
-НээээЭЭЭењиTщЭ
-НээээЭЭЭнќиTщЭ
-НээээЭЭЭСќиTщЭ
-НээээЭЭЭ­ќиTщЭ
-НээээЭЭЭ•ќиTщЭ
+Нээээ
+Нээээ
+Нээээ
+Нээээ
 Fragment info
 -------------
 1(33) : warning C7050: "surfel.shadingNormal" might be used before being initialized
 1(33) : warning C7050: "surfel.glossyShadingNormal" might be used before being initialized
 
-НээээЭЭЭYќиTщЭ
-Нээээ
-НээээЭЭЭЭЭЭЭЭЭЭЭЭЭЭЭЭЭЭЭ“ХyЛтiрMb
-
 Нээээ
 Нээээ
-Fragment info
--------------
-1(33) : warning C7050: "surfel.shadingNormal" might be used before being initialized
-
+Нээээ
+Нээээ
 Нээээ
 Нээээ
 Fragment info
@@ -615,8 +607,5 @@ Fragment info
 1(33) : warning C7050: "surfel.shadingNormal" might be used before being initialized
 
 Нээээ
-Fragment info
--------------
-1(33) : warning C7050: "surfel.shadingNormal" might be used before being initialized
-
+Нээээ
 Нээээ

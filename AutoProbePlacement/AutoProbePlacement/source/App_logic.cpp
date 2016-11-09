@@ -354,7 +354,7 @@ void App::addOneActor()
 {
 	addActor("bunny", sphereModel /*sceneModel*/, 
 			 Vector3( std::stof(actorSpawnX.c_str()), std::stof(actorSpawnY.c_str()), std::stof(actorSpawnZ.c_str()) ),
-			 0.1f, shared_ptr<Texture>(), true, Vector3(1,1,1));
+			 0.1f, shared_ptr<Texture>(), false, Vector3(1,1,1));
 }
 
 void App::addOneActorSq()

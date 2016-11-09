@@ -1421,12 +1421,20 @@ void ProbeStructure::saveInfoFile()
 	std::fstream infoFile = infoFileHandle(false);
 
 	infoFile << "type"			<< " " << std::string(typeMap[m_type].c_str())	<< std::endl;
-	infoFile << "dimensions"	<< " " << probeCount()							<< std::endl;
 	infoFile << "integrator"	<< " " << std::string(m_integrator.c_str())		<< std::endl;
 	infoFile << "gamma"			<< " " << m_gamma								<< std::endl;
 	infoFile << "sampleCount"	<< " " << m_NumSamples							<< std::endl;
 	infoFile << "width"			<< " " << m_width								<< std::endl;
 	infoFile << "height"		<< " " << m_height								<< std::endl;
+
+	if (m_type == EProbeStructureType::Trilinear)
+	{
+		infoFile << "dimensions" << " " << m_dimensions[0] << " " << m_dimensions[1] << " " << m_dimensions[2] << std::endl;
+	}
+	else
+	{
+		infoFile << "dimensions" << " " << probeCount() << std::endl;
+	}
 }
 
 void ProbeStructure::addProbe(G3D::Vector3& position)

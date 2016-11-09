@@ -106,6 +106,8 @@ public:
 
 	String type() { return String(typeMap[m_type]); }
 
+	EProbeStructureType eType() { return m_type; }
+
 	float gamma() { return m_gamma; }
 
     void setGamma(float gamma);

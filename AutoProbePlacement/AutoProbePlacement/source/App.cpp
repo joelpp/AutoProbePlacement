@@ -305,6 +305,13 @@ void App::drawProbes(RenderDevice* rd)
 	G3D::Array<Probe*>& probeRenderList = showAllProbes ? m_probeStructure->probeList : probesToRender;
 	Args args;
 
+	//if (bManipulateProbesEnabled && m_probeStructure->type() == EProbeStructureType::Trilinear)
+	//{
+	//	drawModel(rd, "SH_shader3.*", sphereModel, m_probeStructure->getProbe(0)->getPosition(), args);
+
+	//	return;
+	//}
+
 	for (Probe* probe : probeRenderList)
 	{
 
@@ -326,10 +333,10 @@ void App::drawProbes(RenderDevice* rd)
 			drawModel(rd, "texture.*", sphereModel, probe->getPosition(), args);
 		}
 
-		if (bManipulateProbesEnabled)
-		{
-			probe->getManipulator()->render3D(rd);
-		}
+		//if (bManipulateProbesEnabled)
+		//{
+		//	probe->getManipulator()->render3D(rd);
+		//}
     }
 }
 
@@ -519,7 +526,7 @@ void App::addActor(String name, shared_ptr<ArticulatedModel> model, Point3 posit
 
 	if (useManipulator)
 	{
-	    addWidget(myActor.getManipulator());
+	    //addWidget(myActor.getManipulator());
 	}
 	
 }
@@ -626,23 +633,39 @@ void App::generateSampleSetValuesFromProbes()
 
 void App::switchEditProbeStructure()
 {
+
     if (!bManipulateProbesEnabled)
     {
-        for (Probe* p : m_probeStructure->probeList)
-        {
-            addWidget(p->getManipulator());
-        }
-        bManipulateProbesEnabled = true;
+		if (m_probeStructure->eType() == EProbeStructureType::Trilinear)
+		{
+			addWidget(m_probeStructure->getProbe(0)->getManipulator());
+
+		}
+		else
+		{
+			for (Probe* p : m_probeStructure->probeList)
+			{
+				addWidget(p->getManipulator());
+			}
+		}
+
     }
     else
     {
-        for (Probe* p : m_probeStructure->probeList)
-        {
-            removeWidget(p->getManipulator());
-        }
-        bManipulateProbesEnabled = false;
+		if (m_probeStructure->eType() == EProbeStructureType::Trilinear)
+		{
+			removeWidget(m_probeStructure->getProbe(0)->getManipulator());
+		}
+		else
+		{
+			for (Probe* p : m_probeStructure->probeList)
+			{
+				removeWidget(p->getManipulator());
+			}
+		}
     }
 
+	bManipulateProbesEnabled = !bManipulateProbesEnabled;
 }
 
 void App::updateProbeStructure()
@@ -726,7 +749,7 @@ void App::onAI()
             shouldAddAProbe = !tryOptimization();
         }
 
-        if (shouldAddAProbe && (m_probeStructure->probeCount() == 2))
+        if (shouldAddAProbe && (m_probeStructure->probeCount() == 6))
         {
             optimizing = false;
         }
@@ -1423,8 +1446,9 @@ void App::onUserInput(UserInput* userInput)
     }
     else if (userInput->keyDown(GKey('p')))
     {
-        showAllProbes = true;
+        showAllProbes = !showAllProbes;
     }
+	
 }
 
 G3D::String App::scenesPath()

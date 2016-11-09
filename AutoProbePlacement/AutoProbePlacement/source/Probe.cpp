@@ -231,7 +231,7 @@ TProbeCoefficients subtractAndDivide(TProbeCoefficients& c0, TProbeCoefficients&
 CoeffGradients Probe::computeProbeCoeffGradients()
 {
 	int NumCoeffs = 9;
-	CoeffGradients toReturn;
+	CoeffGradients toReturn = CreateCoeffGradients(NumCoeffs);
 
 	String paths[6];
 	paths[0] = buildPath(EResource::Probes_X_NEG);
@@ -292,115 +292,6 @@ void Probe::computeCoefficientsFromTexture(bool alsoSet)
 	std::shared_ptr<G3D::Image> positionTexture = Image::fromFile(positionPath);
 	std::shared_ptr<G3D::Image> normalTexture = Image::fromFile(normalPath);
 	computeCoefficients(probeTexture, tempCoeffs);
-	//int probeTextureWidth = probeTexture->width();
-	//int probeTextureHeight = probeTexture->height();
-
-	//for (int h = 0; h < probeTextureHeight; ++h)
-	//{
-	//	for (int w = 0; w < probeTextureWidth; ++w)
-	//	{
-	//		Vector2 UV = Transform::ijToUV(Vector2( (float) w, (float) h ), probeTextureWidth, probeTextureHeight);
-
-	//		Vector2 PT = Transform::UVtoPT(UV);
-
-	//		Vector3 texelWSVector = Transform::sphericalToCartesian(PT, 1.0f);
-
-	//		float domega = (PI / (float)probeTextureHeight) * (2.f * PI / (float)probeTextureWidth) * sin(PT.y);
-	//		
-	//		Color3 radiance;
-	//		probeTexture->get(Point2int32(w, h), radiance);
- //           
-	//		Color3 cPosition;
-	//		positionTexture->get(Point2int32(w, h), cPosition);
-	//		Vector3 vPosition = 25.f * ((Vector3(cPosition) * 2) - Vector3(1,1,1));
-
-	//		Color3 cNormal;
-	//		normalTexture->get(Point2int32(w, h), cNormal);
-	//		Vector3 vNormal = (Vector3(cNormal) * 2) - Vector3(1,1,1);
-
-	//		Vector3 s = (vPosition - this->getPosition());
-	//		float sNorm = s.magnitude();
-
-	//		Vector3 directionVector = s.fastUnit();
-
-	//		float normalDotDirectionVector = vNormal.dot(directionVector);
-
-	//		float dA = domega * pow(sNorm, 2) / normalDotDirectionVector;
-
-	//		float g = normalDotDirectionVector / pow(sNorm, 2);
-
-	//		Vector3 gGradTerm0 = vNormal / pow(sNorm, 3);
-	//		float gGradTerm1Factor = 3 * vNormal.dot(s) / pow(sNorm, 5);
-	//		Vector3 gGradTerm1 = s * gGradTerm1Factor;
-
-	//		Vector3 gGrad = gGradTerm0 - gGradTerm1;
-	//		SHGradient shGradient = SH::gradients(vNormal);
-
-
-	//		if (radiance == Color3(0, 0, 0))
-	//		{
-	//			continue;
-	//		}
-
-	//		for (int k = 0; k < NumCoeffs; ++k)
-	//		{
-	//			// Compute contribution to the gradient coefficients
-	//			std::pair<int, int> lm = SH::kToLM(k);
-
-
-	//			float shFunctionEvaluation = SH::SHxyz_yup(lm.first, lm.second, directionVector);
-
-	//			Vector3 shFunctionEvaluationGrad = Vector3(shGradient[AXIS_X][k], shGradient[AXIS_Y][k], shGradient[AXIS_Z][k]);
-	//			
-	//			Vector3 integralFactor0Term0 = shFunctionEvaluationGrad * g;
-	//			Vector3 integralFactor0Term1 = gGrad * shFunctionEvaluation;
-	//			
-	//			Vector3 integralFactor0 = integralFactor0Term0 + integralFactor0Term1;
-	//			
-	//			Array<Vector3> integralTerm;
-	//			for (int channel = 0; channel < 3; ++channel)
-	//			{
-	//				integralTerm.append(integralFactor0 * radiance[channel] * dA);
-	//			}
-	//			
-	//			for (int channel = 0; channel < 3; ++channel)
-	//			{
-	//				tempCoeffGradients[k][channel] = tempCoeffGradients[k][channel] +  integralTerm[channel];
-	//			}
-
-	//			//if ((k == 0) && (h == 15) && (w == 0))
-	//			//{
-	//			//	std::stringstream ss;
-	//			//	ss << "DEBUG INFO" << std::endl;
-	//			//	ss << vPosition << std::endl;
-	//			//	ss << vNormal << std::endl;
-	//			//	ss << s << std::endl;
-	//			//	ss << normalDotDirectionVector << std::endl;
-	//			//	ss << gGrad << std::endl;
-	//			//	ss << shGradient[0][0] << std::endl;
-	//			//	ss << shFunctionEvaluationGrad << std::endl;
-	//			//	ss << integralFactor0 << std::endl;
-	//			//	ss << integralTerm[0] << std::endl;
-	//			//	ss << "END DEBUG INFO" << std::endl;
-	//			//	debugPrintf("%s", ss.str().c_str());
-	//			//}
-	//			// Compute contribution to the SH coefficients
-	//			float shFunctionEvaluationForTexel = SH::SHxyz_yup(lm.first, lm.second, texelWSVector); 
-
-	//			Vector3 toAdd = domega * Vector3(radiance) * shFunctionEvaluationForTexel;
-	//			tempCoeffs[k] += toAdd;
-
-	//		}
-	//	}
-	//}
-
-	//this->coeffs.fastClear();
-	//this->coeffs = tempCoeffs;
-	//this->coeffGradients = tempCoeffGradients;
-
-	// compute sh gradients in the worst way imaginable
-		
-
 
 	if (alsoSet)
 	{

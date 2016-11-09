@@ -1,1 +1,1 @@
-{"bRenderDirect":false,"bRenderIndirect":true,"bShowAllProbes":true,"bUpdateProbesOnOptimizationPass":true,"numOptimizationSamples":"10","numPassesLeft":"25","optimizationSHBand":"1","probeStructureName":"Fit","sampleSetName":"1Band","sceneName":"zcbox"}
+{"bRenderDirect":false,"bRenderIndirect":true,"bShowAllProbes":true,"bUpdateProbesOnOptimizationPass":true,"numOptimizationSamples":"1000","numPassesLeft":"100","optimizationSHBand":"1","probeStructureName":"GridIndirectGamma22","sampleSetName":"1Band","sceneName":"zcbox"}

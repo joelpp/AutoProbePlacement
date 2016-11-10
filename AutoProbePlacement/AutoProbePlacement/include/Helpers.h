@@ -1,6 +1,6 @@
 #pragma once
 #include <string>
-#include "G3D\G3DAll.h"
+#include <G3D/G3DAll.h>
 #define PI 3.141592654f
 #define DEAV3(x) debugPrintf(#x); for(int num = 0; num < x.size(); num++){ debugPrintf(", [%d]: (%s)\n", num, x[num].toString().c_str()); debugPrintf("\n");}
 #define DE_(x) debugPrintf(#x);debugPrintf("\n\n");

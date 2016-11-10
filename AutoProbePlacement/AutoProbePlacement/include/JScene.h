@@ -26,7 +26,7 @@ public:
 	void addLight(SceneLight light);
 	void setBounds();
 	int numModels();
-	MeshShape* JScene::getMeshShape(int i);
+	MeshShape* getMeshShape(int i);
 	float scale();
 	bool isOOB(G3D::Vector3 pos, float tolerance);
 

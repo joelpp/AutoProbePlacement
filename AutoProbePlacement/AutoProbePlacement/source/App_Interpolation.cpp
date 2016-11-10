@@ -292,7 +292,7 @@ Tetrahedron* App::updateNeighbor(Vector3 weights, float d, Actor& actor, Tetrahe
 	if (newIndex == -1)
 	{
 		debugPrintf("Trying to access tetrahedron index -1.\n");
-		debugPrintf("T: %s\n", t->toString());
+		debugPrintf("T: %s\n", t->toString().c_str());
 		debugPrintf("Weights: %s\n", weights.toString().c_str());
 		exit(1);
 	}

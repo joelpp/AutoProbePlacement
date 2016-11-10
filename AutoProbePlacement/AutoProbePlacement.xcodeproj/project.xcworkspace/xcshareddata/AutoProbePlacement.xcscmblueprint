@@ -1,0 +1,32 @@
+{
+  "DVTSourceControlWorkspaceBlueprintPrimaryRemoteRepositoryKey" : "5C81FBFFCC89A1143D494C3F47B3CA53FB0D5452",
+  "DVTSourceControlWorkspaceBlueprintWorkingCopyRepositoryLocationsKey" : {
+    "9296df4a-2249-4d1b-8fb0-1ab621adc933" : {
+
+    }
+  },
+  "DVTSourceControlWorkspaceBlueprintWorkingCopyStatesKey" : {
+    "9296df4a-2249-4d1b-8fb0-1ab621adc933" : 9223372036854775807,
+    "5C81FBFFCC89A1143D494C3F47B3CA53FB0D5452" : 9223372036854775807
+  },
+  "DVTSourceControlWorkspaceBlueprintIdentifierKey" : "0B0D9388-BF87-4016-8FFB-3480B9947553",
+  "DVTSourceControlWorkspaceBlueprintWorkingCopyPathsKey" : {
+    "9296df4a-2249-4d1b-8fb0-1ab621adc933" : "",
+    "5C81FBFFCC89A1143D494C3F47B3CA53FB0D5452" : "AutoProbePlacement\/"
+  },
+  "DVTSourceControlWorkspaceBlueprintNameKey" : "AutoProbePlacement",
+  "DVTSourceControlWorkspaceBlueprintVersion" : 204,
+  "DVTSourceControlWorkspaceBlueprintRelativePathToProjectKey" : "AutoProbePlacement\/AutoProbePlacement.xcodeproj",
+  "DVTSourceControlWorkspaceBlueprintRemoteRepositoriesKey" : [
+    {
+      "DVTSourceControlWorkspaceBlueprintRemoteRepositoryURLKey" : "https:\/\/github.com\/joelpp\/AutoProbePlacement.git",
+      "DVTSourceControlWorkspaceBlueprintRemoteRepositorySystemKey" : "com.apple.dt.Xcode.sourcecontrol.Git",
+      "DVTSourceControlWorkspaceBlueprintRemoteRepositoryIdentifierKey" : "5C81FBFFCC89A1143D494C3F47B3CA53FB0D5452"
+    },
+    {
+      "DVTSourceControlWorkspaceBlueprintRemoteRepositoryURLKey" : "svn:\/\/g3d.cs.williams.edu\/g3d",
+      "DVTSourceControlWorkspaceBlueprintRemoteRepositorySystemKey" : "com.apple.dt.Xcode.sourcecontrol.Subversion",
+      "DVTSourceControlWorkspaceBlueprintRemoteRepositoryIdentifierKey" : "9296df4a-2249-4d1b-8fb0-1ab621adc933"
+    }
+  ]
+}

@@ -130,7 +130,7 @@ float App::computeError(bool outputToLog)
 
     if (!logFile.is_open())
     {
-        debugPrintf("Couldn't open error log file at %s\n", errorLogPath);
+//        debugPrintf("Couldn't open error log file at %s\n", errorLogPath.c_str());
     }
 
 	if (outputToLog)

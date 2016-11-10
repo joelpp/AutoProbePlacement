@@ -1,6 +1,6 @@
 #pragma once
 
-#include "G3D\G3DAll.h"
+#include "G3D/G3DAll.h"
 
 class ProbeRenderer : public DefaultRenderer
 {

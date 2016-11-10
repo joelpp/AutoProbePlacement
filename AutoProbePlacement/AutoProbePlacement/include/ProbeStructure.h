@@ -124,7 +124,7 @@ public:
 
 	//void coefficientInterpolation(G3D::Vector3 position, std::vector<G3D::Vector3> interpolatedCoefficients, std::vector<int>& probeIndices, std::vector<float> weights);
 	ProbeInterpolationRecord getInterpolationProbeIndicesAndWeights(const G3D::Vector3& position);
-	G3D::Array<G3D::Vector3> ProbeStructure::getInterpolatingProbesCoords(const G3D::Vector3& pos, int step);
+	G3D::Array<G3D::Vector3> getInterpolatingProbesCoords(const G3D::Vector3& pos, int step);
 	G3D::Array<int> getInterpolatingProbeIndices(const G3D::Vector3& pos);
 
 
@@ -149,9 +149,9 @@ public:
 
     void uploadToGPU();
 
-	void setIntegrator(String& integrator);
+	void setIntegrator(String integrator);
 
-	void setType(String& type);
+	void setType(String type);
 
 	void saveInfoFile();
 

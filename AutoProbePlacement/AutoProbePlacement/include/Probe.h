@@ -56,7 +56,7 @@ class ProbeManipulator : public ThirdPersonManipulator
 {
 public:
 	Probe* p;
-	static shared_ptr<ProbeManipulator> ProbeManipulator::create() {
+	static shared_ptr<ProbeManipulator> create() {
 		return shared_ptr<ProbeManipulator>(new ProbeManipulator());
 	}
 

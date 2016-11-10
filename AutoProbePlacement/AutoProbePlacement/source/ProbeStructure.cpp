@@ -1399,7 +1399,7 @@ void ProbeStructure::uploadToGPU()
     glBindBuffer(GL_SHADER_STORAGE_BUFFER, 0);
 }
 
-void ProbeStructure::setIntegrator(String& integrator)
+void ProbeStructure::setIntegrator(String integrator)
 {
 	this->m_integrator = integrator;
 
@@ -1411,7 +1411,7 @@ void ProbeStructure::setGamma(float gamma)
 
 }
 
-void ProbeStructure::setType(String& type)
+void ProbeStructure::setType(String type)
 {
 	this->m_type = (EProbeStructureType)(int)(typeMap.findIndex(type));
 }

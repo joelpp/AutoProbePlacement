@@ -268,7 +268,7 @@ void App::renderActors(RenderDevice* rd)
         if (!actor.isVisible) continue;
 	
 		// draw manipulator?
-		actor.getManipulator()->render3D(rd);
+		//actor.getManipulator()->render3D(rd);
 
         args = Args();
 		args.setUniform("albedo", actor.albedo);
@@ -303,27 +303,57 @@ void App::renderActors(RenderDevice* rd)
 void App::drawProbes(RenderDevice* rd)
 {
 	G3D::Array<Probe*>& probeRenderList = showAllProbes ? m_probeStructure->probeList : probesToRender;
+
 	Args args;
+	args.setUniform("multiplier", shadingMultiplier);
+	args.setUniform("r", 1.f);
 
-	//if (bManipulateProbesEnabled && m_probeStructure->type() == EProbeStructureType::Trilinear)
-	//{
-	//	drawModel(rd, "SH_shader3.*", sphereModel, m_probeStructure->getProbe(0)->getPosition(), args);
+	if (bManipulateProbesEnabled && m_probeStructure->eType() == EProbeStructureType::Trilinear)
+	{
+		Probe* p = m_probeStructure->getProbe(0);
+		setProbeCoeffUniforms(args, p->coeffs);
 
-	//	return;
-	//}
+		drawModel(rd, "SH_shader3.*", sphereModel, p->getPosition(), args);
+
+		//float step = m_probeStructure->m_step;
+		float step = std::stof(probeStructurePanelOptions.step.c_str());
+
+		Color3 white = Color3::white();
+		shared_ptr<Texture> whiteTexture = Texture::white();
+		Vector3 manipulatorPos = p->getManipulator()->frame().translation;
+		Array<Vector3> positions;
+		Sampler sampler = Sampler();
+		for (int i = 0; i < m_probeStructure->m_dimensions[0]; ++i)
+		{
+			for (int j = 0; j < m_probeStructure->m_dimensions[1]; ++j)
+			{
+				for (int k = 0; k < m_probeStructure->m_dimensions[2]; ++k)
+				{
+					Vector3 centerPos = manipulatorPos + Vector3(i * step, j * step, k * step);
+					//positions.push_back(manipulatorPos + Vector3(i * step, j * step, k * step)); 
+					//Draw::sphere(Sphere(centerPos, 0.1f), rd, white);
+					args.setUniform("uSampler", whiteTexture, sampler);
+					drawModel(rd, "texture.*", sphereModel, centerPos, args);
+				}
+			}
+		}
+		//Draw::points(positions, rd, white, sampleMultiplier);
+
+	}
 
 	for (Probe* probe : probeRenderList)
 	{
 
 		if (highlightProbes && !probe->bNeedsUpdate)
 		{
-			args.setUniform("multiplier", shadingMultiplier);
-            args.setUniform("r", 1.f);
+
 
 			setProbeCoeffUniforms(args, probe->coeffs);
 
 			//Accumulate the renders
 			drawModel(rd, "SH_shader3.*", sphereModel, probe->getPosition(), args);
+
+
 		}
 		else
 		{
@@ -400,7 +430,8 @@ void App::drawProbeLineSegments(RenderDevice* rd)
  * @param surface3D [unused]
  */
 void App::onGraphics3D(RenderDevice* rd, Array<shared_ptr<Surface> >& surface3D) {
-
+	rd->setColorClearValue(Color3(0.3f, 0.3f, 0.3f));
+	//rd->clear();
 	GBuffer::Specification gbufferSpec = m_gbufferSpecification;
 	gbufferSpec.encoding[GBuffer::Field::WS_POSITION].format = ImageFormat::RGBA16F();
 	extendGBufferSpecification(gbufferSpec);
@@ -411,8 +442,7 @@ void App::onGraphics3D(RenderDevice* rd, Array<shared_ptr<Surface> >& surface3D)
 	m_renderer->render(rd, m_framebuffer, scene()->lightingEnvironment().ambientOcclusionSettings.enabled ? m_depthPeelFramebuffer : shared_ptr<Framebuffer>(),
 		scene()->lightingEnvironment(), m_gbuffer, surface3D);
 
-    rd->setColorClearValue(Color3(0.3f, 0.3f, 0.3f));
-    rd->setRenderMode(RenderDevice::RENDER_SOLID);
+    //rd->setRenderMode(RenderDevice::RENDER_SOLID);
  //   
  //   //Set the framebuffer for drawing
     rd->pushState(m_framebuffer);
@@ -433,7 +463,7 @@ void App::onGraphics3D(RenderDevice* rd, Array<shared_ptr<Surface> >& surface3D)
  //   //Draw manipulator and other stuff
     rd->popState();
 
-	rd->clear();
+	//rd->clear();
     m_film->exposeAndRender(rd, activeCamera()->filmSettings(), m_framebuffer->texture(0), 0, 0);
 
     if (optimizing || numPassesLeft > 0)
@@ -1302,6 +1332,8 @@ void App::updateProbeStructurePane()
 		m_probeStructure->savePositions(true);
 		m_probeStructure->generateProbes("all");
 		m_probeStructure->extractSHCoeffs();
+
+		popNotification("Job finished", "Probe structure update complete", 15);
 	}
 	, GuiTheme::TOOL_BUTTON_STYLE);
 
@@ -1343,12 +1375,14 @@ void App::updateProbeStructurePane()
         probeStructurePanelOptions.numSamples = g3dString(m_probeStructure->numSamples());
         probeStructurePanelOptions.width      = g3dString(m_probeStructure->width()     );
         probeStructurePanelOptions.height     = g3dString(m_probeStructure->height()    );
+        probeStructurePanelOptions.step     =   g3dString(m_probeStructure->m_step	    );
         
         probeStructurePane->beginRow();
         probeStructurePane->addTextBox("Gamma",      &(probeStructurePanelOptions.gamma));
         probeStructurePane->addTextBox("Width",      &(probeStructurePanelOptions.width));
         probeStructurePane->addTextBox("Height",     &(probeStructurePanelOptions.height));
-        probeStructurePane->addTextBox("NumSamples", &(probeStructurePanelOptions.numSamples));
+		probeStructurePane->addTextBox("NumSamples", &(probeStructurePanelOptions.numSamples));
+		probeStructurePane->addTextBox("Step",	     &(probeStructurePanelOptions.step));
 
 		int currentIntegratorIndex = integratorList.findIndex(m_probeStructure->m_integrator);
 		G3D::GuiDropDownList* list = probeStructurePane->addDropDownList("Integrator", integratorList, &(probeStructurePanelOptions.integratorIndex), [this]() 
@@ -1523,11 +1557,11 @@ void App::saveOptions()
 	optionJSON["bUpdateProbesOnOptimizationPass"] = bUpdateProbesOnOptimizationPass;
 	optionJSON["bRenderDirect"] =					bRenderDirect;
 	optionJSON["bRenderIndirect"] =					bRenderIndirect;
+	optionJSON["sampleMultiplier"] =				sampleMultiplier;
 
 	std::fstream optionFile(optionFilePath(), std::fstream::out);
 	optionFile << optionJSON;
 	optionFile.close();
-
 }
 
 using json = nlohmann::json;

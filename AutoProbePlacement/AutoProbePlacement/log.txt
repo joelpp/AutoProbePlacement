@@ -1,13 +1,13 @@
 Application Log
-Start: Wed Nov  9 14:47:14 2016
+Start: Wed Nov  9 17:48:42 2016
 
-Initializing System::findDataFile took 0.004357s
+Initializing System::findDataFile took 0.004810s
 WARNING: AudioDevice is not enabled. Set G3DSpecification::audio = true before invoking initGLG3D() to enable audio.
 
 Entering GApp::GApp()
 cwd = c:\git\AutoProbePlacement\AutoProbePlacement\AutoProbePlacement
 System::setAppDataDir("C:\git\AutoProbePlacement\data-files")
-Initializing System::findDataFile took 0.002499s
+Initializing System::findDataFile took 0.003793s
 Setting video mode
 wglSwapIntervalEXT(0);
 Setting initial rendering state.
@@ -599,8 +599,7 @@ Fragment info
 Нээээ
 Нээээ
 Нээээ
-Нээээ
-Нээээ
+Нээээяя‚Mz
 Нээээ
 Fragment info
 -------------
@@ -608,4 +607,10 @@ Fragment info
 
 Нээээ
 Нээээ
+Fragment info
+-------------
+1(33) : warning C7050: "surfel.shadingNormal" might be used before being initialized
+
 Нээээ
+НээээЭЭЭ|К=LzЭ
+НээээЭЭЭЛ=LzЭ

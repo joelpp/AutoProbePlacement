@@ -1221,6 +1221,12 @@ G3D::Vector3 ProbeStructure::reconstructSH(const G3D::Vector3& position, const G
     {
         //int probeIndex = getProbeStartIndex(coords[i], firstProbePosition, dimensions, 1);
         int probeIndex = record.probeIndices[i];
+
+		if ((probeIndex < 0) || probeIndex >= probeCount())
+		{
+			continue;
+		}
+
         float weight = record.weights[i];
         if (weight == 0)
         {
@@ -1246,9 +1252,18 @@ G3D::Vector3 ProbeStructure::reconstructSH(const G3D::Vector3& position, const G
                 //NDotOmegaCoeff(lm(0)) *
                 phong *
                 sh;
-            Vector3& probeCoeffs = getProbe(probeIndex)->coeffs[coeff];
-            Vector3 accumulation = factors * probeCoeffs;
-            rgb += accumulation;
+			try
+			{
+				Vector3& probeCoeffs = getProbe(probeIndex)->coeffs[coeff];
+				Vector3 accumulation = factors * probeCoeffs;
+				rgb += accumulation;
+
+			}
+			catch (std::exception e)
+			{
+
+			}
+
 
             //if (this->outputToLog)
             //{
@@ -1303,20 +1318,34 @@ void ProbeStructure::savePositions(bool useManipulator)
 {
     std::fstream probeListFile = probeListFileHandle(false);
 
+	int x = 0, y = 0, z = 0;
     for (int i = 0; i < probeList.size(); ++i)
     {
         Probe* p = probeList[i];
         G3D::Vector3 probePosition;
         // todo: ugh :(
-        if (useManipulator)
-        {
-            probePosition = p->manipulator->frame().translation;
-            p->setPosition(probePosition);
-        }
-        else
-        {
-            probePosition = p->getPosition();
-        }
+		if (m_type == EProbeStructureType::Trilinear)
+		{
+			G3D::Vector3 initialPos = probeList[0]->manipulator->frame().translation;
+			probePosition = initialPos + Vector3(x, y, z) * m_step;
+
+			z = (z + 1) % m_dimensions[2];
+			y = (z == 0) ? (y + 1) % m_dimensions[1] : y;
+			x = ((y == 0) && (z == 0)) ? x + 1 : x;
+		}
+		else
+		{
+			if (useManipulator)
+			{
+				probePosition = p->manipulator->frame().translation;
+				p->setPosition(probePosition);
+			}
+			else
+			{
+				probePosition = p->getPosition();
+			}
+		}
+        
 
         std::string toWrite = std::to_string(probePosition[0]) + " " + std::to_string(probePosition[1]) + " " + std::to_string(probePosition[2]) + "\n";
         probeListFile << toWrite;

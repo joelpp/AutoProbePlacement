@@ -70,6 +70,8 @@ struct SProbeStructurePanel
     String width;
     String height;
     String numSamples;
+	String step;
+
 };
 
 

@@ -7,8 +7,8 @@
 #include "Helpers.h"
 #include "SH.h"
 
-#define HOME_PC
-//#define LIGUM_PC
+//#define HOME_PC
+#define LIGUM_PC
 
 String generateFolderNameBaseAnySuffix(const String& prefix) 
 {
@@ -122,14 +122,15 @@ bool createFolder(String& name)
     return createFolder(name.c_str());
 }
 
-void createEmptyFile(const char* name)
+std::fstream createEmptyFile(const char* name)
 {
 	std::fstream file(name, std::fstream::out);
+	return file;
 }
 
-void createEmptyFile(String name)
+std::fstream createEmptyFile(String name)
 {
-    std::fstream file(name.c_str(), std::fstream::out);
+    return createEmptyFile(name.c_str());
 }
 
 void copyDir(const char* srcPath, const char* dstPath)
@@ -297,4 +298,31 @@ void normalize(G3D::Vector3& v)
     float l = v.length();
 
     v /= l;
+}
+
+std::vector<float> readValuesFromFlatFile(const char* fileName)
+{
+	std::vector<float> values;
+
+	std::fstream refFile(fileName, std::fstream::in);
+	std::string line;
+	while (std::getline(refFile, line))
+	{
+		float val = std::stof(line);
+		values.push_back(val);
+	}
+	refFile.close();
+
+	return values;
+}
+
+void writeValuesToFlatFile(const char* fileName, std::vector<float>& values)
+{
+	std::fstream refFile(fileName, std::fstream::out);
+	refFile.precision(20);
+	for (float f : values)
+	{
+		refFile << f << std::endl;
+	}
+	refFile.close();
 }

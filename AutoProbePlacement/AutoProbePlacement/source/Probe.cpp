@@ -256,7 +256,7 @@ CoeffGradients Probe::computeProbeCoeffGradients()
 		computeCoefficients(textures[c], dCoeffs[c]);
 	}
 	TProbeCoefficients gradients[3];
-	float distance = 0.2;
+	float distance = 25.0;
 	gradients[0] = subtractAndDivide(dCoeffs[0], dCoeffs[1], distance);
 	gradients[1] = subtractAndDivide(dCoeffs[2], dCoeffs[3], distance);
 	gradients[2] = subtractAndDivide(dCoeffs[4], dCoeffs[5], distance);

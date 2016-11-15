@@ -123,6 +123,7 @@ void App::onInit() {
     bKeepRefValuesOnNewOptimization = false;
     bTakeRefScreenshot = false;
 	bOptimizeWithMitsubaSamples = false;
+	bPreventErrorIncrease = false;
     //Decide how many bands we want to use for the interpolation
     numBands = 2;
     totalNumberOfCoeffs = 0;
@@ -228,7 +229,6 @@ void App::initializeProbeStructure(String sceneName, String probeStructureName)
 		sampleSet->probeStructure = m_probeStructure;
 	}
 }
-
 void App::setSHTexturesUniforms(Args& args)
 {
 	args.setUniform("uSampler0", shTextures[0], Sampler());
@@ -318,26 +318,24 @@ void App::drawProbes(RenderDevice* rd)
 		//float step = m_probeStructure->m_step;
 		float step = std::stof(probeStructurePanelOptions.step.c_str());
 
-		Color3 white = Color3::white();
 		shared_ptr<Texture> whiteTexture = Texture::white();
 		Vector3 manipulatorPos = p->getManipulator()->frame().translation;
-		Array<Vector3> positions;
 		Sampler sampler = Sampler();
-		for (int i = 0; i < m_probeStructure->m_dimensions[0]; ++i)
+		Vector3 dimensions = StringToVector3(probeStructurePanelOptions.dimensions);
+
+		for (int i = 0; i < dimensions[0]; ++i)
 		{
-			for (int j = 0; j < m_probeStructure->m_dimensions[1]; ++j)
+			for (int j = 0; j < dimensions[1]; ++j)
 			{
-				for (int k = 0; k < m_probeStructure->m_dimensions[2]; ++k)
+				for (int k = 0; k < dimensions[2]; ++k)
 				{
 					Vector3 centerPos = manipulatorPos + Vector3(i * step, j * step, k * step);
-					//positions.push_back(manipulatorPos + Vector3(i * step, j * step, k * step)); 
-					//Draw::sphere(Sphere(centerPos, 0.1f), rd, white);
+
 					args.setUniform("uSampler", whiteTexture, sampler);
 					drawModel(rd, "texture.*", sphereModel, centerPos, args);
 				}
 			}
 		}
-		//Draw::points(positions, rd, white, sampleMultiplier);
 
 	}
 
@@ -431,14 +429,13 @@ void App::drawProbeLineSegments(RenderDevice* rd)
  */
 void App::onGraphics3D(RenderDevice* rd, Array<shared_ptr<Surface> >& surface3D) {
 	rd->setColorClearValue(Color3(0.3f, 0.3f, 0.3f));
-	//rd->clear();
 	GBuffer::Specification gbufferSpec = m_gbufferSpecification;
 	gbufferSpec.encoding[GBuffer::Field::WS_POSITION].format = ImageFormat::RGBA16F();
 	extendGBufferSpecification(gbufferSpec);
 	m_gbuffer->setSpecification(gbufferSpec);
 	m_gbuffer->resize(m_framebuffer->width(), m_framebuffer->height());
 	m_gbuffer->prepare(rd, activeCamera(), 0, -(float)previousSimTimeStep(), m_settings.hdrFramebuffer.depthGuardBandThickness, m_settings.hdrFramebuffer.colorGuardBandThickness);
-
+	
 	m_renderer->render(rd, m_framebuffer, scene()->lightingEnvironment().ambientOcclusionSettings.enabled ? m_depthPeelFramebuffer : shared_ptr<Framebuffer>(),
 		scene()->lightingEnvironment(), m_gbuffer, surface3D);
 
@@ -446,6 +443,7 @@ void App::onGraphics3D(RenderDevice* rd, Array<shared_ptr<Surface> >& surface3D)
  //   
  //   //Set the framebuffer for drawing
     rd->pushState(m_framebuffer);
+	//rd->clear();
 
 	if (showSamples)
 	{
@@ -460,7 +458,6 @@ void App::onGraphics3D(RenderDevice* rd, Array<shared_ptr<Surface> >& surface3D)
 
     renderActors(rd);
 
- //   //Draw manipulator and other stuff
     rd->popState();
 
 	//rd->clear();
@@ -556,7 +553,7 @@ void App::addActor(String name, shared_ptr<ArticulatedModel> model, Point3 posit
 
 	if (useManipulator)
 	{
-	    //addWidget(myActor.getManipulator());
+	    addWidget(myActor.getManipulator());
 	}
 	
 }
@@ -758,13 +755,22 @@ void App::onAI()
 
 	if (numPassesLeft > 0)
 	{
-		tryOptimization();
-        numPassesLeft--;
+		if (!tryOptimization())
+		{
+			numPassesLeft = 0;
+			popNotification("Optimization terminated", "Error would've increased!", 15);
 
-        if (numPassesLeft == 0)
-        {
-            popNotification("Optimization complete", "Finished all job!", 15);
-        }
+		}
+		else
+		{
+			numPassesLeft--;
+			if (numPassesLeft == 0)
+			{
+				popNotification("Optimization complete", "Finished all job!", 15);
+			}
+		}
+
+        
 	}
 
     if (optimizing)
@@ -1063,6 +1069,11 @@ void App::createNewOptimizationSettings()
     FileSystem::clearCache("");
     const String folderName(generateFolderNameBaseAnySuffix(basePath));
 
+	std::vector<float> previousRefValues;
+	if (bKeepRefValuesOnNewOptimization)
+	{
+		previousRefValues = readValuesFromFlatFile( (currentOptimizationPath + "/ref_values.txt").c_str() );
+	}
     m_currentOptimization++;
 
     createFolder(folderName.c_str());
@@ -1070,14 +1081,14 @@ void App::createNewOptimizationSettings()
     createEmptyFile((folderName + "/samples.txt").c_str());
     createEmptyFile((folderName + "/values.txt").c_str());
 
-    //if (bKeepRefValuesOnNewOptimization)
-    //{
-    //    copyFile(currentOptimizationPath + "/ref_values.txt", currentOptimizationPath + "/ref_values.txt");
-    //}
-    //else
-    {
-        createEmptyFile((folderName + "/ref_values.txt").c_str());
-    }
+
+    createEmptyFile((folderName + "/ref_values.txt").c_str());
+
+	if (bKeepRefValuesOnNewOptimization)
+	{
+		writeValuesToFlatFile( (folderName + "/ref_values.txt").c_str(), previousRefValues);
+	}
+
     createEmptyFile((folderName + "/errorlog.txt").c_str());
     createEmptyFile((folderName + "/dplog.txt").c_str());
     createEmptyFile((folderName + "/triplets.txt").c_str());
@@ -1097,6 +1108,8 @@ void App::makeGui() {
     tab->addButton("New optimization", [this]()
     {
         createNewOptimizationSettings();
+
+		currentOptimization = SProbeOptimization();
     }
     , GuiTheme::TOOL_BUTTON_STYLE);
     tab->addCheckBox("Keep ref values", &bKeepRefValuesOnNewOptimization);
@@ -1108,6 +1121,7 @@ void App::makeGui() {
 	tab->addTextBox("Max probe step", &maxProbeStepLength);
 	tab->addTextBox("SHBand", &optimizationSHBand);
 	tab->addCheckBox("Update probes", &bUpdateProbesOnOptimizationPass);
+	tab->addCheckBox("Prevent error increase", &bPreventErrorIncrease);
 	tab->endRow();
 
 	tab->beginRow();
@@ -1218,7 +1232,7 @@ void App::makeGui() {
 	tab->addCheckBox("Show ALL Probes", &showAllProbes);
 	tab->addCheckBox("CPUInterpolation", &CPUInterpolation);
 	tab->addCheckBox("highlight probes", &highlightProbes);
-	tab->addTextBox("SH band (-1 = all)", &shadingSHBand);
+	tab->addTextBox("SH band max", &shadingSHBand);
 
 	tab->endRow();
 
@@ -1358,9 +1372,14 @@ void App::updateProbeStructurePane()
 
 	if (m_probeStructure != NULL)
 	{
+		probeStructurePanelOptions.gamma = g3dString(m_probeStructure->gamma());
+		probeStructurePanelOptions.numSamples = g3dString(m_probeStructure->numSamples());
+		probeStructurePanelOptions.width = g3dString(m_probeStructure->width());
+		probeStructurePanelOptions.height = g3dString(m_probeStructure->height());
+		probeStructurePanelOptions.step = g3dString(m_probeStructure->m_step);
+
 		int currentPSIndex = probeStructureList.findIndex(m_probeStructure->name());
 		scenePane.probeStructureList->setSelectedIndex(currentPSIndex);
-
 
 		probeStructurePane->beginRow();
 
@@ -1369,20 +1388,22 @@ void App::updateProbeStructurePane()
 		const G3D::String type = "Type : " + m_probeStructure->type();
 		probeStructurePane->addLabel(type);
 		probeStructurePane->addLabel("Number of probes : " + String(std::to_string(m_probeStructure->probeCount())));
+
+		if (m_probeStructure->eType() == EProbeStructureType::Trilinear)
+		{
+			probeStructurePane->addTextBox("Step", &(probeStructurePanelOptions.step));
+			probeStructurePane->addTextBox("Dimensions", &(probeStructurePanelOptions.dimensions));
+
+		}
+
         probeStructurePane->endRow();
 
-        probeStructurePanelOptions.gamma      = g3dString(m_probeStructure->gamma()     );
-        probeStructurePanelOptions.numSamples = g3dString(m_probeStructure->numSamples());
-        probeStructurePanelOptions.width      = g3dString(m_probeStructure->width()     );
-        probeStructurePanelOptions.height     = g3dString(m_probeStructure->height()    );
-        probeStructurePanelOptions.step     =   g3dString(m_probeStructure->m_step	    );
         
         probeStructurePane->beginRow();
         probeStructurePane->addTextBox("Gamma",      &(probeStructurePanelOptions.gamma));
         probeStructurePane->addTextBox("Width",      &(probeStructurePanelOptions.width));
         probeStructurePane->addTextBox("Height",     &(probeStructurePanelOptions.height));
 		probeStructurePane->addTextBox("NumSamples", &(probeStructurePanelOptions.numSamples));
-		probeStructurePane->addTextBox("Step",	     &(probeStructurePanelOptions.step));
 
 		int currentIntegratorIndex = integratorList.findIndex(m_probeStructure->m_integrator);
 		G3D::GuiDropDownList* list = probeStructurePane->addDropDownList("Integrator", integratorList, &(probeStructurePanelOptions.integratorIndex), [this]() 
@@ -1397,8 +1418,9 @@ void App::updateProbeStructurePane()
             m_probeStructure->setGamma(     std::stof(probeStructurePanelOptions.gamma.c_str()));
             m_probeStructure->setWidth(     std::stoi(probeStructurePanelOptions.width.c_str()));
             m_probeStructure->setHeight(    std::stoi(probeStructurePanelOptions.height.c_str()));
-            m_probeStructure->setNumSamples(std::stoi(probeStructurePanelOptions.numSamples.c_str()));
-			m_probeStructure->saveInfoFile(); 
+			m_probeStructure->setNumSamples(std::stoi(probeStructurePanelOptions.numSamples.c_str()));
+			m_probeStructure->setStep(std::stof(probeStructurePanelOptions.step.c_str()));
+			m_probeStructure->saveInfoFile();
 		}, GuiTheme::TOOL_BUTTON_STYLE);
 		probeStructurePane->addButton(GuiText("Delete all probes"), [this]()
 		{
@@ -1558,6 +1580,19 @@ void App::saveOptions()
 	optionJSON["bRenderDirect"] =					bRenderDirect;
 	optionJSON["bRenderIndirect"] =					bRenderIndirect;
 	optionJSON["sampleMultiplier"] =				sampleMultiplier;
+	optionJSON["m_sNumICTries"] =					m_sNumICTries.c_str();
+	optionJSON["m_sNumICProbes"] =					m_sNumICProbes.c_str();
+	optionJSON["bPreventErrorIncrease"] =			bPreventErrorIncrease;
+	optionJSON["bManipulateProbesEnabled"] =		bManipulateProbesEnabled;
+
+	float x, y, z, yaw, pitch, roll;
+	m_activeCamera->frame().getXYZYPRDegrees(x, y, z, yaw, pitch, roll);
+	optionJSON["cameraX"] =							x;
+	optionJSON["cameraY"] =							y;
+	optionJSON["cameraZ"] =							z;
+	optionJSON["cameraPitch"] =						pitch;
+	optionJSON["cameraYaw"] =						yaw;
+	optionJSON["cameraRoll"] =						roll;
 
 	std::fstream optionFile(optionFilePath(), std::fstream::out);
 	optionFile << optionJSON;
@@ -1592,6 +1627,19 @@ bool App::loadBoolOption(String name, nlohmann::json& optionJSON)
 	}
 }
 
+float App::loadFloatOption(String name, nlohmann::json& optionJSON)
+{
+	try
+	{
+		float val = optionJSON[name.c_str()];
+		return val;
+	}
+	catch (std::exception e)
+	{
+		return 0.0f;;
+	}
+}
+
 void App::loadOptions()
 {
 	json optionJSON;
@@ -1604,9 +1652,12 @@ void App::loadOptions()
 	loadScene(loadStringOption("sceneName", optionJSON));
 	bUpdateProbesOnOptimizationPass = loadBoolOption("bUpdateProbesOnOptimizationPass", optionJSON);
 	showAllProbes = loadBoolOption("bShowAllProbes", optionJSON);
+	bPreventErrorIncrease = loadBoolOption("bPreventErrorIncrease", optionJSON);
 	bRenderDirect = loadBoolOption("bRenderDirect", optionJSON);
 	bRenderIndirect = loadBoolOption("bRenderIndirect", optionJSON);
-
+	m_sNumICTries = loadStringOption("m_sNumICTries", optionJSON);
+	m_sNumICProbes = loadStringOption("m_sNumICProbes", optionJSON);
+	
 	try
 	{
 		json::string_t probeStructureName = optionJSON["probeStructureName"];
@@ -1660,6 +1711,21 @@ void App::loadOptions()
 	catch (std::exception e)
 	{
 
+	}
+
+	float x, y, z, pitch, yaw, roll;
+	x =		loadFloatOption("cameraX", optionJSON);
+	y =		loadFloatOption("cameraY", optionJSON);
+	z =		loadFloatOption("cameraZ", optionJSON);
+	pitch = loadFloatOption("cameraPitch", optionJSON);
+	yaw =	loadFloatOption("cameraYaw", optionJSON);
+	roll =	loadFloatOption("cameraRoll", optionJSON);
+
+	m_activeCamera->setFrame(CFrame::fromXYZYPRDegrees(x, y, z, yaw, pitch, roll));
+
+	if (loadBoolOption("bManipulateProbesEnabled", optionJSON))
+	{
+		switchEditProbeStructure();
 	}
 }
 

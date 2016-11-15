@@ -28,8 +28,8 @@ bool runPythonScriptFromDataFiles(std::string scriptName, std::string args, bool
 bool createFolder(const char* name);
 bool createFolder(String& name);
 
-void createEmptyFile(const char* name);
-void createEmptyFile(String name);
+std::fstream createEmptyFile(const char* name);
+std::fstream createEmptyFile(String name);
 
 void copyDir(const char* srcPath, const char* dstPath);
 void copyDir(const String& srcPath, const String& dstPath);
@@ -61,3 +61,7 @@ String g3dString(T s)
 void popNotification(std::string title, std::string message, int timeInSeconds);
 
 void normalize(G3D::Vector3& v);
+
+std::vector<float> readValuesFromFlatFile(const char* fileName);
+
+void writeValuesToFlatFile(const char* fileName, std::vector<float>& values);

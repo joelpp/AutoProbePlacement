@@ -71,7 +71,7 @@ struct SProbeStructurePanel
     String height;
     String numSamples;
 	String step;
-
+	String dimensions;
 };
 
 
@@ -334,10 +334,14 @@ private:
 	bool showSamples;
 	bool useSHGradients;
 	bool bOptimizeForCoeffs;
+	bool bPreventErrorIncrease;
 	TriTree triTree;
 	//Index* trisIndex;
 
 public:
+	bool pointInsideEntity(G3D::Vector3 point);
+
+
 	float shadingMultiplier;
 	ProbeStructure *m_probeStructure;
 
@@ -395,6 +399,7 @@ public:
 	SOfflineRenderingOptions offlineRenderingOptions;
 	SProbeStructurePanel probeStructurePanelOptions;
 
+
 	G3D::Array<G3D::String> integratorList;
 	G3D::Array<G3D::String> filmTypeList;
 
@@ -415,6 +420,7 @@ public:
 
 	String loadStringOption(String name, nlohmann::json& optionJSON);
 	bool loadBoolOption(String name, nlohmann::json& optionJSON);
+	float loadFloatOption(String name, nlohmann::json& optionJSON);
 
 };
 

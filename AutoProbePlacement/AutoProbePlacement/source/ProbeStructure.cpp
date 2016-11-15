@@ -1162,6 +1162,14 @@ void ProbeStructure::displaceProbesWithGradient(std::vector<float>& displacement
 
 		// Start by sending the probe to its new location
 		G3D::Vector3 newPosition = probe->frame.translation + displacement;
+
+		App* app = App::instance;
+
+		if (app->m_scene->isOOB(newPosition, 0.01f) || app->pointInsideEntity(newPosition))
+		{
+			continue;
+		}
+			 
 		probe->frame.translation = newPosition;
 		probe->manipulator->frame().translation = probe->frame.translation;
 		probe->bNeedsUpdate = true;
@@ -1289,7 +1297,7 @@ void ProbeStructure::generateProbes(std::string type)
     std::stringstream args;
     args << m_sceneName.c_str() << " " << m_name.c_str() << " " << type;
 
-    runPythonScriptFromDataFiles("onecamera.py", args.str(), true, true);
+    runPythonScriptFromDataFiles("onecamera.py", args.str(), false, true);
 
     for (Probe* p : probeList)
     {
@@ -1437,12 +1445,16 @@ void ProbeStructure::setIntegrator(String& integrator)
 void ProbeStructure::setGamma(float gamma)
 {
 	this->m_gamma = gamma;
-
 }
 
 void ProbeStructure::setType(String& type)
 {
 	this->m_type = (EProbeStructureType)(int)(typeMap.findIndex(type));
+}
+
+void ProbeStructure::setStep(float step)
+{
+	this->m_step = step;
 }
 
 void ProbeStructure::saveInfoFile()
@@ -1459,6 +1471,7 @@ void ProbeStructure::saveInfoFile()
 	if (m_type == EProbeStructureType::Trilinear)
 	{
 		infoFile << "dimensions" << " " << m_dimensions[0] << " " << m_dimensions[1] << " " << m_dimensions[2] << std::endl;
+		infoFile << "step" << " " << m_step << std::endl;
 	}
 	else
 	{

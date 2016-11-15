@@ -11,7 +11,6 @@ void ProbeRenderer::render
 	const shared_ptr<GBuffer>&          gbuffer,
 	const Array<shared_ptr<Surface>>&   allSurfaces) {
 
-
 	alwaysAssertM(!lightingEnvironment.ambientOcclusionSettings.enabled || notNull(lightingEnvironment.ambientOcclusion),
 		"Ambient occlusion is enabled but no ambient occlusion object is bound to the lighting environment");
 
@@ -31,6 +30,14 @@ void ProbeRenderer::render
 	// Bind the main framebuffer
 	rd->pushState(framebuffer); {
 		rd->clear();
+
+		App* app = App::instance;
+		if (!app->bRenderDirect && !app->bRenderIndirect)
+		{
+			rd->popState();
+			return;
+		}
+
 		rd->setProjectionAndCameraMatrix(camera->projection(), camera->frame());
 
 		const bool needDepthPeel = lightingEnvironment.ambientOcclusionSettings.useDepthPeelBuffer && lightingEnvironment.ambientOcclusionSettings.enabled;

@@ -73,8 +73,8 @@ SceneSample App::generateSceneSample(int* _selectedModel, Vector3 *_P, Vector2* 
 void App::clearAllActors(){
 	if (actors.size() > 0)
 	{
-		removeWidget(actors[0].getManipulator());
-		actors.fastClear();
+		//removeWidget(actors[0].getManipulator());
+		actors.clear();
 		randomPoints.clear();
 		//resetParticles();
 		extrapolationT = 0;
@@ -161,10 +161,33 @@ void App::createTempProbeStructure(G3D::Array<G3D::Vector3>& probePositions)
 
 }
 
+bool App::pointInsideEntity(G3D::Vector3 point)
+{
+	Array<shared_ptr<Entity> > entities;
+	scene()->getEntityArray(entities);
+
+	for (int i = 0; i < entities.size(); ++i)
+	{
+		shared_ptr<Entity> entity = entities[i];
+		Ray ray = Ray(point, Vector3(1, 0, 0));
+		Model::HitInfo info;
+		float maxDist = 1000.f;
+		entity->intersect(ray, maxDist, info);
+
+		if ((info.point != Point3::nan()) && (entity == info.entity) && (dot(info.normal, ray.direction()) > 0.0f))
+		{
+			return true;
+		}
+	}
+	return false;
+}
+
+
+
 G3D::Array<G3D::Vector3> App::generateRandomPositions(int NumberOfPositions)
 {
 	G3D::Array<G3D::Vector3> toReturn;
-	float maxDistance = 4;
+	float maxDistance = 2;
 	float offset = 0.5;
 	G3D::Vector3 min = m_scene->m_minBound + Vector3(offset, offset, offset);
 	G3D::Vector3 max = m_scene->m_maxBound - Vector3(offset, offset, offset);
@@ -187,7 +210,13 @@ G3D::Array<G3D::Vector3> App::generateRandomPositions(int NumberOfPositions)
 					ok = false;
 				}
 			}
-			
+
+
+			if (pointInsideEntity(possiblePos))
+			{
+				ok = false;
+			}
+
 			if (ok)
 			{
 				toReturn.append(possiblePos);
@@ -204,19 +233,19 @@ void App::findBestInitialConditions()
 {
 	debugPrintf("Attempting to add probe...");
 
-	int NumberOfProbes = 1;
+	int NumberOfProbes = std::atoi(m_sNumICProbes.c_str());
 	int NumberOfTries = std::atoi(m_sNumICTries.c_str());
 
 	float bestError = 99999;
 	G3D::Array<G3D::Vector3> bestPositions;
 	bestPositions.resize(NumberOfProbes);
 
-	m_probeStructure->setGamma(1.0f);
-	m_probeStructure->setHeight(64);
-	m_probeStructure->setWidth(128);
-	m_probeStructure->setIntegrator(String("path_samples"));
-	m_probeStructure->setNumSamples(128);
-	m_probeStructure->setType(String("wNN"));
+	//m_probeStructure->setGamma(1.0f);
+	//m_probeStructure->setHeight(64);
+	//m_probeStructure->setWidth(128);
+	//m_probeStructure->setIntegrator(String("direct"));
+	//m_probeStructure->setNumSamples(4);
+	//m_probeStructure->setType(String("wNN"));
 
 	for (int tryNumber = 0; tryNumber < NumberOfTries; ++tryNumber)
 	{
@@ -251,7 +280,10 @@ void App::findBestInitialConditions()
 		}
 		positionsFile.close();
 
-		m_probeStructure->removeProbe(m_probeStructure->probeCount() - 1);
+		for (int i = 0; i < NumberOfProbes; ++i)
+		{
+			m_probeStructure->removeProbe(m_probeStructure->probeCount() - 1);
+		}
 
 	}
 	debugPrintf("error: %f \n", bestError);
@@ -283,25 +315,25 @@ bool App::tryOptimization()
 	std::vector<float> displacements;
 
     sampleSet->generateRGBValuesFromProbes(numSamples, numCoeffs, currentOptimizationFolderPath() + "/values.txt", 0);
-    float error = computeError(true);
+    float error = computeError(false);
 
 	if (currentOptimization.errors.size())
 	{
 		if (error > currentOptimization.errors[currentOptimization.errors.size() - 1])
 		{
 			currentOptimization.consecutiveFailures++;
-
 		}
 		else
 		{
 			currentOptimization.consecutiveFailures = 0;
 		}
 	}
-
-	if (currentOptimization.consecutiveFailures == 3)
+	
+	if (bPreventErrorIncrease && currentOptimization.consecutiveFailures >= 1)
 	{
 		return false;
 	}
+	computeError(true);
 
 	currentOptimization.errors.push_back(error);
 
@@ -372,17 +404,17 @@ void App::addOneActorSq()
 
 void App::displaceProbes()
 {
-	G3D::Vector3 displacementV = Vector3(0.1, 0, 0).unit();
+	//G3D::Vector3 displacementV = Vector3(0.1, 0, 0).unit();
 
-	std::vector<float> displacement;
-	displacement.push_back(displacementV.x);
-	displacement.push_back(displacementV.y);
-	displacement.push_back(displacementV.z);
+	//std::vector<float> displacement;
+	//displacement.push_back(displacementV.x);
+	//displacement.push_back(displacementV.y);
+	//displacement.push_back(displacementV.z);
 
-	m_probeStructure->displaceProbesWithGradient(displacement, 0.1f);
-	m_probeStructure->saveCoefficients();
+	//m_probeStructure->displaceProbesWithGradient(displacement, 0.1f);
+	//m_probeStructure->saveCoefficients();
 
-	return;
+	//return;
 	std::vector<G3D::Vector3> originalPositions;
 
 	for (int i = 0 ; i < m_probeStructure->probeCount(); ++i)

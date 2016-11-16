@@ -1479,7 +1479,7 @@ void ProbeStructure::saveInfoFile()
 	}
 }
 
-void ProbeStructure::addProbe(G3D::Vector3& position)
+void ProbeStructure::addProbe(const G3D::Vector3& position)
 {
 	Probe* probe = new Probe(probeCount(), probeStructurePath);
 

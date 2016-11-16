@@ -370,6 +370,7 @@ public:
 	Array<Vector3> extrapolationTriangleVertices;
 	void tetrahedralInterpolation(G3D::Vector3 testPoint, Array<int> *_probeIndices, Array<float> *_coeffs);
 
+	void addProbeAt(const G3D::Vector3& position);
 	void switchEditProbeStructure();
 	JScene* m_scene;
 
@@ -422,6 +423,7 @@ public:
 	bool loadBoolOption(String name, nlohmann::json& optionJSON);
 	float loadFloatOption(String name, nlohmann::json& optionJSON);
 
+	CFrame m_storedCameraFrame;
 };
 
 #endif

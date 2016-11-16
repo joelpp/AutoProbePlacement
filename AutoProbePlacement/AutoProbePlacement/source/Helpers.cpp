@@ -7,8 +7,8 @@
 #include "Helpers.h"
 #include "SH.h"
 
-//#define HOME_PC
-#define LIGUM_PC
+#define HOME_PC
+//#define LIGUM_PC
 
 String generateFolderNameBaseAnySuffix(const String& prefix) 
 {

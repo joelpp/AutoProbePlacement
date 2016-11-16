@@ -984,6 +984,13 @@ void App::createNewSampleSet(String& sceneName, String& newSampleSetName)
 	createEmptyFile((newSSPath + "/IrradianceResults2.txt").c_str());
 }
 
+void App::addProbeAt(const G3D::Vector3& position)
+{
+	m_probeStructure->addProbe(position);
+	windowNewProbe->setVisible(false);
+	bShouldUpdateProbeStructurePane = true;
+}
+
 
 void App::createNewProbeWindow()
 {
@@ -995,11 +1002,7 @@ void App::createNewProbeWindow()
 	pane->addButton("Ok", [this]()
 	{
 		Vector3 newPosition = StringToVector3(sNewProbePosition);
-
-		m_probeStructure->addProbe(newPosition);
-		windowNewProbe->setVisible(false);
-        bShouldUpdateProbeStructurePane = true;
-
+		addProbeAt(newPosition);
 	});
 
 	pane->addButton("Cancel", [this]()
@@ -1220,6 +1223,11 @@ void App::makeGui() {
 
 
 	}, GuiTheme::TOOL_BUTTON_STYLE);
+
+	tab->addButton("Save settings", [this]()
+	{
+		saveOptions();
+	});
 	tab->endRow();
 
 	tab = tabPane->addTab("Display");
@@ -1246,6 +1254,17 @@ void App::makeGui() {
 	tab->addCheckBox("Show normals", &showSampleNormals);
 	tab->addCheckBox("Show dark samples", &showDarkSamples);
 	tab->addSlider("F", &sampleMultiplier, 1.0f, 50.f);
+
+	tab->addButton(GuiText("Save camera"), [this]()
+	{
+		m_storedCameraFrame = activeCamera()->frame();
+	});
+
+	tab->addButton(GuiText("Restore camera"), [this]()
+	{
+		activeCamera()->setFrame(m_storedCameraFrame);
+	});
+
 	tab->endRow();
 
 	tab = tabPane->addTab("Actors");
@@ -1338,8 +1357,12 @@ void App::updateProbeStructurePane()
 	probeStructurePane->addButton(GuiText("Add probe"), [this]()
 	{
 		windowNewProbe->setVisible(true);
-	}
-	, GuiTheme::TOOL_BUTTON_STYLE);
+	});
+
+	probeStructurePane->addButton(GuiText("Add probe at camera"), [this]()
+	{
+		addProbeAt(activeCamera()->frame().translation);
+	});
 
 	probeStructurePane->addButton(GuiText("Update all"), [this]()
 	{
@@ -1357,10 +1380,7 @@ void App::updateProbeStructurePane()
     } 
     , GuiTheme::TOOL_BUTTON_STYLE);
 
-    probeStructurePane->addButton(GuiText("Update Probes (all)"), [this]() { m_probeStructure->generateProbes("all"); }, GuiTheme::TOOL_BUTTON_STYLE);
-    probeStructurePane->addButton(GuiText("Update Probes (probes)"), [this]() { m_probeStructure->generateProbes("Probes"); }, GuiTheme::TOOL_BUTTON_STYLE);
-    probeStructurePane->addButton(GuiText("Update Probes (positions)"), [this]() { m_probeStructure->generateProbes("Positions"); }, GuiTheme::TOOL_BUTTON_STYLE);
-    probeStructurePane->addButton(GuiText("Update Probes (normals)"), [this]() { m_probeStructure->generateProbes("Normals"); }, GuiTheme::TOOL_BUTTON_STYLE);
+    probeStructurePane->addButton(GuiText("Update textures"), [this]() { m_probeStructure->generateProbes("all"); }, GuiTheme::TOOL_BUTTON_STYLE);
 	probeStructurePane->addButton(GuiText("Extract coeffs"), [this]() { m_probeStructure->extractSHCoeffs(); }, GuiTheme::TOOL_BUTTON_STYLE);
     probeStructurePane->addCheckBox("Use gradients", &useSHGradients);
 	probeStructurePane->endRow();
@@ -1737,5 +1757,5 @@ bool App::onEvent(const GEvent& event)
 		exit(0);
 	}
 
-	return false;
+	return GApp::onEvent(event);
 }

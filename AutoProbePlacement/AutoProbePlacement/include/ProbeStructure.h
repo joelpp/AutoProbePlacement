@@ -143,7 +143,7 @@ public:
 
     G3D::Vector3 reconstructSH(const G3D::Vector3& position, const G3D::Vector3& normal, int NumberOfCoeffs);
 
-	void addProbe(G3D::Vector3& position);
+	void addProbe(const G3D::Vector3& position);
 
     void generateProbes(std::string type);
 

@@ -7,13 +7,13 @@
 #define p110 6
 #define p111 7
 
-vec3 findNode000(vec3 wsPos, vec3 normal, float step)
+vec3 findNode000(vec3 wsPos, vec3 firstProbePosition, float step)
 {
 	vec3 toReturn;
 	
-	toReturn.x = floor( wsPos.x / step ) * step;
-	toReturn.y = floor( wsPos.y / step ) * step;
-	toReturn.z = floor( wsPos.z / step ) * step;
+	toReturn.x = floor( (wsPos.x - firstProbePosition.x) / step ) * step + firstProbePosition.x;
+	toReturn.y = floor( (wsPos.y - firstProbePosition.y) / step ) * step + firstProbePosition.y;
+	toReturn.z = floor( (wsPos.z - firstProbePosition.z) / step ) * step + firstProbePosition.z;
 	
 	return toReturn;
 }

@@ -10,6 +10,34 @@
 #define AXIS_Y 1
 #define AXIS_Z 2
 
+
+void initProbeCoefficients(TProbeCoefficients& coeffs)
+{
+	int NumCoeffs = 9;
+	for (int i = 0; i < NumCoeffs; ++i)
+	{
+		coeffs.push_back(G3D::Vector3(0, 0, 0));
+	}
+}
+CoeffGradients CreateCoeffGradients(int NumCoefficients)
+{
+	CoeffGradients coeffGrad;
+	for (int coeff = 0; coeff < NumCoefficients; ++coeff)
+	{
+		coeffGrad.append(Array<Vector3>());
+
+	}
+	for (int coeff = 0; coeff < NumCoefficients; ++coeff)
+	{
+		for (int channel = 0; channel < 3; ++channel)
+		{
+			coeffGrad[coeff].append(Vector3());
+		}
+	}
+	return coeffGrad;
+}
+
+
 Probe::Probe()
 {
 	
@@ -23,6 +51,8 @@ Probe::Probe(int index, String probeStructurePath)
 	texture = NULL;
 	irr_texture = NULL;
 
+	initProbeCoefficients(this->coeffs);
+	this->coeffGradients = CreateCoeffGradients(9);
 }
 
 String Probe::buildPath(EResource res)
@@ -111,23 +141,6 @@ void Probe::setPosition(G3D::Vector3& pos)
 }
 
 
-CoeffGradients CreateCoeffGradients(int NumCoefficients)
-{
-	CoeffGradients coeffGrad;
-	for (int coeff = 0 ; coeff < NumCoefficients; ++coeff)
-	{
-		coeffGrad.append(Array<Vector3>());
-
-	}
-	for (int coeff = 0 ; coeff < NumCoefficients; ++coeff)
-	{	
-		for (int channel = 0; channel < 3; ++channel)
-		{
-			coeffGrad[coeff].append(Vector3());
-		}
-	}
-	return coeffGrad;
-}
 
 void Probe::computeCoefficients(std::shared_ptr<G3D::Image> probeTexture, TProbeCoefficients& coeffs)
 {
@@ -206,14 +219,6 @@ void Probe::computeCoefficients(std::shared_ptr<G3D::Image> probeTexture, TProbe
 	}
 }
 
-void initProbeCoefficients(TProbeCoefficients& coeffs)
-{
-	int NumCoeffs = 9;
-	for (int i = 0; i < NumCoeffs; ++i)
-	{
-		coeffs.push_back(G3D::Vector3(0, 0, 0));
-	}
-}
 
 TProbeCoefficients subtractAndDivide(TProbeCoefficients& c0, TProbeCoefficients& c1, float divider)
 {
@@ -288,10 +293,15 @@ void Probe::computeCoefficientsFromTexture(bool alsoSet)
 	String positionPath = buildPath(EResource::Positions);
 	String normalPath = buildPath(EResource::Normals);
 
-	std::shared_ptr<G3D::Image> probeTexture = Image::fromFile(texturePath);
-	std::shared_ptr<G3D::Image> positionTexture = Image::fromFile(positionPath);
-	std::shared_ptr<G3D::Image> normalTexture = Image::fromFile(normalPath);
-	computeCoefficients(probeTexture, tempCoeffs);
+	try
+	{
+		std::shared_ptr<G3D::Image> probeTexture = Image::fromFile(texturePath);
+		computeCoefficients(probeTexture, tempCoeffs);
+	}
+	catch (G3D::Image::Error e)
+	{
+		debugPrintf("Exception when loading probe texture (filename='%s'): %s\n", e.filename, e.reason);
+	}
 
 	if (alsoSet)
 	{

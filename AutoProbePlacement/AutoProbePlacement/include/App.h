@@ -96,7 +96,6 @@ private:
     void createRenameOptimizationWindow();
     void createNewProbeWindow();
 	void createNewSampleSetWindow();
-	void createNewProbe(String& sceneName, String& probeStructureName, G3D::Vector3& position);
 	void createNewSampleSet(String& sceneName, String& sNewSampleSetName);
 	void createNewProbeStructureWindow();
     void createNewProbeStructure(String& sceneName, String& newSampleSetName);

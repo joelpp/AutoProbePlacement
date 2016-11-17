@@ -1,1 +1,23 @@
-{"bManipulateProbesEnabled":false,"bPreventErrorIncrease":false,"bRenderDirect":false,"bRenderIndirect":true,"bShowAllProbes":true,"bUpdateProbesOnOptimizationPass":true,"cameraPitch":-6.86382246017456,"cameraRoll":0.0,"cameraX":10.3215084075928,"cameraY":8.18884468078613,"cameraYaw":94.4729385375977,"cameraZ":-1.40611219406128,"m_sNumICProbes":"4","m_sNumICTries":"10","numOptimizationSamples":"2000","numPassesLeft":"50","optimizationSHBand":"1","probeStructureName":"FitWNN","sampleMultiplier":4,"sampleSetName":"50000","sceneName":"sponza"}
+{
+    "bManipulateProbesEnabled": false,
+    "bPreventErrorIncrease": false,
+    "bRenderDirect": false,
+    "bRenderIndirect": true,
+    "bShowAllProbes": true,
+    "bUpdateProbesOnOptimizationPass": true,
+    "cameraPitch": -11.4591302871704,
+    "cameraRoll": 0.0,
+    "cameraX": 4.1471734046936,
+    "cameraY": 5.1939811706543,
+    "cameraYaw": 176.744979858398,
+    "cameraZ": -11.2855434417725,
+    "m_sNumICProbes": "7",
+    "m_sNumICTries": "20",
+    "numOptimizationSamples": "2000",
+    "numPassesLeft": "5",
+    "optimizationSHBand": "1",
+    "probeStructureName": "THRILL",
+    "sampleMultiplier": 4,
+    "sampleSetName": "1Band",
+    "sceneName": "zcbox"
+}

@@ -802,20 +802,7 @@ ProbeInterpolationRecord ProbeStructure::getInterpolationProbeIndicesAndWeights(
 	ProbeInterpolationRecord record;
 	if (m_type == EProbeStructureType::Trilinear)
 	{
-		//G3D::Array<G3D::Vector3> coords = getInterpolatingProbesCoords(position, step);
 
-		//// Find how close the sample is to probe 000
-		//G3D::Vector3 ratios((position[0] - coords[0][0]) / step,
-		//					(position[1] - coords[0][1]) / step,
-		//					(position[2] - coords[0][2]) / step);
-
-		//std::vector<float> interpolationWeights;// = getInterpolationWeights(ratios);
-
-		//for (float f : interpolationWeights)
-		//{
-		//	record.weights.push_back(f);
-		//}
-		// TODO: fix the fact that this doesnt consider the borders.
         G3D::Vector3 firstProbePosition = G3D::Vector3(m_firstProbePosition);
         G3D::Vector3 probe000Pos = findNode000(position, firstProbePosition, step);
         G3D::Vector3 dimensions = G3D::Vector3(m_dimensions[0], m_dimensions[1], m_dimensions[2]);
@@ -1326,10 +1313,17 @@ void ProbeStructure::savePositions(bool useManipulator)
 {
     std::fstream probeListFile = probeListFileHandle(false);
 
+	int count = (m_type == EProbeStructureType::Trilinear) ? m_dimensions[0] * m_dimensions[1] * m_dimensions[2] : probeList.size();
+
+	if (probeList.size() == 0)
+	{
+		probeListFile.close();
+		return;
+	}
+
 	int x = 0, y = 0, z = 0;
-    for (int i = 0; i < probeList.size(); ++i)
+    for (int i = 0; i < count; ++i)
     {
-        Probe* p = probeList[i];
         G3D::Vector3 probePosition;
         // todo: ugh :(
 		if (m_type == EProbeStructureType::Trilinear)
@@ -1343,6 +1337,8 @@ void ProbeStructure::savePositions(bool useManipulator)
 		}
 		else
 		{
+			Probe* p = probeList[i];
+
 			if (useManipulator)
 			{
 				probePosition = p->manipulator->frame().translation;

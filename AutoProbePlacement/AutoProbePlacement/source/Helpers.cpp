@@ -7,8 +7,8 @@
 #include "Helpers.h"
 #include "SH.h"
 
-#define HOME_PC
-//#define LIGUM_PC
+//#define HOME_PC
+#define LIGUM_PC
 
 String generateFolderNameBaseAnySuffix(const String& prefix) 
 {
@@ -284,6 +284,10 @@ Vector3 StringToVector3(const std::string& s)
 
 Vector3 StringToVector3(const G3D::String& s)
 {
+	if (s == "")
+	{
+		return Vector3(0, 0, 0);
+	}
 	Array<String> split = stringSplit(s, ' ');
 	return Vector3(std::stof(split[0].c_str()), std::stof(split[1].c_str()), std::stof(split[2].c_str()));
 }

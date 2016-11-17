@@ -1,0 +1,186 @@
+#version 430// -*- c++ -*-
+/** \file DefaultRenderer_deferredShade.pix */
+#ifdef GL_ARB_texture_query_lod
+#extension GL_ARB_texture_query_lod : enable
+#endif
+#include <compatibility.glsl>
+#include <g3dmath.glsl>
+#include <Light/Light.glsl>
+#include <GBuffer/GBuffer.glsl>
+#include <reconstructFromDepth.glsl>
+#include <LightingEnvironment/LightingEnvironment_LightUniforms.glsl>
+#include <LightingEnvironment/LightingEnvironment_environmentMapUniforms.glsl>
+#include "ProbeFunctions.pix"
+
+
+// Declare a GBuffer with no prefix
+uniform_GBuffer(gbuffer_);
+
+#ifdef ambientOcclusion_notNull
+    uniform_Texture(sampler2D, ambientOcclusion_);
+    uniform ivec2       ambientOcclusion_offset;
+#endif
+    
+uniform float SHMultiplier;
+
+out Color3 result;
+
+
+void main() {
+    // Screen-space point being shaded
+    ivec2 C = ivec2(gl_FragCoord.xy);
+    
+    UniversalMaterialSample surfel;
+
+    // Surface normal
+    Vector3 csN = texelFetch(gbuffer_CS_NORMAL_buffer, C, 0).xyz;
+    if (dot(csN, csN) < 0.01) {
+        // This is a background pixel, not part of an object
+        discard;
+    } else {
+        surfel.tsNormal = surfel.geometricNormal = surfel.shadingNormal = surfel.glossyShadingNormal = normalize(mat3x3(gbuffer_camera_frame) * (csN * gbuffer_CS_NORMAL_readMultiplyFirst.xyz + gbuffer_CS_NORMAL_readAddSecond.xyz));
+    }
+    surfel.offsetTexCoord = Point2(0);
+
+    // Point being shaded
+    float csZ = reconstructCSZ(texelFetch(gbuffer_DEPTH_buffer, C, 0).r, gbuffer_camera_clipInfo);
+    Point3 csPosition = reconstructCSPosition(gl_FragCoord.xy, csZ, gbuffer_camera_projInfo);
+    surfel.position = (gbuffer_camera_frame * vec4(csPosition, 1.0)).xyz;
+        //texelFetch(WS_POSITION_buffer, C, 0).xyz * WS_POSITION_readScaleBias.x + WS_POSITION_readScaleBias.y;
+    
+    // View vector
+    Vector3 w_o = normalize(gbuffer_camera_frame[3] - surfel.position);
+
+#   ifdef gbuffer_LAMBERTIAN_notNull    
+        surfel.lambertianReflectivity = texelFetch(gbuffer_LAMBERTIAN_buffer, C, 0).rgb;
+#   else
+        surfel.lambertianReflectivity = Color3(0);
+#   endif
+
+    surfel.coverage = 1.0;
+
+    {
+        Color4  temp;
+#       ifdef gbuffer_GLOSSY_notNull
+            temp = texelFetch(gbuffer_GLOSSY_buffer, C, 0);
+#       else
+            temp = Color4(0);
+#       endif
+        surfel.fresnelReflectionAtNormalIncidence = temp.rgb;
+        surfel.smoothness = temp.a;
+    }
+
+    surfel.transmissionCoefficient = Color3(0);
+    surfel.collimation = 1.0;
+#   ifdef gbuffer_EMISSIVE_notNull
+        surfel.emissive = texelFetch(gbuffer_EMISSIVE_buffer, C, 0).rgb * gbuffer_EMISSIVE_readMultiplyFirst.rgb + gbuffer_EMISSIVE_readAddSecond.rgb;
+#   else
+        surfel.emissive = Radiance3(0);
+#   endif
+
+    surfel.lightMapRadiance = Radiance3(0);
+
+    // End reading surfel from G-buffer
+    ///////////////////////////////////////////////////////////////////////////
+
+    Radiance3 L_scatteredDirect = computeDirectLighting(surfel, w_o, 1.0);
+    Radiance3 L_scatteredIndirect = computeIndirectLighting(surfel, w_o, false, 0);
+
+    float AO =
+#       ifdef ambientOcclusion_notNull
+            (0.95 * texelFetch(ambientOcclusion_buffer, min(ivec2(gl_FragCoord.xy) + ambientOcclusion_offset, ivec2(ambientOcclusion_size.xy) - ivec2(1, 1)), 0).r + 0.05);
+#       else
+            1.0;
+#       endif
+
+    // How much ambient occlusion to apply to direct illumination (sort of approximates area lights,
+    // more importantly: NPR term that adds local contrast)
+    const float aoInfluenceOnDirectIllumination = 0.65;
+    float directAO = lerp(1.0, AO, aoInfluenceOnDirectIllumination);
+
+    result = vec3(0);
+
+#   if Render_DIRECT 
+
+    result += surfel.emissive + L_scatteredDirect * directAO + L_scatteredIndirect * AO;
+
+#   endif
+
+#if Render_INDIRECT
+
+    // ProbeInterpolationRecord iRec;
+
+    // iRec.weights[0] = 1.0f;
+    // iRec.probeIndices[0] = 0;
+
+    // for (int i = 1; i < 9; ++i)
+    // {
+    //     iRec.weights[i] = 0.f;
+    // }
+
+    ProbeInterpolationRecord iRec = findInterpolatingProbes(surfel.position, surfel.shadingNormal, probeStructure.step);
+
+    result += SHMultiplier *
+#if Render_INDIRECTBRDF
+              surfel.lambertianReflectivity *
+#endif // Render_INDIRECTBRDF
+              fullSHInterpolation(iRec, surfel.shadingNormal) * directAO /  3.14159;
+
+#if 0
+//  TEST: WHICH WEIGHTS TYPE
+
+#if WEIGHTS_TRILERP
+    result = vec3(1,0,0);
+#endif
+
+#if WEIGHTS_CLOSEST
+    result = vec3(0,1,0);
+#endif
+
+#if WEIGHTS_WNN
+    result = vec3(0,0,1);
+#endif
+
+return;
+#endif
+/////////////////
+#if 0
+//  TEST: WEIGHTS X,Y,Z = ?
+    int x = 0;
+    int y = 1;
+    int z = 2;
+
+    result = vec3(iRec.weights[x], iRec.weights[y], iRec.weights[z]);
+#endif
+////////////////
+#if 0
+//  TEST: WEIGHTS SUM TO 1 
+    float weight = 0;
+    for (int i = 0; i < 8; ++i)
+    {
+        weight += iRec.weights[i];
+    }
+
+    result = vec3(weight);
+#endif
+////////////////
+#if 0
+// TEST : NODE 000 POS
+vec3 pos = findNode000(surfel.position,  probeStructure.firstProbePosition.xyz, probeStructure.step);
+    result = pos;
+
+#endif
+////////////////
+#if 0
+//  TEST: Indices X,Y,Z = ?
+    int x = 0;
+    int y = 0;
+    int z = 0;
+
+    result = vec3(iRec.probeIndices[x], iRec.probeIndices[y], iRec.probeIndices[z]);
+#endif
+    // result = abs(result);
+#endif // Render_INDIRECT
+
+}
+

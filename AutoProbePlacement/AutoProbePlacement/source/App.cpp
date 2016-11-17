@@ -310,17 +310,20 @@ void App::drawProbes(RenderDevice* rd)
 
 	if (bManipulateProbesEnabled && m_probeStructure->eType() == EProbeStructureType::Trilinear)
 	{
+		shared_ptr<Texture> whiteTexture = Texture::white();
+		Sampler sampler = Sampler();
+		args.setUniform("uSampler", whiteTexture, sampler);
+
 		Probe* p = m_probeStructure->getProbe(0);
 		setProbeCoeffUniforms(args, p->coeffs);
 
-		drawModel(rd, "SH_shader3.*", sphereModel, p->getPosition(), args);
+		//drawModel(rd, "SH_shader3.*", sphereModel, p->getPosition(), args);
+		drawModel(rd, "texture.*", sphereModel, p->getPosition(), args);
 
 		//float step = m_probeStructure->m_step;
 		float step = std::stof(probeStructurePanelOptions.step.c_str());
 
-		shared_ptr<Texture> whiteTexture = Texture::white();
 		Vector3 manipulatorPos = p->getManipulator()->frame().translation;
-		Sampler sampler = Sampler();
 		Vector3 dimensions = StringToVector3(probeStructurePanelOptions.dimensions);
 
 		for (int i = 0; i < dimensions[0]; ++i)
@@ -331,7 +334,6 @@ void App::drawProbes(RenderDevice* rd)
 				{
 					Vector3 centerPos = manipulatorPos + Vector3(i * step, j * step, k * step);
 
-					args.setUniform("uSampler", whiteTexture, sampler);
 					drawModel(rd, "texture.*", sphereModel, centerPos, args);
 				}
 			}
@@ -661,6 +663,11 @@ void App::generateSampleSetValuesFromProbes()
 void App::switchEditProbeStructure()
 {
 
+	if (m_probeStructure->probeCount() == 0)
+	{
+		return;
+	}
+
     if (!bManipulateProbesEnabled)
     {
 		if (m_probeStructure->eType() == EProbeStructureType::Trilinear)
@@ -679,9 +686,13 @@ void App::switchEditProbeStructure()
     }
     else
     {
+
 		if (m_probeStructure->eType() == EProbeStructureType::Trilinear)
 		{
-			removeWidget(m_probeStructure->getProbe(0)->getManipulator());
+			if (m_widgetManager->contains(m_probeStructure->getProbe(0)->getManipulator()))
+			{
+				removeWidget(m_probeStructure->getProbe(0)->getManipulator());
+			}
 		}
 		else
 		{
@@ -1304,8 +1315,6 @@ void App::makeGui() {
 	tab->addButton("OfflineRender", GuiControl::Callback(this, &App::offlineRender), GuiTheme::TOOL_BUTTON_STYLE);
 	tab->endRow();
 
-
-
 	addSampleSetPane(tabPane);
 
 	probeStructurePane = tabPane->addTab("Probes");
@@ -1366,6 +1375,30 @@ void App::updateProbeStructurePane()
 
 	probeStructurePane->addButton(GuiText("Update all"), [this]()
 	{
+		if (m_probeStructure->eType() == EProbeStructureType::Trilinear)
+		{
+			Probe* p = m_probeStructure->getProbe(0);
+			Vector3 manipulatorPos = p->getManipulator()->frame().translation;
+
+			for (int i = m_probeStructure->probeCount() - 1; i > 0; ++i)
+			{
+				m_probeStructure->removeProbe(i);
+			}
+
+			float step = std::stof(probeStructurePanelOptions.step.c_str());
+			Vector3 dimensions = StringToVector3(probeStructurePanelOptions.dimensions);
+
+			m_probeStructure->setStep(step);
+			m_probeStructure->m_dimensions.clear();
+			m_probeStructure->m_dimensions.push_back(dimensions[0]);
+			m_probeStructure->m_dimensions.push_back(dimensions[1]);
+			m_probeStructure->m_dimensions.push_back(dimensions[2]);
+
+			m_probeStructure->m_firstProbePosition[0] = manipulatorPos.x;
+			m_probeStructure->m_firstProbePosition[1] = manipulatorPos.y;
+			m_probeStructure->m_firstProbePosition[2] = manipulatorPos.z;
+
+		}
 		m_probeStructure->savePositions(true);
 		m_probeStructure->generateProbes("all");
 		m_probeStructure->extractSHCoeffs();
@@ -1615,7 +1648,7 @@ void App::saveOptions()
 	optionJSON["cameraRoll"] =						roll;
 
 	std::fstream optionFile(optionFilePath(), std::fstream::out);
-	optionFile << optionJSON;
+	optionFile << std::setw(4) << optionJSON;
 	optionFile.close();
 }
 

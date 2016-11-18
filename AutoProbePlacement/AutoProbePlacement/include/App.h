@@ -29,11 +29,29 @@ class SceneSampleSet;
 
 struct SProbeOptimization
 {
+	SProbeOptimization()
+		: id(-1)
+		, consecutiveFailures(-1)
+		, iteration(-1)
+		, errors(std::vector<float>())
+		, dp(std::vector<float>())
+	{ }
+
+	SProbeOptimization(int ID)
+		: id(ID)
+		, consecutiveFailures(0)
+		, iteration(0)
+		, errors(std::vector<float>())
+		, dp(std::vector<float>())
+		{ }
+
     int id;
     std::vector<float> errors;
     std::vector<float> dp;
 	int consecutiveFailures;
+	int iteration;
 };
+
 struct ScenePane
 {
 	G3D::GuiDropDownList* selectedSceneList;
@@ -82,6 +100,8 @@ enum EFilmType
 	NUM_FILM_TYPES = LDR + 1
 };
 
+
+
 class App : public GApp {
 private:
 	/**
@@ -128,6 +148,8 @@ private:
 	void initializeProbeStructure(String sceneName, String probeStructurePath);
 	void loadPreviousProbeStructure();
 	void loadScene(String sceneName);
+	void createTriTree();
+	void loadCurrentOptimization();
 
     G3D::String scenesPath();
     G3D::String selectedSceneName();
@@ -176,6 +198,7 @@ private:
 	void computeSamplesRGBRef();
 	void computeTriplets();
 	bool tryOptimization();
+	void logOptimizationIteration(float error);
 	void startOptimizationPasses();
 	float computeError(bool outputToLog);
 	void createTempProbeStructure(G3D::Array<G3D::Vector3>& probePositions);
@@ -423,6 +446,9 @@ public:
 	float loadFloatOption(String name, nlohmann::json& optionJSON);
 
 	CFrame m_storedCameraFrame;
+
+	Array<shared_ptr<Surface> > m_surfaceArray;
+	NativeTriTree m_triTree;
 };
 
 #endif

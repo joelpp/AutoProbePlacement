@@ -54,14 +54,14 @@ void App::onInit() {
     createRenameOptimizationWindow();
 
 	probeStructurePane = NULL;	
-	m_probeStructure = NULL;
-    m_scene = NULL;
-	sampleSet = NULL;
+	m_probeStructure =	 NULL;
+    m_scene =			 NULL;
+	sampleSet =			 NULL;
 
 	integratorList.resize(EIntegrator::NUM_INTEGRATORS);
-	integratorList[EIntegrator::Path] = "path";
+	integratorList[EIntegrator::Path] =		"path";
 	integratorList[EIntegrator::Indirect] = "path_samples";
-	integratorList[EIntegrator::Direct] = "direct";
+	integratorList[EIntegrator::Direct] =	"direct";
 
 	filmTypeList.resize(EFilmType::NUM_FILM_TYPES);
 	filmTypeList[EFilmType::HDR] = "hdrfilm";
@@ -86,92 +86,76 @@ void App::onInit() {
     spec.filename = System::findDataFile("../data-files/objs/bunny.obj");
 	bunnyModel = ArticulatedModel::create(spec);
 
-    spec.scale = 1.0f;
-	//spec.filename = System::findDataFile("../data-files/Scenes/crytek-sponza/sponza_v2_scaled.obj");
-	//spec.filename = System::findDataFile("../data-files/Scenes/ZScene/objs/largegreenwall.obj");
-	//sceneModel = ArticulatedModel::create(spec);
-
     //Set Critical settings
-    // spherePosition = Point3(0,4.5,0);
     lightPosition = Point3(0,4,0);
-    // lightPosition = Point3(0,2.5,0);
-    showInterpolationProbes = false;
-    showAllProbes = false;
-    CPUInterpolation = false;
-    highlightProbes = false;
-    showFaceNormals = false;
-    hideCeiling = true;
-    hideRoom = false;
-    showParticles = false;
-	useIrradianceTexture = false;
-	highlightTetrahedron = false;
-	saveSample = true;
-	useBakedSceneTextures = true;
-	interpolateCoefficients = false;
-	logSampleSet = false;
-	showSampleNormals = false;
-	showDarkSamples = true;
-	showSamples = false;
-	useSHGradients = false;
-	bManipulateProbesEnabled = false;
-	hideActors = false;
-    bOptimizeForCoeffs = false;
-	bRenderDirect = true;
-	bRenderIndirect = true;
-	bRenderMultiplyIndirectByBRDF = false;
+    showInterpolationProbes =		  false;
+    showAllProbes =					  false;
+    CPUInterpolation =				  false;
+    highlightProbes =				  false;
+    showFaceNormals =				  false;
+    hideCeiling =					  true;
+    hideRoom =						  false;
+    showParticles =					  false;
+	useIrradianceTexture =			  false;
+	highlightTetrahedron =			  false;
+	saveSample =					  true;
+	useBakedSceneTextures =			  true;
+	interpolateCoefficients =		  false;
+	logSampleSet =					  false;
+	showSampleNormals =				  false;
+	showDarkSamples =				  true;
+	showSamples =					  false;
+	useSHGradients =				  false;
+	bManipulateProbesEnabled =		  false;
+	hideActors =					  false;
+    bOptimizeForCoeffs =			  false;
+	bRenderDirect =					  true;
+	bRenderIndirect =				  true;
+	bRenderMultiplyIndirectByBRDF =   false;
     bShouldUpdateProbeStructurePane = true;
     bKeepRefValuesOnNewOptimization = false;
-    bTakeRefScreenshot = false;
-	bOptimizeWithMitsubaSamples = false;
-	bPreventErrorIncrease = false;
+    bTakeRefScreenshot =			  false;
+	bOptimizeWithMitsubaSamples =	  false;
+	bPreventErrorIncrease =			  false;
+
     //Decide how many bands we want to use for the interpolation
-    numBands = 2;
-    totalNumberOfCoeffs = 0;
-    maxDrawBand = 8;
-    shadingMultiplier = 1.0f;
-    sampleMultiplier = 4.0f;
-    lightIntensity = 1;
+    numBands =				2;
+    maxDrawBand =			8;
+    shadingMultiplier =		1.0f;
+    sampleMultiplier =		4.0f;
+    lightIntensity =		1;
     sceneTextureIntensity = 1.0;
-    extrapolationT = 0;
-    smallestBaryCoord = -1;
-    numPassesLeft = 0;
-    timer = 0;
-	maxProbeStepLength = "0.1";
+    extrapolationT =		0;
+    smallestBaryCoord =		-1;
+    numPassesLeft =			0;
+    timer =					0;
+	sampleDropDownIndex =	0;
 
-    numOptimizationSamples = "0";
-    maxSamplesPointsToDraw = "0";
-    samplesToSave = new String("0");
+	maxProbeStepLength =	  "0.1";
+	numOptimizationSamples =  "0";
+    maxSamplesPointsToDraw =  "0";
+    samplesToSave =		  new String("0");
     SampleSetOutputName = new String("SampleSetOutputName");
-    actorSpawnX = String("0");
-    actorSpawnY = String("0");
-    actorSpawnZ = String("0");
-    tbNumPassesLeft = String("1");
-	shadingSHBand = "9";
-	optimizationSHBand = "9";
-	m_activeCamera->setPosition(Point3(0,3,3));
-	sampleDropDownIndex = 0;
-	tetgenString = "../data-files/tetgen/44/";
-    previousProbeStructure = "";
+    actorSpawnX =			  String("0");
+    actorSpawnY =			  String("0");
+    actorSpawnZ =			  String("0");
+    tbNumPassesLeft =		  String("1");
+	shadingSHBand =			  "9";
+	optimizationSHBand =      "9";
+	tetgenString =			  "../data-files/tetgen/44/";
+	previousProbeStructure =  "";
 
-    for (int i = 0; i <= numBands; i++)
-	{
-		totalNumberOfCoeffs += 2*i + 1; 
-	}
+	offlineRenderingOptions.numSamples = "256";
+	offlineRenderingOptions.height =	 "256";
+	offlineRenderingOptions.width =		 "512";
+	offlineRenderingOptions.gamma =		 "2.2";
+
+	m_activeCamera->setPosition(Point3(0,3,3));
+	setActiveCamera(m_debugCamera);
 
     createDeveloperHUD();
 
-    //Add sliders for rendering parameters
 	addOneActor();
-
-    //Load the textures containing the SH coefficient values
-    //loadSHTextures();
-
-	offlineRenderingOptions.numSamples = "256";
-	offlineRenderingOptions.height = "256";
-	offlineRenderingOptions.width = "512";
-	offlineRenderingOptions.gamma = "2.2";
-
-	setActiveCamera(m_debugCamera);
 
 	loadOptions();
 	makeGui();
@@ -193,9 +177,44 @@ void App::loadScene(String sceneName)
 		throw e;
 	}
     setActiveCamera(m_debugCamera);
+	loadCurrentOptimization();
+	createTriTree();
 
-    m_currentOptimization = folderCount(basePath + "Optimizations\\") - 1;
-    debugPrintf("%d\n", m_currentOptimization);
+}
+
+void App::loadCurrentOptimization()
+{
+	String optimizationsPath = optimizationFolderPath() + "/";
+	m_currentOptimization = folderCount(optimizationsPath) - 1;
+	currentOptimization = SProbeOptimization(m_currentOptimization);
+
+	debugPrintf("%d\n", m_currentOptimization);
+
+	optimizationsPath = currentOptimizationFolderPath();
+	std::fstream infoFile((optimizationsPath + "/infos.txt").c_str(), std::fstream::in);
+
+	std::vector<String> tokens;
+	std::string line;
+	while (std::getline(infoFile, line))
+	{
+		for (String s : stringSplit(String(line), ' '))
+		{
+			tokens.push_back(s);
+		}
+	}
+
+	int lastIteration = 0;
+	for (int i = tokens.size() - 1; i > 0; --i)
+	{
+		String& s = tokens[i];
+
+		if (s == "iteration")
+		{
+			lastIteration = std::stoi(tokens[i + 1].c_str());
+			break;
+		}
+	}
+	currentOptimization.iteration = lastIteration;
 
 }
 
@@ -386,7 +405,10 @@ void App::drawSurfaceSamples(RenderDevice* rd)
 {
 	int numOfsamplesToShow = atoi(maxSamplesPointsToDraw.c_str());
 
-	Draw::points(sampleSet->m_points, rd, sampleSet->m_colors, sampleMultiplier);
+	if (sampleSet->m_points.size() && sampleSet->m_colors.size())
+	{
+		Draw::points(sampleSet->m_points, rd, sampleSet->m_colors, sampleMultiplier);
+	}
 }
 
 void App::drawScene(RenderDevice* rd)
@@ -458,7 +480,7 @@ void App::onGraphics3D(RenderDevice* rd, Array<shared_ptr<Surface> >& surface3D)
 		drawProbes(rd);
     }
 
-    renderActors(rd);
+    //renderActors(rd);
 
     rd->popState();
 
@@ -608,7 +630,7 @@ void App::clearSampleSetValues()
 {
 	if (sampleSet != NULL)
 	{
-sampleSet->clearValues();
+		sampleSet->clearValues();
     }
 }
 
@@ -698,7 +720,10 @@ void App::switchEditProbeStructure()
 		{
 			for (Probe* p : m_probeStructure->probeList)
 			{
-				removeWidget(p->getManipulator());
+				if (m_widgetManager->contains(p->getManipulator()))
+				{
+					removeWidget(p->getManipulator());
+				}
 			}
 		}
     }
@@ -780,8 +805,6 @@ void App::onAI()
 				popNotification("Optimization complete", "Finished all job!", 15);
 			}
 		}
-
-        
 	}
 
     if (optimizing)
@@ -1037,7 +1060,7 @@ void App::createRenameOptimizationWindow()
     {
         String currentOptimizationPath = currentOptimizationFolderPath();
 
-        String newName = g3dString(m_currentOptimization) + " - " + sCurrentOptimizationName;
+        String newName = g3dString(currentOptimization.id) + " - " + sCurrentOptimizationName;
         String newOptimizationPath = optimizationFolderPath() + "/" + newName;
         std::rename(currentOptimizationPath.c_str(), newOptimizationPath.c_str());
     });
@@ -1088,7 +1111,8 @@ void App::createNewOptimizationSettings()
 	{
 		previousRefValues = readValuesFromFlatFile( (currentOptimizationPath + "/ref_values.txt").c_str() );
 	}
-    m_currentOptimization++;
+
+	currentOptimization = SProbeOptimization(currentOptimization.id + 1);
 
     createFolder(folderName.c_str());
     createFolder((folderName + "/screens").c_str());
@@ -1106,7 +1130,9 @@ void App::createNewOptimizationSettings()
     createEmptyFile((folderName + "/errorlog.txt").c_str());
     createEmptyFile((folderName + "/dplog.txt").c_str());
     createEmptyFile((folderName + "/triplets.txt").c_str());
-    createEmptyFile((folderName + "/log.txt").c_str());
+	createEmptyFile((folderName + "/log.txt").c_str());
+	createEmptyFile((folderName + "/infos.txt").c_str());
+	
 }
 
 void App::makeGui() {
@@ -1122,8 +1148,6 @@ void App::makeGui() {
     tab->addButton("New optimization", [this]()
     {
         createNewOptimizationSettings();
-
-		currentOptimization = SProbeOptimization();
     }
     , GuiTheme::TOOL_BUTTON_STYLE);
     tab->addCheckBox("Keep ref values", &bKeepRefValuesOnNewOptimization);
@@ -1161,6 +1185,12 @@ void App::makeGui() {
         {
             sampleSet->generateRGBValuesFromProbes(numSamples, numCoeffs, outputFile, 0);
         }
+
+		std::fstream infoFile((currentOptimizationFolderPath() + "/infos.txt").c_str(), std::fstream::out | std::fstream::app);
+		infoFile << "refProbeStructure " << m_probeStructure->name().c_str() << std::endl;
+		infoFile << "numSamples " << numSamples << std::endl << std::endl;
+		infoFile.close();
+
         bTakeRefScreenshot = true;
     }
     ,GuiTheme::TOOL_BUTTON_STYLE);
@@ -1238,6 +1268,12 @@ void App::makeGui() {
 	tab->addButton("Save settings", [this]()
 	{
 		saveOptions();
+	});
+
+	tab->addButton("testcamerapos", [this]()
+	{
+		G3D::Vector3 cameraPos = activeCamera()->frame().translation;
+		debugPrintf("camera inside entity : %s\n", pointInsideEntity(cameraPos) ? "true" : "false");
 	});
 	tab->endRow();
 
@@ -1382,7 +1418,15 @@ void App::updateProbeStructurePane()
 
 			for (int i = m_probeStructure->probeCount() - 1; i > 0; ++i)
 			{
-				m_probeStructure->removeProbe(i);
+				try
+				{
+					m_probeStructure->removeProbe(i);
+
+				}
+				catch(std::exception e)
+				{
+
+				}
 			}
 
 			float step = std::stof(probeStructurePanelOptions.step.c_str());
@@ -1444,9 +1488,12 @@ void App::updateProbeStructurePane()
 
 		if (m_probeStructure->eType() == EProbeStructureType::Trilinear)
 		{
+			std::stringstream ss;
+			ss << m_probeStructure->m_dimensions[0] << " " << m_probeStructure->m_dimensions[1] << " " << m_probeStructure->m_dimensions[2];
+			probeStructurePanelOptions.dimensions = String(ss.str().c_str());
+
 			probeStructurePane->addTextBox("Step", &(probeStructurePanelOptions.step));
 			probeStructurePane->addTextBox("Dimensions", &(probeStructurePanelOptions.dimensions));
-
 		}
 
         probeStructurePane->endRow();
@@ -1473,6 +1520,16 @@ void App::updateProbeStructurePane()
             m_probeStructure->setHeight(    std::stoi(probeStructurePanelOptions.height.c_str()));
 			m_probeStructure->setNumSamples(std::stoi(probeStructurePanelOptions.numSamples.c_str()));
 			m_probeStructure->setStep(std::stof(probeStructurePanelOptions.step.c_str()));
+
+			if (m_probeStructure->eType() == EProbeStructureType::Trilinear)
+			{
+				G3D::Vector3 dim = StringToVector3(probeStructurePanelOptions.dimensions);
+
+				m_probeStructure->m_dimensions[0] = dim.x;
+				m_probeStructure->m_dimensions[1] = dim.y;
+				m_probeStructure->m_dimensions[2] = dim.z;
+			}
+
 			m_probeStructure->saveInfoFile();
 		}, GuiTheme::TOOL_BUTTON_STYLE);
 		probeStructurePane->addButton(GuiText("Delete all probes"), [this]()
@@ -1529,7 +1586,7 @@ void App::addSampleSetPane(GuiTabPane* tabPane)
 
 void App::updateSelectedScenePane()
 {
-    G3D::String selectedScene = selectedSceneName();
+    G3D::String selectedScene = scenePane.selectedSceneList->selectedValue();
 	debugPrintf("update ldofgio");
 
 	loadScene(selectedScene);
@@ -1539,6 +1596,24 @@ void App::updateSelectedScenePane()
 
 	G3D::Array<G3D::String> sampleSetList = getFoldersInFolder(sampleSetFoldersPath());
 	scenePane.sampleSetList->setList(sampleSetList);
+
+}
+
+void App::createTriTree()
+{
+
+	Array<shared_ptr<VisibleEntity>> entityArray;
+	scene()->getTypedEntityArray<VisibleEntity>(entityArray);
+
+	for (int i = 0; i < entityArray.length(); ++i) {
+		Array<shared_ptr<Surface>> surfaceArray;
+		entityArray[i]->onPose(surfaceArray);
+		for (int j = 0; j < surfaceArray.length(); ++j) {
+			m_surfaceArray.append(surfaceArray[j]);
+		}
+	}
+	m_triTree.setContents(m_surfaceArray);
+
 }
 
 void App::onUserInput(UserInput* userInput)
@@ -1557,7 +1632,11 @@ void App::onUserInput(UserInput* userInput)
     {
         showAllProbes = !showAllProbes;
     }
-	
+	else if (userInput->keyDown(GKey('m')))
+	{
+		bRenderIndirect = !bRenderIndirect;
+		showSamples = !showSamples;
+	}
 }
 
 G3D::String App::scenesPath()
@@ -1567,7 +1646,8 @@ G3D::String App::scenesPath()
 
 G3D::String App::selectedSceneName()
 {
-    return scenePane.selectedSceneList->selectedValue();
+	//return scenePane.selectedSceneList->selectedValue();
+	return m_scene->m_name;
 }
 
 G3D::String App::optimizationFolderPath()
@@ -1577,7 +1657,7 @@ G3D::String App::optimizationFolderPath()
 
 G3D::String App::currentOptimizationFolderPath()
 {
-    return optimizationFolderPath() + "/" + g3dString(m_currentOptimization);
+    return optimizationFolderPath() + "/" + g3dString(currentOptimization.id);
 }
 
 G3D::String App::probeStructureFoldersPath()

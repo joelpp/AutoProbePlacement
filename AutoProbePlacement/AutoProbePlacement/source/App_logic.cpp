@@ -2,7 +2,6 @@
 #include "SceneSampleSet.h"
 #include "Helpers.h"
 
-
 Vector3 App::getRandomPointInScene(){
 	float x = Random::common().uniform(-5,5);
 	float y = Random::common().uniform(0,5);
@@ -83,27 +82,15 @@ void App::clearAllActors(){
 
 void App::startOptimizationPasses()
 {
-	if (sampleSetLoaded() && probeStructureLoaded())
+	if (!sampleSetLoaded() && !probeStructureLoaded())
 	{
-		std::fstream infoFile;
-		infoFile.open("C:/temp/CurrentOptimization/InitialConditions.txt", std::fstream::out | std::fstream::app | std::fstream::in);
-		
-		if (!infoFile)
-		{
-			infoFile.open("C:/temp/CurrentOptimization/InitialConditions.txt", std::fstream::in | std::fstream::out | std::fstream::trunc);
-			infoFile << m_scene->m_name.c_str() << std::endl;
-			infoFile << m_probeStructure->m_name.c_str() << std::endl;
-
-			for (int i = 0; i <  m_probeStructure->probeList.size(); ++i)
-			{
-				infoFile << "Probe " << i << " : " << m_probeStructure->probeList[i]->getPosition() << std::endl;
-			}
-		}
-		sampleSet->outputToLog = logSampleSet;
-		numPassesLeft = std::atoi(tbNumPassesLeft.c_str());
+		return;
 	}
-	
+
+	sampleSet->outputToLog = logSampleSet;
+	numPassesLeft = std::atoi(tbNumPassesLeft.c_str());	
 }
+
 float App::computeError(bool outputToLog)
 {
 	std::fstream currentFile, referenceFile, logFile;
@@ -163,23 +150,43 @@ void App::createTempProbeStructure(G3D::Array<G3D::Vector3>& probePositions)
 
 bool App::pointInsideEntity(G3D::Vector3 point)
 {
-	Array<shared_ptr<Entity> > entities;
-	scene()->getEntityArray(entities);
+	Ray ray = Ray::fromOriginAndDirection(point, Vector3(1,0,0), 0.0f, 100.f);
 
-	for (int i = 0; i < entities.size(); ++i)
+	int score = 0;
+	TriTree::Hit hit;
+	while (m_triTree.intersectRay(ray, hit, TriTree::DO_NOT_CULL_BACKFACES))
 	{
-		shared_ptr<Entity> entity = entities[i];
-		Ray ray = Ray(point, Vector3(1, 0, 0));
-		Model::HitInfo info;
-		float maxDist = 1000.f;
-		entity->intersect(ray, maxDist, info);
-
-		if ((info.point != Point3::nan()) && (entity == info.entity) && (dot(info.normal, ray.direction()) > 0.0f))
+		if (hit.backface)
 		{
-			return true;
+			score -= 1;
 		}
+		else
+		{
+			score += 1;
+		}
+		
+
+		ray = Ray::fromOriginAndDirection(ray.origin() + (hit.distance + 0.01) * ray.direction(), ray.direction());
 	}
-	return false;
+
+	return score <= 0;
+	//Array<shared_ptr<Entity> > entities;
+	//scene()->getEntityArray(entities);
+
+	//for (int i = 0; i < entities.size(); ++i)
+	//{
+	//	shared_ptr<Entity> entity = entities[i];
+	//	Ray ray = Ray(point, Vector3(1, 0, 0));
+	//	Model::HitInfo info;
+	//	float maxDist = 1000.f;
+	//	entity->intersect(ray, maxDist, info);
+
+	//	if ((info.point != Point3::nan()) && (entity == info.entity) && (dot(info.normal, ray.direction()) > 0.0f))
+	//	{
+	//		return true;
+	//	}
+	//}
+	//return false;
 }
 
 
@@ -231,7 +238,7 @@ G3D::Array<G3D::Vector3> App::generateRandomPositions(int NumberOfPositions)
 
 void App::findBestInitialConditions()
 {
-	debugPrintf("Attempting to add probe...");
+	debugPrintf("Attempting to find minimalest error...\n");
 
 	int NumberOfProbes = std::atoi(m_sNumICProbes.c_str());
 	int NumberOfTries = std::atoi(m_sNumICTries.c_str());
@@ -265,20 +272,15 @@ void App::findBestInitialConditions()
 		computeSamplesRGB();
 
 		float error = computeError(false);
+		debugPrintf("- Attempt #%d, error : %f", tryNumber, error);
 
 		if (error < bestError)
 		{
+			debugPrintf(" (best yet!)");
 			bestError = error;
 			bestPositions = positions;
 		}
-
-		std::fstream positionsFile;
-		positionsFile.open("C:/temp/positionsLog/" + std::to_string(tryNumber) + ".txt", std::fstream::out);
-		for (int i = 0; i < NumberOfProbes; ++i)
-		{
-			positionsFile << positions[i] << std::endl;
-		}
-		positionsFile.close();
+		debugPrintf("\n");
 
 		for (int i = 0; i < NumberOfProbes; ++i)
 		{
@@ -302,6 +304,31 @@ void App::findBestInitialConditions()
 	//initializeProbeStructure(m_scene->m_name, "temp");
 }
 
+void App::logOptimizationIteration(float error)
+{
+	String path = currentOptimizationFolderPath() + "/infos.txt";
+
+	std::fstream infoFile;
+	infoFile.open(path.c_str(), std::fstream::out | std::fstream::app);
+
+	if (infoFile.is_open())
+	{
+		if (currentOptimization.iteration == 0)
+		{		
+			infoFile << "optimizing : " << m_probeStructure->m_name.c_str() << std::endl << std::endl;
+		}
+
+		infoFile << "iteration " << currentOptimization.iteration << std::endl;
+		infoFile << "error " << error << std::endl;
+
+		for (int i = 0; i < m_probeStructure->probeList.size(); ++i)
+		{
+			infoFile << "Probe " << i << " : " << m_probeStructure->probeList[i]->getPosition() << std::endl;
+		}
+	}
+	infoFile << std::endl;
+	infoFile.close();
+}
 
 bool App::tryOptimization()
 {
@@ -315,7 +342,11 @@ bool App::tryOptimization()
 	std::vector<float> displacements;
 
     sampleSet->generateRGBValuesFromProbes(numSamples, numCoeffs, currentOptimizationFolderPath() + "/values.txt", 0);
+
     float error = computeError(false);
+	logOptimizationIteration(error);
+
+	currentOptimization.iteration++;
 
 	if (currentOptimization.errors.size())
 	{

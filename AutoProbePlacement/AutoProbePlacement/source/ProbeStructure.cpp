@@ -798,18 +798,18 @@ int findProbeIndex(G3D::Vector3& probePosition, G3D::Vector3& startingPosition, 
 ProbeInterpolationRecord ProbeStructure::getInterpolationProbeIndicesAndWeights(const G3D::Vector3& position)
 {
 	// TODO FIX THIS
-	int step = 1;
 	ProbeInterpolationRecord record;
 	if (m_type == EProbeStructureType::Trilinear)
 	{
 
         G3D::Vector3 firstProbePosition = G3D::Vector3(m_firstProbePosition);
-        G3D::Vector3 probe000Pos = findNode000(position, firstProbePosition, step);
+        G3D::Vector3 probe000Pos = findNode000(position, firstProbePosition, m_step);
         G3D::Vector3 dimensions = G3D::Vector3(m_dimensions[0], m_dimensions[1], m_dimensions[2]);
-        int index = findProbeIndex(probe000Pos, firstProbePosition, dimensions, step);
+        int index000 = findProbeIndex(probe000Pos, firstProbePosition, dimensions, m_step);
         G3D::Vector3 offsets = G3D::Vector3(m_dimensions[2] * m_dimensions[1], m_dimensions[2], 1);
+		Vector3 lastProbePosition = firstProbePosition + m_step * (dimensions - Vector3(1, 1, 1));
 
-        G3D::Vector3 w000 = G3D::Vector3(1.0f, 1.0f, 1.0f) - (position - probe000Pos) / step;
+        G3D::Vector3 w000 = G3D::Vector3(1.0f, 1.0f, 1.0f) - (position - probe000Pos) / m_step;
 
 		record.weights.push_back(w000.x * w000.y * w000.z);
 		record.weights.push_back(w000.x * w000.y * (1.0f - w000.z));
@@ -820,24 +820,31 @@ ProbeInterpolationRecord ProbeStructure::getInterpolationProbeIndicesAndWeights(
 		record.weights.push_back((1.0f - w000.x) * (1.0f - w000.y) * w000.z);
 		record.weights.push_back((1.0f - w000.x)* (1.0f - w000.y) * (1.0f - w000.z));
 
-        record.probeIndices.push_back(index);
-        record.probeIndices.push_back(record.probeIndices[0] + offsets[2]); 							 // p001
-        record.probeIndices.push_back(record.probeIndices[0] + offsets[1]); 							 // p010
-        record.probeIndices.push_back(record.probeIndices[0] + offsets[1] + offsets[2]);                 // p011
-        record.probeIndices.push_back(record.probeIndices[0] + offsets[0]);                              // p100
-        record.probeIndices.push_back(record.probeIndices[0] + offsets[0] + offsets[2]);                 // p101
-        record.probeIndices.push_back(record.probeIndices[0] + offsets[0] + offsets[1]);                 // p110
-        record.probeIndices.push_back(record.probeIndices[0] + offsets[0] + offsets[1] + offsets[2]);    // p111
-
-		int numProbes = m_dimensions[0] * m_dimensions[1] * m_dimensions[2];
-		bool shouldNormalize = false;
+		int x = 0, y = 0, z = 0;
+		bool shouldNormalize = true;
 		for (int i = 0; i < 8; ++i)
 		{
-			if ((record.probeIndices[i] >= numProbes) || (record.probeIndices[i] < 0))
+			int index = index000 + int(dot(Vector3(x, y, z), offsets));
+			record.probeIndices.push_back(index);
+
+			Vector3 possiblePos = probe000Pos + Vector3(x * m_step, y * m_step, z * m_step);
+
+			z = (z + 1) % (2);
+			y = (z == 0) ? (y + 1) % (2) : y;
+			x = ((y == 0) && (z == 0)) ? x + 1 : x;
+
+			if ((possiblePos.x > lastProbePosition.x)		 ||
+				(possiblePos.y > lastProbePosition.y)		 ||
+				(possiblePos.z > lastProbePosition.z)		 ||
+				(possiblePos.x + 0.1 < firstProbePosition.x) ||
+				(possiblePos.y + 0.1 < firstProbePosition.y) ||
+				(possiblePos.z + 0.1 < firstProbePosition.z))
 			{
-                record.weights[i] = 0;
+				record.weights[i] = 0;
 				shouldNormalize = true;
+				continue;
 			}
+
 		}
 
 		if (shouldNormalize)
@@ -1119,7 +1126,8 @@ void ProbeStructure::applyOffsetToProbes(std::vector<float>& displacements)
 		Probe* probe = probeList[counter];
 		G3D::Vector3 newPosition = probe->frame.translation - displacement;
 		
-		//if (!isOutsideSceneBounds(newPosition, 0.25))
+		bool valid = App::instance->pointInsideEntity(newPosition);
+		if (valid)
 		{
 			probe->frame.translation = newPosition;
 			probe->bNeedsUpdate = true;
@@ -1468,6 +1476,9 @@ void ProbeStructure::saveInfoFile()
 	{
 		infoFile << "dimensions" << " " << m_dimensions[0] << " " << m_dimensions[1] << " " << m_dimensions[2] << std::endl;
 		infoFile << "step" << " " << m_step << std::endl;
+		infoFile << "firstProbePosition" << " " << probeList[0]->getPosition().x << " "
+												<< probeList[0]->getPosition().y << " "
+												<< probeList[0]->getPosition().z << std::endl;
 	}
 	else
 	{
@@ -1525,6 +1536,10 @@ void ProbeStructure::deleteAllProbes()
 
 void ProbeStructure::removeProbe(int i)
 {
+	if (i > probeList.size())
+	{
+		return;
+	}
 	probeList.remove(i);
 
 	saveInfoFile();

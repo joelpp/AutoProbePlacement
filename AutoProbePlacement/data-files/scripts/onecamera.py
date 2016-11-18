@@ -162,7 +162,7 @@ def makeProbe(x, y, z, probeCount, rootPath, pRenderType):
 	if (pRenderType == "Probes"):
 		for i in xrange(6):
 			(a,b,c) = (x,y,z);
-			dp = 25.0;
+			dp = float(globalInfo["gradientDisplacement"]);
 			if (i < 2):
 				a += dp * ( (i % 2) * 2 - 1 )
 			elif (i < 4):

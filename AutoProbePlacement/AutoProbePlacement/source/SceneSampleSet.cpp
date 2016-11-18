@@ -410,6 +410,8 @@ void SceneSampleSet::generateTriplets(int NumberOfSamples,
 
 void SceneSampleSet::generateRGBValuesFromProbes(int NumberOfSamples, int NumberOfCoeffs)
 {
+	m_colors.clear();
+
     std::fstream file = openFile(ESSFile::Values, false);
     for (int i = 0; i < NumberOfSamples; ++i)
     {
@@ -418,7 +420,8 @@ void SceneSampleSet::generateRGBValuesFromProbes(int NumberOfSamples, int Number
         Vector3 rgb = probeStructure->reconstructSH(ss.position, ss.normal, NumberOfCoeffs);
 
         file << rgb.x << " " << rgb.y << " " << rgb.z << "\n";
-    }
+		m_colors.push_back(Color3(rgb));
+	}
 
     file.close();
 }

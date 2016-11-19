@@ -255,8 +255,8 @@ def makeProbeList(rootPath):
 		
 		if (renderType == "all"):
 			makeProbe(x,y,z,probeCount, rootPath, "Probes");
-			makeProbe(x,y,z,probeCount, rootPath, "Positions");
-			makeProbe(x,y,z,probeCount, rootPath, "Normals");
+			# makeProbe(x,y,z,probeCount, rootPath, "Positions");
+			# makeProbe(x,y,z,probeCount, rootPath, "Normals");
 		else:
 			makeProbe(x,y,z,probeCount, rootPath, renderType);
 		probeCount += 1;

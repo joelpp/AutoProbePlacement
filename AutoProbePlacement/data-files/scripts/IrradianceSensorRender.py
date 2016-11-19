@@ -100,7 +100,7 @@ def render(sampleNumber):
 	print((position, normal));
 	#Create integrator
 	integrator = pmgr.create({
-		'type' : integratorType,
+		'type' : "path_samples2",
 		'samplePosition': Point(position[0], position[1], position[2]),
 		'sampleNormal': Normal(normal[0], normal[1], normal[2]),
 		'pointSampling': 1,
@@ -112,10 +112,10 @@ def render(sampleNumber):
 	integrator.configure();
 	sceneCopy.setIntegrator(integrator);
 	
-	sampleCount = 8192;
+	sampleCount = 512;
 	sampler = pmgr.create({
 	'type' : 'ldsampler',
-	'sampleCount' : sampleCount
+	'sampleCount' : 8192
 	})
 
 	#Create film

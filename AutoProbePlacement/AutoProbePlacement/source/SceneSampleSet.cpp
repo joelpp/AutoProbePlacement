@@ -366,6 +366,8 @@ void SceneSampleSet::generateTriplets(int NumberOfSamples,
 
 		ProbeInterpolationRecord iRec = probeStructure->getInterpolationProbeIndicesAndWeights(SamplePosition);
 		//float weightDenum = C(SamplePosition);
+		float inverseSumOf1OverSquaredProbeDistances = InverseSumOf1OverSquaredProbeDistances(SamplePosition);
+
 		for (int color = COLOR_RED; color <= COLOR_BLUE; ++color)
 		{
 			col = 0;
@@ -390,7 +392,7 @@ void SceneSampleSet::generateTriplets(int NumberOfSamples,
 						float Rval = R(SamplePosition, SampleNormal, NumberOfCoeffs, pm, axis, color);
 						float Bval = B(SamplePosition, SampleNormal, NumberOfCoeffs, pm, pn, axis, color);
 
-						float computedWeights = InverseSumOf1OverSquaredProbeDistances(SamplePosition) * powf(distanceToProbe(SamplePosition, pm), -2);
+						float computedWeights = inverseSumOf1OverSquaredProbeDistances * powf(distanceToProbe(SamplePosition, pm), -2);
 						
 						dRGB_color_axis += Wval * Rval + computedWeights * Bval;
 					}
@@ -651,6 +653,9 @@ std::vector<float> SceneSampleSet::tryOptimizationPass(int NumberOfSamples,
 													   bool optimizeForMitsubaSamples, 
 													   String optimizationFolderPath)
 {
+	G3D::StopWatch sw("InnerOptimization");
+	sw.setEnabled(true);
+
 	// todo: this is dependant on the interpolation method...
 	int NumElementsPerRow = probeStructure->probeCount() * 3;
 
@@ -661,18 +666,21 @@ std::vector<float> SceneSampleSet::tryOptimizationPass(int NumberOfSamples,
 	Eigen::VectorXd* rgbColumn = new Eigen::VectorXd(NumberOfSamples * 3);
 
 	generateTriplets(NumberOfSamples, NumberOfCoeffs, optimizationFolderPath + "/triplets.txt", eigenTriplets, optimizeForMitsubaSamples);
-    generateRGBValuesFromProbes(NumberOfSamples, NumberOfCoeffs, optimizationFolderPath + "/values.txt", rgbColumn);
+	sw.after("Generated Triplets");
+    //generateRGBValuesFromProbes(NumberOfSamples, NumberOfCoeffs, optimizationFolderPath + "/values.txt", rgbColumn);
 
 	Eigen::VectorXd bVector(NumberOfSamples * 3);
 	createbVector(&bVector, rgbColumn, optimizationFolderPath);
 
 	WeightMatrixType A(NumberOfSamples * 3, NumElementsPerRow);
 	A.setFromTriplets(eigenTriplets->begin(), eigenTriplets->end());
+	sw.after("Set matrices");
 
 	int NumberOfProbes = probeStructure->probeCount();
 
 	Eigen::VectorXd optimizationResult(NumberOfProbes * 3);
 	bool success = probeOptimizationPass(A, bVector, &optimizationResult);
+	sw.after("Optimization finished");
 
 	std::fstream logFile;
 	logFile.open((optimizationFolderPath + "/log.txt").c_str(), std::ios::app);
@@ -708,6 +716,7 @@ std::vector<float> SceneSampleSet::tryOptimizationPass(int NumberOfSamples,
 
         dpLogFile << optimizationResult << "\n\n";
 	}
+	sw.after("Logged results");
 
 
 	delete eigenTriplets;

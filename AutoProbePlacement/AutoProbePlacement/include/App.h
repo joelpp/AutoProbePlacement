@@ -357,6 +357,7 @@ private:
 	bool useSHGradients;
 	bool bOptimizeForCoeffs;
 	bool bPreventErrorIncrease;
+
 	TriTree triTree;
 	//Index* trisIndex;
 
@@ -372,6 +373,7 @@ public:
 	bool bRenderMultiplyIndirectByBRDF;
 	bool bRenderShadowMaps;
 	bool bRenderAO;
+	bool bFlipShadingNormals;
 
 	static App* instance;
 	App(const GApp::Settings& settings = GApp::Settings());
@@ -449,6 +451,8 @@ public:
 
 	Array<shared_ptr<Surface> > m_surfaceArray;
 	NativeTriTree m_triTree;
+
+	bool bSceneLoaded;
 };
 
 #endif

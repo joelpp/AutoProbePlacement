@@ -127,6 +127,8 @@ void ProbeRenderer::renderProbeShading(RenderDevice* rd, const shared_ptr<GBuffe
             args.setMacro("NUM_PROBES", app->m_probeStructure->probeCount());
             args.setMacro("Render_INDIRECT", app->bRenderIndirect);
 			args.setMacro("Render_INDIRECTBRDF", app->bRenderMultiplyIndirectByBRDF);
+			args.setMacro("FLIP_NORMALS", app->bFlipShadingNormals);
+
 
 			args.setMacro("WEIGHTS_WNN", app->m_probeStructure->m_type == EProbeStructureType::WeightedNearestNeighbour);
 			args.setMacro("WEIGHTS_TRILERP", app->m_probeStructure->m_type == EProbeStructureType::Trilinear);

@@ -31,15 +31,15 @@ fileResolver = Thread.getThread().getFileResolver();
 
 paramMap = StringMap()
 path = "../Scenes/" + sceneName;
-path = "C:/git/AutoProbePlacement/AutoProbePlacement/Scenes/" + sceneName;
+path = "C:/git/AutoProbePlacement/AutoProbePlacement/data-files/Scenes/" + sceneName;
 fileResolver.appendPath(path);
 
 
 renderType = sys.argv[3];
-
-origin = [float(sys.argv[4]) / globalInfo["scale"], float(sys.argv[5]) / globalInfo["scale"], float(sys.argv[6]) / globalInfo["scale"]];
+scale = float(globalInfo["scale"]);
+origin = [float(sys.argv[4]) / scale, float(sys.argv[5]) / scale, float(sys.argv[6]) /scale];
 direction = [float(sys.argv[7]), float(sys.argv[8]), float(sys.argv[9])];
-actorPos = [float(sys.argv[10]) / globalInfo["scale"], float(sys.argv[11]) / globalInfo["scale"], float(sys.argv[12]) / globalInfo["scale"]];
+actorPos = [float(sys.argv[10]) / scale, float(sys.argv[11]) / scale, float(sys.argv[12]) / scale];
 numSamplesOption = int(sys.argv[13]);
 widthOption = int(sys.argv[14]);
 heightOption = int(sys.argv[15]);
@@ -49,7 +49,7 @@ filmTypeOption = sys.argv[18]
 
 print(origin);
 print(direction);
-scene = SceneHandler.loadScene("../Scenes/zcbox/MitsubaScene2.xml", paramMap)
+scene = SceneHandler.loadScene(path + "/MitsubaScene.xml", paramMap)
 #Initialise Mitsuba stuff
 queue = RenderQueue()
 
@@ -110,7 +110,6 @@ def makeProbe(x, y, z, probeCount, rootPath, pRenderType):
 	
 	film = pmgr.createObject(filmProps)
 	
-	scale = globalInfo["scale"];
 	x /= scale;
 	y /= scale;
 	z /= scale;

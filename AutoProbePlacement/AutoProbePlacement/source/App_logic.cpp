@@ -194,7 +194,7 @@ bool App::pointInsideEntity(G3D::Vector3 point)
 G3D::Array<G3D::Vector3> App::generateRandomPositions(int NumberOfPositions)
 {
 	G3D::Array<G3D::Vector3> toReturn;
-	float maxDistance = 2;
+	float maxDistance = 0.5;
 	float offset = 0.5;
 	G3D::Vector3 min = m_scene->m_minBound + Vector3(offset, offset, offset);
 	G3D::Vector3 max = m_scene->m_maxBound - Vector3(offset, offset, offset);
@@ -332,7 +332,10 @@ void App::logOptimizationIteration(float error)
 
 bool App::tryOptimization()
 {
-	G3D::StopWatch sw;
+	G3D::StopWatch sw("OuterOptimization");
+	sw.setEnabled(true);
+
+	sw.after("Starting optimization pass #" + String(currentOptimization.iteration));
 	G3D::String sceneName = scenePane.selectedSceneList->selectedValue();
 	G3D::String probeStructureName = scenePane.probeStructureList->selectedValue();
 
@@ -342,9 +345,11 @@ bool App::tryOptimization()
 	std::vector<float> displacements;
 
     sampleSet->generateRGBValuesFromProbes(numSamples, numCoeffs, currentOptimizationFolderPath() + "/values.txt", 0);
+	sw.after("Generated RGB values from probes");
 
     float error = computeError(false);
 	logOptimizationIteration(error);
+	sw.after("Error : " + String(error));
 
 	currentOptimization.iteration++;
 
@@ -369,18 +374,22 @@ bool App::tryOptimization()
 	currentOptimization.errors.push_back(error);
 
 	displacements = sampleSet->tryOptimizationPass(numSamples, numCoeffs, bOptimizeWithMitsubaSamples, currentOptimizationFolderPath());
+	sw.after("Finished optimization pass");
 
-	sw.after("Performed optimization step");
 	if (displacements.size() > 0)
 	{
 		m_probeStructure->displaceProbesWithGradient(displacements, std::stof(maxProbeStepLength.c_str()));
+		sw.after("Displaced probes");
 
 		m_probeStructure->savePositions(false);
+		sw.after("Saved new positions");
 
 		if (bUpdateProbesOnOptimizationPass)
 		{
 			m_probeStructure->generateProbes("all");
+			sw.after("Regenerated probes");
 			m_probeStructure->extractSHCoeffs();
+			sw.after("Regenerated probes");
 		}
 		else
 		{
@@ -388,6 +397,7 @@ bool App::tryOptimization()
 		}
 	}
 
+	sw.after("Finished iteration!");
 	return true;
 }
 

@@ -117,7 +117,8 @@ void App::onInit() {
     bTakeRefScreenshot =			  false;
 	bOptimizeWithMitsubaSamples =	  false;
 	bPreventErrorIncrease =			  false;
-
+	bSceneLoaded =					  false;
+	bFlipShadingNormals =			  false;
     //Decide how many bands we want to use for the interpolation
     numBands =				2;
     maxDrawBand =			8;
@@ -130,7 +131,6 @@ void App::onInit() {
     numPassesLeft =			0;
     timer =					0;
 	sampleDropDownIndex =	0;
-
 	maxProbeStepLength =	  "0.1";
 	numOptimizationSamples =  "0";
     maxSamplesPointsToDraw =  "0";
@@ -149,6 +149,8 @@ void App::onInit() {
 	offlineRenderingOptions.height =	 "256";
 	offlineRenderingOptions.width =		 "512";
 	offlineRenderingOptions.gamma =		 "2.2";
+	offlineRenderingOptions.filmTypeIndex = 0;
+	offlineRenderingOptions.integratorIndex = 0;
 
 	m_activeCamera->setPosition(Point3(0,3,3));
 	setActiveCamera(m_debugCamera);
@@ -163,6 +165,7 @@ void App::onInit() {
 
 void App::loadScene(String sceneName)
 {
+	bSceneLoaded = false;
 	lightPositions.clear();
 
 	m_scene = new JScene(sceneName);
@@ -179,7 +182,7 @@ void App::loadScene(String sceneName)
     setActiveCamera(m_debugCamera);
 	loadCurrentOptimization();
 	createTriTree();
-
+	bSceneLoaded = true;
 }
 
 void App::loadCurrentOptimization()
@@ -453,16 +456,21 @@ void App::drawProbeLineSegments(RenderDevice* rd)
  */
 void App::onGraphics3D(RenderDevice* rd, Array<shared_ptr<Surface> >& surface3D) {
 	rd->setColorClearValue(Color3(0.3f, 0.3f, 0.3f));
-	GBuffer::Specification gbufferSpec = m_gbufferSpecification;
-	gbufferSpec.encoding[GBuffer::Field::WS_POSITION].format = ImageFormat::RGBA16F();
-	extendGBufferSpecification(gbufferSpec);
-	m_gbuffer->setSpecification(gbufferSpec);
-	m_gbuffer->resize(m_framebuffer->width(), m_framebuffer->height());
-	m_gbuffer->prepare(rd, activeCamera(), 0, -(float)previousSimTimeStep(), m_settings.hdrFramebuffer.depthGuardBandThickness, m_settings.hdrFramebuffer.colorGuardBandThickness);
-	
-	m_renderer->render(rd, m_framebuffer, scene()->lightingEnvironment().ambientOcclusionSettings.enabled ? m_depthPeelFramebuffer : shared_ptr<Framebuffer>(),
-		scene()->lightingEnvironment(), m_gbuffer, surface3D);
 
+	if (bSceneLoaded)
+	{
+		GBuffer::Specification gbufferSpec = m_gbufferSpecification;
+		gbufferSpec.encoding[GBuffer::Field::WS_POSITION].format = ImageFormat::RGBA16F();
+		extendGBufferSpecification(gbufferSpec);
+		m_gbuffer->setSpecification(gbufferSpec);
+		m_gbuffer->resize(m_framebuffer->width(), m_framebuffer->height());
+		m_gbuffer->prepare(rd, activeCamera(), 0, -(float)previousSimTimeStep(), m_settings.hdrFramebuffer.depthGuardBandThickness, m_settings.hdrFramebuffer.colorGuardBandThickness);
+
+		m_renderer->render(rd, m_framebuffer, scene()->lightingEnvironment().ambientOcclusionSettings.enabled ? m_depthPeelFramebuffer : shared_ptr<Framebuffer>(),
+			scene()->lightingEnvironment(), m_gbuffer, surface3D);
+
+	}
+	
     //rd->setRenderMode(RenderDevice::RENDER_SOLID);
  //   
  //   //Set the framebuffer for drawing
@@ -684,7 +692,6 @@ void App::generateSampleSetValuesFromProbes()
 
 void App::switchEditProbeStructure()
 {
-
 	if (m_probeStructure->probeCount() == 0)
 	{
 		return;
@@ -708,7 +715,6 @@ void App::switchEditProbeStructure()
     }
     else
     {
-
 		if (m_probeStructure->eType() == EProbeStructureType::Trilinear)
 		{
 			if (m_widgetManager->contains(m_probeStructure->getProbe(0)->getManipulator()))
@@ -887,7 +893,7 @@ void App::offlineRender()
 {
 
 	std::stringstream command;
-	command << "zcbox 1Probe Probes ";
+	command << m_scene->m_name.c_str() <<" 1Probe Probes ";
 
 	command << m_activeCamera->frame().translation.x << " ";
 	command << m_activeCamera->frame().translation.y << " ";
@@ -1150,7 +1156,8 @@ void App::makeGui() {
         createNewOptimizationSettings();
     }
     , GuiTheme::TOOL_BUTTON_STYLE);
-    tab->addCheckBox("Keep ref values", &bKeepRefValuesOnNewOptimization);
+	tab->addCheckBox("Keep ref values", &bKeepRefValuesOnNewOptimization);
+	tab->addCheckBox("Stored Samples", &bOptimizeWithMitsubaSamples);
     tab->addButton("Rename current optimization", [this]()
     {
         windowRenameOptimization->setVisible(true);
@@ -1282,6 +1289,7 @@ void App::makeGui() {
 	tab->addCheckBox("Direct", &(bRenderDirect));
 	tab->addCheckBox("Indirect (probes)", &(bRenderIndirect));
 	tab->addCheckBox("* BRDF", &(bRenderMultiplyIndirectByBRDF));
+	tab->addCheckBox("flip N", &bFlipShadingNormals);
 	tab->addSlider("Mutiplier", &shadingMultiplier, 0.0f, 5.0f);
 	tab->addCheckBox("Show Interp Probes", &showInterpolationProbes);
 	tab->addCheckBox("Show ALL Probes", &showAllProbes);
@@ -1696,36 +1704,51 @@ const char* optionFilePath()
 {
 	return "../data-files/options.txt";
 }
+
+#define SAVE_STRING(s) optionJSON[#s] = s.c_str();
+#define SAVE_BOOL(b) optionJSON[#b] = b;
+#define SAVE_FLOAT(f) optionJSON[#f] = f;
+#define SAVE_INT(i) optionJSON[#i] = i;
+
 void App::saveOptions()
 {
 	using json = nlohmann::json;
 	json optionJSON;
 
 	optionJSON["sceneName"] =						selectedSceneName().c_str();
-	optionJSON["optimizationSHBand"] =				optimizationSHBand.c_str();
-	optionJSON["numPassesLeft"] =					tbNumPassesLeft.c_str();
-	optionJSON["numOptimizationSamples"] =			numOptimizationSamples.c_str();
+	SAVE_STRING(optimizationSHBand);
+	SAVE_STRING(tbNumPassesLeft);
+	SAVE_STRING(numOptimizationSamples);
+	SAVE_STRING(m_sNumICTries);
+	SAVE_STRING(m_sNumICProbes);
 	optionJSON["probeStructureName"] =				m_probeStructure->m_name.c_str();
 	optionJSON["sampleSetName"] =					sampleSet->m_sampleSetName.c_str();
 
-	optionJSON["bShowAllProbes"] =					showAllProbes;
-	optionJSON["bUpdateProbesOnOptimizationPass"] = bUpdateProbesOnOptimizationPass;
-	optionJSON["bRenderDirect"] =					bRenderDirect;
-	optionJSON["bRenderIndirect"] =					bRenderIndirect;
-	optionJSON["sampleMultiplier"] =				sampleMultiplier;
-	optionJSON["m_sNumICTries"] =					m_sNumICTries.c_str();
-	optionJSON["m_sNumICProbes"] =					m_sNumICProbes.c_str();
-	optionJSON["bPreventErrorIncrease"] =			bPreventErrorIncrease;
-	optionJSON["bManipulateProbesEnabled"] =		bManipulateProbesEnabled;
+	SAVE_STRING(offlineRenderingOptions.numSamples);
+	SAVE_STRING(offlineRenderingOptions.height);
+	SAVE_STRING(offlineRenderingOptions.width);
+	SAVE_STRING(offlineRenderingOptions.gamma);
+	SAVE_INT(offlineRenderingOptions.filmTypeIndex);
+	SAVE_INT(offlineRenderingOptions.integratorIndex);
 
-	float x, y, z, yaw, pitch, roll;
-	m_activeCamera->frame().getXYZYPRDegrees(x, y, z, yaw, pitch, roll);
-	optionJSON["cameraX"] =							x;
-	optionJSON["cameraY"] =							y;
-	optionJSON["cameraZ"] =							z;
-	optionJSON["cameraPitch"] =						pitch;
-	optionJSON["cameraYaw"] =						yaw;
-	optionJSON["cameraRoll"] =						roll;
+	optionJSON["bShowAllProbes"] =					showAllProbes;
+	SAVE_BOOL(bUpdateProbesOnOptimizationPass);
+	SAVE_BOOL(bRenderDirect);
+	SAVE_BOOL(bRenderIndirect);
+	SAVE_BOOL(bPreventErrorIncrease);
+	SAVE_BOOL(bManipulateProbesEnabled);
+	SAVE_BOOL(bFlipShadingNormals);
+	
+	SAVE_FLOAT(sampleMultiplier);
+
+	float cameraX, cameraY, cameraZ, cameraYaw, cameraPitch, cameraRoll;
+	m_activeCamera->frame().getXYZYPRDegrees(cameraX, cameraY, cameraZ, cameraYaw, cameraPitch, cameraRoll);
+	SAVE_FLOAT(cameraX);
+	SAVE_FLOAT(cameraY);
+	SAVE_FLOAT(cameraZ);
+	SAVE_FLOAT(cameraPitch);
+	SAVE_FLOAT(cameraYaw);
+	SAVE_FLOAT(cameraRoll);
 
 	std::fstream optionFile(optionFilePath(), std::fstream::out);
 	optionFile << std::setw(4) << optionJSON;
@@ -1773,6 +1796,11 @@ float App::loadFloatOption(String name, nlohmann::json& optionJSON)
 	}
 }
 
+#define LOAD_STRING(s) s = loadStringOption(#s, optionJSON);
+#define LOAD_BOOL(b) b = loadBoolOption(#b, optionJSON);
+#define LOAD_FLOAT(f) f = loadFloatOption(#f, optionJSON);
+#define LOAD_INT(i) i = loadFloatOption(#i, optionJSON);
+
 void App::loadOptions()
 {
 	json optionJSON;
@@ -1781,16 +1809,27 @@ void App::loadOptions()
 	optionJSON << optionFile;
 	optionFile.close();
 
+	String sceneName;
+	LOAD_STRING(sceneName);
+	loadScene(sceneName);
 
-	loadScene(loadStringOption("sceneName", optionJSON));
-	bUpdateProbesOnOptimizationPass = loadBoolOption("bUpdateProbesOnOptimizationPass", optionJSON);
-	showAllProbes = loadBoolOption("bShowAllProbes", optionJSON);
-	bPreventErrorIncrease = loadBoolOption("bPreventErrorIncrease", optionJSON);
-	bRenderDirect = loadBoolOption("bRenderDirect", optionJSON);
-	bRenderIndirect = loadBoolOption("bRenderIndirect", optionJSON);
-	m_sNumICTries = loadStringOption("m_sNumICTries", optionJSON);
-	m_sNumICProbes = loadStringOption("m_sNumICProbes", optionJSON);
-	
+	LOAD_BOOL(bUpdateProbesOnOptimizationPass);
+	LOAD_BOOL(bPreventErrorIncrease);
+	LOAD_BOOL(bRenderIndirect);
+	LOAD_BOOL(showAllProbes);
+	LOAD_BOOL(bRenderDirect);
+
+	LOAD_STRING(m_sNumICTries); 
+	LOAD_STRING(m_sNumICProbes);
+
+	LOAD_STRING(offlineRenderingOptions.numSamples);
+	LOAD_STRING(offlineRenderingOptions.height);
+	LOAD_STRING(offlineRenderingOptions.width);
+	LOAD_STRING(offlineRenderingOptions.gamma);
+	LOAD_INT(offlineRenderingOptions.filmTypeIndex);
+	LOAD_INT(offlineRenderingOptions.integratorIndex);
+
+
 	try
 	{
 		json::string_t probeStructureName = optionJSON["probeStructureName"];
@@ -1828,7 +1867,7 @@ void App::loadOptions()
 
 	try
 	{
-		json::string_t val = optionJSON["numPassesLeft"];
+		json::string_t val = optionJSON["tbNumPassesLeft"];
 		tbNumPassesLeft = String(val.c_str());
 	}
 	catch (std::exception e)
@@ -1846,15 +1885,15 @@ void App::loadOptions()
 
 	}
 
-	float x, y, z, pitch, yaw, roll;
-	x =		loadFloatOption("cameraX", optionJSON);
-	y =		loadFloatOption("cameraY", optionJSON);
-	z =		loadFloatOption("cameraZ", optionJSON);
-	pitch = loadFloatOption("cameraPitch", optionJSON);
-	yaw =	loadFloatOption("cameraYaw", optionJSON);
-	roll =	loadFloatOption("cameraRoll", optionJSON);
+	float cameraX, cameraY, cameraZ, cameraYaw, cameraPitch, cameraRoll;
+	LOAD_FLOAT(cameraX);
+	LOAD_FLOAT(cameraY);
+	LOAD_FLOAT(cameraZ);
+	LOAD_FLOAT(cameraPitch);
+	LOAD_FLOAT(cameraYaw);
+	LOAD_FLOAT(cameraRoll);
 
-	m_activeCamera->setFrame(CFrame::fromXYZYPRDegrees(x, y, z, yaw, pitch, roll));
+	m_activeCamera->setFrame(CFrame::fromXYZYPRDegrees(cameraX, cameraY, cameraZ, cameraYaw, cameraPitch, cameraRoll));
 
 	if (loadBoolOption("bManipulateProbesEnabled", optionJSON))
 	{

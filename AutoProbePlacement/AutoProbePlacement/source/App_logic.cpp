@@ -267,7 +267,7 @@ void App::findBestInitialConditions()
 		{
 			m_probeStructure->addProbe(v);
 		}
-		m_probeStructure->updateAll();
+		m_probeStructure->updateAll(bShowOptimizationOutput);
 
 		computeSamplesRGB();
 
@@ -296,7 +296,7 @@ void App::findBestInitialConditions()
 		m_probeStructure->addProbe(v);
 
 	}
-	m_probeStructure->updateAll();
+	m_probeStructure->updateAll(bShowOptimizationOutput);
 	// generate 
 
 	//createTempProbeStructure(bestPositions);
@@ -386,10 +386,10 @@ bool App::tryOptimization()
 
 		if (bUpdateProbesOnOptimizationPass)
 		{
-			m_probeStructure->generateProbes("all");
+			m_probeStructure->generateProbes("all", bShowOptimizationOutput);
 			sw.after("Regenerated probes");
 			m_probeStructure->extractSHCoeffs();
-			sw.after("Regenerated probes");
+			sw.after("Extracted SH coeffs");
 		}
 		else
 		{
@@ -474,7 +474,7 @@ void App::displaceProbes()
 		}
 		//m_probeStructure->updateProbes(true);
         m_probeStructure->savePositions(false);
-        m_probeStructure->generateProbes("all");
+        m_probeStructure->generateProbes("all", bShowOptimizationOutput);
         m_probeStructure->extractSHCoeffs();
 		//updateProbeStructure();
 
@@ -496,7 +496,7 @@ void App::displaceProbes()
 
 		//m_probeStructure->updateProbes(true);
 		//updateProbeStructure();
-        m_probeStructure->generateProbes("all");
+        m_probeStructure->generateProbes("all", bShowOptimizationOutput);
         m_probeStructure->extractSHCoeffs();
 		//computeSamplesRGB();
 		//computeError("C:/temp/errorlog2.txt");

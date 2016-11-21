@@ -233,7 +233,7 @@ TProbeCoefficients subtractAndDivide(TProbeCoefficients& c0, TProbeCoefficients&
 	return diff;
 }
 
-CoeffGradients Probe::computeProbeCoeffGradients()
+CoeffGradients Probe::computeProbeCoeffGradients(float gradientDisplacement)
 {
 	int NumCoeffs = 9;
 	CoeffGradients toReturn = CreateCoeffGradients(NumCoeffs);
@@ -262,7 +262,8 @@ CoeffGradients Probe::computeProbeCoeffGradients()
 	}
 
 	TProbeCoefficients gradients[3];
-	float distance = 25.f;
+
+	float distance = gradientDisplacement;
 	gradients[0] = subtractAndDivide(dCoeffs[0], dCoeffs[1], distance);
 	gradients[1] = subtractAndDivide(dCoeffs[2], dCoeffs[3], distance);
 	gradients[2] = subtractAndDivide(dCoeffs[4], dCoeffs[5], distance);
@@ -281,7 +282,7 @@ CoeffGradients Probe::computeProbeCoeffGradients()
 	return toReturn;
 }
 
-void Probe::computeCoefficientsFromTexture(bool alsoSet)
+void Probe::computeCoefficientsFromTexture(bool alsoSet, float gradientDisplacement)
 {
 	int NumCoeffs = 9;
 
@@ -307,7 +308,7 @@ void Probe::computeCoefficientsFromTexture(bool alsoSet)
 	if (alsoSet)
 	{
 		this->coeffs = tempCoeffs;
-		this->coeffGradients = computeProbeCoeffGradients();
+		this->coeffGradients = computeProbeCoeffGradients(gradientDisplacement);
 	}
 }
 

@@ -1,0 +1,102 @@
+﻿<?xml version="1.0" encoding="utf-8"?>
+<Project ToolsVersion="4.0" xmlns="http://schemas.microsoft.com/developer/msbuild/2003" DefaultTargets="Build">
+  <PropertyGroup>
+    <Configuration Condition=" '$(Configuration)' == '' ">Debug</Configuration>
+    <SchemaVersion>2.0</SchemaVersion>
+    <ProjectGuid>{c5a308fc-bdeb-4c88-acbc-cb7a7b6223ba}</ProjectGuid>
+    <ProjectHome />
+    <StartupFile>onecamera.py</StartupFile>
+    <SearchPath>
+    </SearchPath>
+    <WorkingDirectory>.</WorkingDirectory>
+    <OutputPath>.</OutputPath>
+    <ProjectTypeGuids>{888888a0-9f3d-457c-b088-3a5042f75d52}</ProjectTypeGuids>
+    <LaunchProvider>Standard Python launcher</LaunchProvider>
+    <InterpreterId />
+    <InterpreterVersion />
+    <EnableNativeCodeDebugging>False</EnableNativeCodeDebugging>
+    <Environment>
+    </Environment>
+    <IsWindowsApplication>False</IsWindowsApplication>
+    <CommandLineArguments>zcbox Ref all</CommandLineArguments>
+  </PropertyGroup>
+  <PropertyGroup Condition="'$(Configuration)' == 'Debug'" />
+  <PropertyGroup Condition="'$(Configuration)' == 'Release'" />
+  <PropertyGroup>
+    <VisualStudioVersion Condition=" '$(VisualStudioVersion)' == '' ">10.0</VisualStudioVersion>
+    <PtvsTargetsFile>$(MSBuildExtensionsPath32)\Microsoft\VisualStudio\v$(VisualStudioVersion)\Python Tools\Microsoft.PythonTools.targets</PtvsTargetsFile>
+  </PropertyGroup>
+  <ItemGroup>
+    <Content Include="codeimightnotwannalose.txt" />
+    <Content Include="GenerateRandomProbes.txt" />
+    <Content Include="log.txt" />
+    <Content Include="outfile.png" />
+    <Content Include="probeList.txt" />
+    <Content Include="redgreenprobes.txt" />
+    <Content Include="renderedResult.png" />
+    <Content Include="result.png" />
+  </ItemGroup>
+  <ItemGroup>
+    <Compile Include="AllPurposeTests.py" />
+    <Compile Include="ApplyOffset.py" />
+    <Compile Include="blendermeshexport.py" />
+    <Compile Include="BuildDiffFile.py" />
+    <Compile Include="BuildIterationFile.py" />
+    <Compile Include="CoefficientOptimization.py" />
+    <Compile Include="CoefficientOptimization2.py" />
+    <Compile Include="CoefficientOptimization3.py" />
+    <Compile Include="CoefficientOptimizationSimple.py" />
+    <Compile Include="compare.py" />
+    <Compile Include="CompareProbeStructures.py" />
+    <Compile Include="ComputeError.py" />
+    <Compile Include="CopySurfaceTextures.py" />
+    <Compile Include="CreateNewProbe.py" />
+    <Compile Include="CreateNodeFile.py" />
+    <Compile Include="CreateProbeStructure.py" />
+    <Compile Include="CreateScene.py" />
+    <Compile Include="CreateSceneRender.py" />
+    <Compile Include="CreateSmallerRegularGrid.py" />
+    <Compile Include="DecombineProbes.py" />
+    <Compile Include="emdTests.py" />
+    <Compile Include="ExperimentManager.py" />
+    <Compile Include="ExtractColorsFromSamples.py" />
+    <Compile Include="ExtractPointsFromSamples.py" />
+    <Compile Include="extractprobecoefficients.py" />
+    <Compile Include="FixReconstructions.py" />
+    <Compile Include="GenerateRandomProbes.py" />
+    <Compile Include="GenerateSamplesRGBRef.py" />
+    <Compile Include="GenerateVolumetricSamples.py" />
+    <Compile Include="HelloWorld.py" />
+    <Compile Include="helper.py" />
+    <Compile Include="irradiance.py" />
+    <Compile Include="IrradianceGradient.py" />
+    <Compile Include="IrradianceSensorRender.py" />
+    <Compile Include="ktolmtest.py" />
+    <Compile Include="LabelScreenshots.py" />
+    <Compile Include="markUV.py" />
+    <Compile Include="npytoTexture.py" />
+    <Compile Include="onecamera.py" />
+    <Compile Include="printimgrgb.py" />
+    <Compile Include="recombine.py" />
+    <Compile Include="RecombineProbes.py" />
+    <Compile Include="RecombineSampleSet.py" />
+    <Compile Include="renamer.py" />
+    <Compile Include="renderaprobe.py" />
+    <Compile Include="renderer.py" />
+    <Compile Include="ResetExperiment.py" />
+    <Compile Include="ResizeAllScreenshots.py" />
+    <Compile Include="RunTetgen.py" />
+    <Compile Include="salut.py" />
+    <Compile Include="SHCoeffExtraction.py" />
+    <Compile Include="SHRenders.py" />
+    <Compile Include="SHTests.py" />
+    <Compile Include="Simple_Mitsuba.py" />
+    <Compile Include="SphericalHarmonics.py" />
+    <Compile Include="SubtractProbes.py" />
+    <Compile Include="SurfaceIrradianceTest.py" />
+    <Compile Include="SurfaceTextureGeneration.py" />
+    <Compile Include="Tests.py" />
+  </ItemGroup>
+  <Import Project="$(PtvsTargetsFile)" Condition="Exists($(PtvsTargetsFile))" />
+  <Import Project="$(MSBuildToolsPath)\Microsoft.Common.targets" Condition="!Exists($(PtvsTargetsFile))" />
+</Project>

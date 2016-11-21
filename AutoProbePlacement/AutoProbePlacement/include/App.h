@@ -357,6 +357,8 @@ private:
 	bool useSHGradients;
 	bool bOptimizeForCoeffs;
 	bool bPreventErrorIncrease;
+	bool bShowOptimizationOutput;
+	bool bShowProbeGenerationOutput;
 
 	TriTree triTree;
 	//Index* trisIndex;
@@ -374,6 +376,7 @@ public:
 	bool bRenderShadowMaps;
 	bool bRenderAO;
 	bool bFlipShadingNormals;
+
 
 	static App* instance;
 	App(const GApp::Settings& settings = GApp::Settings());

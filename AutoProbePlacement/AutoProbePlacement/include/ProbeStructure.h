@@ -145,11 +145,13 @@ public:
 
 	void addProbe(const G3D::Vector3& position);
 
-    void generateProbes(std::string type);
+	void generateProbes(std::string type, bool showOutput);
 
     void extractSHCoeffs();
 
 	void loadProbeStructureInfo();
+
+	void loadSceneInfo();
 
     void savePositions(bool useManipulator);
 
@@ -165,7 +167,7 @@ public:
 
 	void saveCoefficients();
 
-	void updateAll();
+	void updateAll(bool showOutput);
 
 	void deleteAllProbes();
 
@@ -180,12 +182,15 @@ public:
     float m_step;
     float m_firstProbePosition[3];
     float m_gamma;
+	float m_gradientDisplacement;
 
     int m_NumCoefficients;
     int m_NumColors;
     int m_width;
     int m_height;
     int m_NumSamples;
+
+
 };
 
 #endif

@@ -57,6 +57,7 @@ ProbeStructure::ProbeStructure(String sceneName, String probeStructureName)
 	this->m_name = probeStructureName;
 	this->probeStructurePath = "../data-files/Scenes/" + sceneName + "/ProbeStructures/" + probeStructureName;;
 
+	loadSceneInfo();
 	loadProbeStructureInfo();
 	makeProbeList();
 
@@ -74,6 +75,28 @@ ProbeStructure::ProbeStructure(String sceneName, String probeStructureName)
 	}
  
     uploadToGPU();
+}
+
+void ProbeStructure::loadSceneInfo()
+{
+	String scenePath = "../data-files/Scenes/" + m_sceneName + "/SceneInfo.txt";
+
+	std::fstream sceneInformationFile(scenePath.c_str(), std::fstream::in);
+
+	std::string line;
+	while (std::getline(sceneInformationFile, line))
+	{
+		Array<String> splitLine = stringSplit(String(line.c_str()), ' ');
+		String param = splitLine[0];
+		splitLine.remove(0);
+
+		if (param == "gradientDisplacement")
+		{
+			m_gradientDisplacement = std::stof(splitLine[0].c_str());
+		}
+	}
+
+	sceneInformationFile.close();
 }
 
 
@@ -1067,7 +1090,7 @@ void ProbeStructure::updateProbes(bool updateAll)
 			// reload new probes textures and coefficients
 			//if (result == true)
 			{
-				p->computeCoefficientsFromTexture(false);
+				//p->computeCoefficientsFromTexture(false);
 				p->bNeedsUpdate = false;
 			}
 
@@ -1286,13 +1309,13 @@ G3D::Vector3 ProbeStructure::reconstructSH(const G3D::Vector3& position, const G
     return rgb;
 }
 
-void ProbeStructure::generateProbes(std::string type)
+void ProbeStructure::generateProbes(std::string type, bool showOutput)
 {
     // system call to mitsuba
     std::stringstream args;
     args << m_sceneName.c_str() << " " << m_name.c_str() << " " << type;
 
-    runPythonScriptFromDataFiles("onecamera.py", args.str(), false, true);
+    runPythonScriptFromDataFiles("onecamera.py", args.str(), showOutput, true);
 
     for (Probe* p : probeList)
     {
@@ -1308,7 +1331,7 @@ void ProbeStructure::extractSHCoeffs()
     {
         Probe* p = probeList[i];
 
-        p->computeCoefficientsFromTexture(true);
+        p->computeCoefficientsFromTexture(true, m_gradientDisplacement);
 		p->saveCoefficients();
 
 		p->bNeedsUpdate = false;
@@ -1518,11 +1541,11 @@ void ProbeStructure::saveCoefficients()
 	}
 }
 
-void ProbeStructure::updateAll()
+void ProbeStructure::updateAll(bool showOutput)
 {
 	saveInfoFile();
 	savePositions(false);
-	generateProbes("all");
+	generateProbes("all", showOutput);
 	extractSHCoeffs();
 }
 

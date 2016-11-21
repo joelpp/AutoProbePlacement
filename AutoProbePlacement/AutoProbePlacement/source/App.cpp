@@ -1251,7 +1251,7 @@ void App::makeGui() {
 	}
 	, GuiTheme::TOOL_BUTTON_STYLE);
 
-	tab->addCheckBox("Path traced samples", &bOptimizeWithMitsubaSamples);
+	tab->addCheckBox("Show output", &bShowOptimizationOutput);
 	tab->addButton("Optimization pass (GO!)", GuiControl::Callback(this, &App::startOptimizationPasses), GuiTheme::TOOL_BUTTON_STYLE);
     tab->addTextBox("Num passes", &tbNumPassesLeft);
     tab->addTextBox("Num samples", &numOptimizationSamples);
@@ -1452,7 +1452,7 @@ void App::updateProbeStructurePane()
 
 		}
 		m_probeStructure->savePositions(true);
-		m_probeStructure->generateProbes("all");
+		m_probeStructure->generateProbes("all", bShowOptimizationOutput);
 		m_probeStructure->extractSHCoeffs();
 
 		popNotification("Job finished", "Probe structure update complete", 15);
@@ -1465,9 +1465,10 @@ void App::updateProbeStructurePane()
     } 
     , GuiTheme::TOOL_BUTTON_STYLE);
 
-    probeStructurePane->addButton(GuiText("Update textures"), [this]() { m_probeStructure->generateProbes("all"); }, GuiTheme::TOOL_BUTTON_STYLE);
+    probeStructurePane->addButton(GuiText("Update textures"), [this]() { m_probeStructure->generateProbes("all", bShowProbeGenerationOutput); }, GuiTheme::TOOL_BUTTON_STYLE);
 	probeStructurePane->addButton(GuiText("Extract coeffs"), [this]() { m_probeStructure->extractSHCoeffs(); }, GuiTheme::TOOL_BUTTON_STYLE);
-    probeStructurePane->addCheckBox("Use gradients", &useSHGradients);
+	probeStructurePane->addCheckBox("Show output", &bShowProbeGenerationOutput);
+	probeStructurePane->addCheckBox("Use gradients", &useSHGradients);
 	probeStructurePane->endRow();
 
 	probeStructurePane->beginRow();
@@ -1738,7 +1739,9 @@ void App::saveOptions()
 	SAVE_BOOL(bPreventErrorIncrease);
 	SAVE_BOOL(bManipulateProbesEnabled);
 	SAVE_BOOL(bFlipShadingNormals);
-	
+	SAVE_BOOL(bShowOptimizationOutput);
+	SAVE_BOOL(bShowProbeGenerationOutput);
+
 	SAVE_FLOAT(sampleMultiplier);
 
 	float cameraX, cameraY, cameraZ, cameraYaw, cameraPitch, cameraRoll;
@@ -1818,6 +1821,8 @@ void App::loadOptions()
 	LOAD_BOOL(bRenderIndirect);
 	LOAD_BOOL(showAllProbes);
 	LOAD_BOOL(bRenderDirect);
+	LOAD_BOOL(bShowOptimizationOutput);
+	LOAD_BOOL(bShowProbeGenerationOutput);
 
 	LOAD_STRING(m_sNumICTries); 
 	LOAD_STRING(m_sNumICProbes);

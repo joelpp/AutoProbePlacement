@@ -35,11 +35,11 @@ public:
 	Probe(int i, String probeStructurePath);
 	shared_ptr<Texture> getTexture(int texID);
 	void reconstructSH(const G3D::Vector3& normal);
-	void computeCoefficientsFromTexture(bool alsoSet);
+	void computeCoefficientsFromTexture(bool alsoSet, float gradientDisplacement);
 	String buildPath(EResource res);
 	void saveCoefficients();
 	void computeCoefficients(std::shared_ptr<G3D::Image> probeTexture, TProbeCoefficients& coeffs);
-	CoeffGradients computeProbeCoeffGradients();
+	CoeffGradients computeProbeCoeffGradients(float gradientDisplacement);
 
 	shared_ptr<Texture>		texture;
 	shared_ptr<Texture>		irr_texture;

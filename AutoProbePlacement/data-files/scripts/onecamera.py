@@ -155,9 +155,9 @@ def makeProbe(x, y, z, probeCount, rootPath, pRenderType):
 	job.start()
 	# print(Statistics.getInstance().getStats())
 
-	queue.waitLeft(0)
-	queue.join()
-
+	# queue.waitLeft(0)
+	# queue.join()
+	print("made it here! 0");
 	# render the 6 surrounding probes
 	if (pRenderType == "Probes"):
 		for i in xrange(6):
@@ -203,8 +203,11 @@ def makeProbe(x, y, z, probeCount, rootPath, pRenderType):
 			job.start()
 			# print(Statistics.getInstance().getStats())
 
-			queue.waitLeft(0)
-			queue.join()
+			# queue.waitLeft(0)
+			# queue.join()
+	print("made it here! 1");
+	queue.waitLeft(0)
+	queue.join()
 
 def createProbeStructure(rootPath):
 	

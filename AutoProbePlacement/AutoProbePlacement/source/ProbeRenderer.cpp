@@ -111,7 +111,6 @@ void ProbeRenderer::renderProbeShading(RenderDevice* rd, const shared_ptr<GBuffe
 		// Don't shade the skybox on this pass because it will be forward rendered
 		rd->setDepthTest(RenderDevice::DEPTH_GREATER);
 		Args args;
-
 		environment.setShaderArgs(args);
 		gbuffer->setShaderArgsRead(args, "gbuffer_");
 

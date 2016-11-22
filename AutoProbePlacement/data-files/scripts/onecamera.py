@@ -21,7 +21,7 @@ os.environ['PATH'] = 'C:/Users/polardpj.artichaut/Downloads/mitsuba-eaff1cd989f3
 
 
 from mitsuba.core import *
-from mitsuba.render import SceneHandler, RenderQueue, RenderJob
+from mitsuba.render import SceneHandler, RenderQueue, RenderJob, Scene
 
 from string import maketrans
 import helper
@@ -43,7 +43,8 @@ fileResolver.appendPath(path);
 renderType = sys.argv[3];
 
 
-scene = SceneHandler.loadScene("../Scenes/" + sceneName + "/MitsubaScene.xml", paramMap)
+#scene = SceneHandler.loadScene("../Scenes/" + sceneName + "/MitsubaScene.xml", paramMap)
+scene = SceneHandler.loadScene("C:/git/g3d/data10/common/model/crytek_sponza/sponza.xml", paramMap)
 
 #Initialise Mitsuba stuff
 queue = RenderQueue()
@@ -155,12 +156,14 @@ def makeProbe(x, y, z, probeCount, rootPath, pRenderType):
 	job.start()
 	# print(Statistics.getInstance().getStats())
 
-	# queue.waitLeft(0)
-	# queue.join()
+	queue.waitLeft(0)
+	queue.join()
 	print("made it here! 0");
 	# render the 6 surrounding probes
 	if (pRenderType == "Probes"):
 		for i in xrange(6):
+			lScene = Scene(scene);
+
 			(a,b,c) = (x,y,z);
 			dp = float(globalInfo["gradientDisplacement"]);
 			if (i < 2):
@@ -171,43 +174,43 @@ def makeProbe(x, y, z, probeCount, rootPath, pRenderType):
 				c += dp * ( (i % 2) * 2 - 1 )
 			print(a,b,c);
 			#Create sensor and transform for sensor
-			toWorld = Transform.lookAt(
+			lToWorld = Transform.lookAt(
 
 			    Point(a,b,c),
 			    Point(a+1,b,c),
 			    Vector(0, 1, 0)) #up direction after I fixed stuff
 				
-			sensorProps = Properties('spherical')
+			lSensorProps = Properties('spherical')
 			# sensorProps = Properties('perspective')
-			sensorProps['toWorld'] = toWorld
-			sensorProps['fov'] = 45.0
-			sensor = pmgr.createObject(sensorProps)
+			lSensorProps['toWorld'] = lToWorld 
+			lSensorProps['fov'] = 45.0
+			lSensor = pmgr.createObject(lSensorProps)
 			#format of a lookat transform: lookAt(origin, target, updirection)
 
 			#Make it all come together
-			sensor.addChild('film', film)
-			sensor.addChild('sampler', sampler)
-			sensor.configure();
+			lSensor.addChild('film', film)
+			lSensor.addChild('sampler', sampler)
+			lSensor.configure();
 
-			scene.addSensor(sensor);
-			scene.setSensor(sensor);
-			scene.configure()
+			lScene.addSensor(lSensor);
+			lScene.setSensor(lSensor);
+			lScene.configure()
 
 			# Your custom destination goes here.
-			destination = rootPath + "/" + pRenderType + "/" + pRenderType[:-1] + "_"
-			destination += repr(probeCount)+'_' + repr(i) + '.png'
-			scene.setDestinationFile(destination)
-			print(destination)
+			lDestination = rootPath + "/" + pRenderType + "/" + pRenderType[:-1] + "_"
+			lDestination  += repr(probeCount)+'_' + repr(i) + '.png'
+			lScene.setDestinationFile(lDestination )
+			print(lDestination )
 			#Render!
-			job = RenderJob('myRenderJob', scene, queue)
-			job.start()
+			lJob = RenderJob('myRenderJob', lScene, queue)
+			lJob.start()
 			# print(Statistics.getInstance().getStats())
 
-			# queue.waitLeft(0)
-			# queue.join()
+			queue.waitLeft(0)
+			queue.join()
 	print("made it here! 1");
-	queue.waitLeft(0)
-	queue.join()
+	#queue.waitLeft(0)
+	#queue.join()
 
 def createProbeStructure(rootPath):
 	

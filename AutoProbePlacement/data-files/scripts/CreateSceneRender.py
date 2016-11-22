@@ -6,18 +6,21 @@ import os, sys
 # # Ensure that Python will be able to find the Mitsuba core libraries
 
 # Ensure that Python will be able to find the Mitsuba core libraries
+sys.path.append('C:/Users/polardpj.artichaut/Downloads/mitsuba-eaff1cd989f3/mitsuba-eaff1cd989f3/dist/python/2.7/')
+# Ensure that Python will be able to find the Mitsuba core libraries
+os.environ['PATH'] = 'C:/Users/polardpj.artichaut/Downloads/mitsuba-eaff1cd989f3/mitsuba-eaff1cd989f3/dist/' + os.pathsep + os.environ['PATH']
 
-if (True):
-	sys.path.append('C:/git/mitsuba/dist/python/2.7/')
-	# Ensure that Python will be able to find the Mitsuba core libraries
-	os.environ['PATH'] = 'C:/git/mitsuba/dist/' + os.pathsep + os.environ['PATH']
-else:
-	sys.path.append('C:/Users/Joel/Downloads/mitsuba-c7aac473729a/mitsuba-c7aac473729a/dist/python/2.7/')
-	os.environ['PATH'] = 'C:/Users/Joel/Downloads/mitsuba-c7aac473729a/mitsuba-c7aac473729a/dist/' + os.pathsep + os.environ['PATH']
+#if (True):
+#	sys.path.append('C:/git/mitsuba/dist/python/2.7/')
+#	# Ensure that Python will be able to find the Mitsuba core libraries
+#	os.environ['PATH'] = 'C:/git/mitsuba/dist/' + os.pathsep + os.environ['PATH']
+#else:
+#	sys.path.append('C:/Users/Joel/Downloads/mitsuba-c7aac473729a/mitsuba-c7aac473729a/dist/python/2.7/')
+#	os.environ['PATH'] = 'C:/Users/Joel/Downloads/mitsuba-c7aac473729a/mitsuba-c7aac473729a/dist/' + os.pathsep + os.environ['PATH']
 
 
 from mitsuba.core import *
-from mitsuba.render import SceneHandler, RenderQueue, RenderJob
+from mitsuba.render import SceneHandler, RenderQueue, RenderJob, Scene
 
 from string import maketrans
 import helper
@@ -27,6 +30,7 @@ import helper
 globalInfo = helper.readSceneAndProbeStructureInfo(sceneName, structureName);
 
 pmgr = PluginManager.getInstance();
+imgr = InstanceManager();
 fileResolver = Thread.getThread().getFileResolver();
 
 paramMap = StringMap()
@@ -49,7 +53,11 @@ filmTypeOption = sys.argv[18]
 
 print(origin);
 print(direction);
-scene = SceneHandler.loadScene(path + "/MitsubaScene.xml", paramMap)
+fs = FileStream("../Scenes/" + sceneName + "/MitsubaScene.serialized", FileStream.EReadWrite)
+scene = Scene(fs, imgr)
+#scene = SceneHandler.loadScene(path + "/MitsubaScene.xml", paramMap)
+#scene = SceneHandler.loadScene("C:/git/g3d/data10/common/model/crytek_sponza/sponza.xml", paramMap)
+
 #Initialise Mitsuba stuff
 queue = RenderQueue()
 
@@ -241,6 +249,10 @@ def renderProbe(rootPath, id):
 rootPath = "../Scenes/" + sceneName + "/ProbeStructures/" + structureName;
 print(rootPath);
 	
+
+#fs = FileStream("../Scenes/" + sceneName + "/MitsubaScene.serialized", FileStream.EReadWrite)
+#scene.serialize(fs, imgr)
+#exit();
 
 createProbeStructure(rootPath);
 

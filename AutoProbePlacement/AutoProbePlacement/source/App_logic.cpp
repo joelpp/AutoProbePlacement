@@ -375,7 +375,7 @@ bool App::tryOptimization()
 
 	displacements = sampleSet->tryOptimizationPass(numSamples, numCoeffs, bOptimizeWithMitsubaSamples, currentOptimizationFolderPath());
 	sw.after("Finished optimization pass");
-
+	
 	if (displacements.size() > 0)
 	{
 		m_probeStructure->displaceProbesWithGradient(displacements, std::stof(maxProbeStepLength.c_str()));

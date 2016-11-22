@@ -8,16 +8,16 @@ import os, sys
 # Ensure that Python will be able to find the Mitsuba core libraries
 
 # if (os.environ['COMPUTERNAME'] ==):
-# sys.path.append('C:/git/mitsuba/dist/python/2.7/')
+sys.path.append('C:/git/mitsuba/dist/python/2.7/')
 # 	# Ensure that Python will be able to find the Mitsuba core libraries
-# os.environ['PATH'] = 'C:/git/mitsuba/dist/' + os.pathsep + os.environ['PATH']
+os.environ['PATH'] = 'C:/git/mitsuba/dist/' + os.pathsep + os.environ['PATH']
 # else:
 	# sys.path.append('C:/Users/Joel/Downloads/mitsuba-c7aac473729a/mitsuba-c7aac473729a/dist/python/2.7/')
 # 	os.environ['PATH'] = 'C:/Users/Joel/Downloads/mitsuba-c7aac473729a/mitsuba-c7aac473729a/dist/' + os.pathsep + os.environ['PATH']
 
-sys.path.append('C:/Users/polardpj.artichaut/Downloads/mitsuba-eaff1cd989f3/mitsuba-eaff1cd989f3/dist/python/2.7/')
+# sys.path.append('C:/Users/polardpj.artichaut/Downloads/mitsuba-eaff1cd989f3/mitsuba-eaff1cd989f3/dist/python/2.7/')
 # Ensure that Python will be able to find the Mitsuba core libraries
-os.environ['PATH'] = 'C:/Users/polardpj.artichaut/Downloads/mitsuba-eaff1cd989f3/mitsuba-eaff1cd989f3/dist/' + os.pathsep + os.environ['PATH']
+# os.environ['PATH'] = 'C:/Users/polardpj.artichaut/Downloads/mitsuba-eaff1cd989f3/mitsuba-eaff1cd989f3/dist/' + os.pathsep + os.environ['PATH']
 
 
 from mitsuba.core import *
@@ -43,8 +43,8 @@ fileResolver.appendPath(path);
 renderType = sys.argv[3];
 
 
-#scene = SceneHandler.loadScene("../Scenes/" + sceneName + "/MitsubaScene.xml", paramMap)
-scene = SceneHandler.loadScene("C:/git/g3d/data10/common/model/crytek_sponza/sponza.xml", paramMap)
+scene = SceneHandler.loadScene("../Scenes/" + sceneName + "/MitsubaScene.xml", paramMap)
+# scene = SceneHandler.loadScene("C:/git/g3d/data10/common/model/crytek_sponza/sponza.xml", paramMap)
 
 #Initialise Mitsuba stuff
 queue = RenderQueue()
@@ -288,19 +288,22 @@ def renderProbe(rootPath, id):
 rootPath = "../Scenes/" + sceneName + "/ProbeStructures/" + structureName;
 print(rootPath);
 	
+settingsPath ="optimizationSettings.txt"
+lastModifTime = os.path.getmtime(settingsPath)
 
-createProbeStructure(rootPath);
+while (True):
+	if (os.path.getmtime(settingsPath) != lastModifTime):
+		# If we want to render a single probe
+		if (len(sys.argv) == 5):
+			id = int(sys.argv[4]);
+			renderProbe(rootPath, id);
+		else:
+		# elif (globalInfo["type"] != "trilinear"):
+			makeProbeList(rootPath);
+		# else:
+			# makeProbeGrid(rootPath, globalInfo["firstProbePosition"], globalInfo["step"], globalInfo["dimensions"]);
 
-# If we want to render a single probe
-if (len(sys.argv) == 5):
-	id = int(sys.argv[4]);
-	renderProbe(rootPath, id);
-else:
-# elif (globalInfo["type"] != "trilinear"):
-	makeProbeList(rootPath);
-# else:
-	# makeProbeGrid(rootPath, globalInfo["firstProbePosition"], globalInfo["step"], globalInfo["dimensions"]);
-
+		lastModifTime = os.path.getmtime(settingsPath);
 file = open("C:/temp/log2.txt", 'w');
 file.write("EVEN MORE LOL");
 file.close();

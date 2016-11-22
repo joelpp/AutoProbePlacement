@@ -50,6 +50,8 @@ struct SProbeOptimization
     std::vector<float> dp;
 	int consecutiveFailures;
 	int iteration;
+	FILETIME lastRenderEndTime;
+	bool bRenderingFinished;
 };
 
 struct ScenePane

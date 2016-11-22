@@ -165,23 +165,32 @@ void App::onInit() {
 
 void App::loadScene(String sceneName)
 {
+	G3D::StopWatch sw;
+	sw.setEnabled(true);
+
 	bSceneLoaded = false;
 	lightPositions.clear();
 
 	m_scene = new JScene(sceneName);
+	sw.after("Loaded JScene");
 
     String basePath = "C:\\git\\AutoProbePlacement\\AutoProbePlacement\\data-files\\Scenes\\" + sceneName + "\\";
 	try
 	{
 		GApp::loadScene(basePath + sceneName + ".Scene.Any");
+		sw.after("Loaded G3D Scene");
 	}
 	catch (std::exception e)
 	{
 		throw e;
 	}
     setActiveCamera(m_debugCamera);
+
 	loadCurrentOptimization();
+	sw.after("Loaded optimization settings");
+
 	createTriTree();
+	sw.after("Created Tritree");
 	bSceneLoaded = true;
 }
 
@@ -223,6 +232,9 @@ void App::loadCurrentOptimization()
 
 void App::initializeProbeStructure(String sceneName, String probeStructureName)
 {
+	G3D::StopWatch sw;
+
+
 	if (previousProbeStructure != "")
 	{
 		previousProbeStructure = m_probeStructure->m_name;
@@ -240,6 +252,7 @@ void App::initializeProbeStructure(String sceneName, String probeStructureName)
 	try
 	{
 		m_probeStructure = new ProbeStructure(sceneName, probeStructureName);
+		sw.after("Loaded ProbeStructure");
 	}
 	catch (std::exception e)
 	{
@@ -1252,7 +1265,12 @@ void App::makeGui() {
 	, GuiTheme::TOOL_BUTTON_STYLE);
 
 	tab->addCheckBox("Show output", &bShowOptimizationOutput);
-	tab->addButton("Optimization pass (GO!)", GuiControl::Callback(this, &App::startOptimizationPasses), GuiTheme::TOOL_BUTTON_STYLE);
+	tab->addButton("Start engine", [this]() 
+	{
+
+	});
+
+	tab->addButton("GO!", GuiControl::Callback(this, &App::startOptimizationPasses), GuiTheme::TOOL_BUTTON_STYLE);
     tab->addTextBox("Num passes", &tbNumPassesLeft);
     tab->addTextBox("Num samples", &numOptimizationSamples);
 	tab->addCheckBox("log", &logSampleSet);

@@ -7,8 +7,8 @@
 #include "Helpers.h"
 #include "SH.h"
 
-//#define HOME_PC
-#define LIGUM_PC
+#define HOME_PC
+//#define LIGUM_PC
 
 String generateFolderNameBaseAnySuffix(const String& prefix) 
 {
@@ -329,4 +329,20 @@ void writeValuesToFlatFile(const char* fileName, std::vector<float>& values)
 		refFile << f << std::endl;
 	}
 	refFile.close();
+}
+
+int getFileLastModifiedTime(const char* fileName)
+{
+	FILETIME creationTime;
+	SYSTEMTIME systemTime;
+	bool res = FileTimeToSystemTime(&creationTime, &systemTime);
+	if (!res)
+	{
+		return -1;
+	}
+	else
+	{
+
+	}
+
 }

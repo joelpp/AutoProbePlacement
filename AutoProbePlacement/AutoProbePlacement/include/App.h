@@ -51,7 +51,7 @@ struct SProbeOptimization
 	int consecutiveFailures;
 	int iteration;
 	FILETIME lastRenderEndTime;
-	bool bRenderingFinished;
+	bool bWaitingForRenderingFinished;
 };
 
 struct ScenePane
@@ -199,7 +199,7 @@ private:
 	void computeSamplesRGB();
 	void computeSamplesRGBRef();
 	void computeTriplets();
-	bool tryOptimization();
+	std::vector<float> tryOptimization();
 	void logOptimizationIteration(float error);
 	void startOptimizationPasses();
 	float computeError(bool outputToLog);

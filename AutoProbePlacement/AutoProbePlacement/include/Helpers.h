@@ -65,3 +65,7 @@ void normalize(G3D::Vector3& v);
 std::vector<float> readValuesFromFlatFile(const char* fileName);
 
 void writeValuesToFlatFile(const char* fileName, std::vector<float>& values);
+
+FILETIME getFileLastModifiedTime(const char* fileName);
+
+bool isLaterFileTime(FILETIME tested, FILETIME reference);

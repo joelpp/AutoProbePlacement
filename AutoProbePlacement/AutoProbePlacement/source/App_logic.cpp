@@ -89,6 +89,14 @@ void App::startOptimizationPasses()
 
 	sampleSet->outputToLog = logSampleSet;
 	numPassesLeft = std::atoi(tbNumPassesLeft.c_str());	
+
+	std::string settingsFilePath = "../data-files/scripts/optimizationSettings.txt";
+	std::fstream settingsFile = createEmptyFile(settingsFilePath.c_str());
+	settingsFile << m_probeStructure->name().c_str();
+	settingsFile.close();
+
+	currentOptimization.bWaitingForRenderingFinished = false;
+	currentOptimization.lastRenderEndTime = getFileLastModifiedTime(settingsFilePath.c_str());
 }
 
 float App::computeError(bool outputToLog)
@@ -330,7 +338,7 @@ void App::logOptimizationIteration(float error)
 	infoFile.close();
 }
 
-bool App::tryOptimization()
+std::vector<float> App::tryOptimization()
 {
 	G3D::StopWatch sw("OuterOptimization");
 	sw.setEnabled(true);
@@ -367,7 +375,7 @@ bool App::tryOptimization()
 	
 	if (bPreventErrorIncrease && currentOptimization.consecutiveFailures >= 1)
 	{
-		return false;
+		return displacements;
 	}
 	computeError(true);
 
@@ -375,30 +383,8 @@ bool App::tryOptimization()
 
 	displacements = sampleSet->tryOptimizationPass(numSamples, numCoeffs, bOptimizeWithMitsubaSamples, currentOptimizationFolderPath());
 	sw.after("Finished optimization pass");
-	
-	if (displacements.size() > 0)
-	{
-		m_probeStructure->displaceProbesWithGradient(displacements, std::stof(maxProbeStepLength.c_str()));
-		sw.after("Displaced probes");
+	return displacements;
 
-		m_probeStructure->savePositions(false);
-		sw.after("Saved new positions");
-
-		if (bUpdateProbesOnOptimizationPass)
-		{
-			m_probeStructure->generateProbes("all", bShowOptimizationOutput);
-			sw.after("Regenerated probes");
-			m_probeStructure->extractSHCoeffs();
-			sw.after("Extracted SH coeffs");
-		}
-		else
-		{
-			m_probeStructure->uploadToGPU();
-		}
-	}
-
-	sw.after("Finished iteration!");
-	return true;
 }
 
 void App::computeSamplesRGB()

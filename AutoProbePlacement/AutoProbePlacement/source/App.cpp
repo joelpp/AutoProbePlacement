@@ -810,18 +810,49 @@ void App::onAI()
 
 	if (numPassesLeft > 0)
 	{
-		if (!tryOptimization())
+		if (!currentOptimization.bWaitingForRenderingFinished)
 		{
-			numPassesLeft = 0;
-			popNotification("Optimization terminated", "Error would've increased!", 15);
+			std::vector<float> displacements = tryOptimization();
+			if (displacements.size() == 0)
+			{
+				numPassesLeft = 0;
+				popNotification("Optimization terminated", "Error would've increased!", 15);
+			}
 
+			m_probeStructure->displaceProbesWithGradient(displacements, std::stof(maxProbeStepLength.c_str()));
+			//sw.after("Displaced probes");
+			m_probeStructure->savePositions(false);
+			//sw.after("Saved new positions");
+			currentOptimization.bWaitingForRenderingFinished = true;
 		}
 		else
 		{
-			numPassesLeft--;
-			if (numPassesLeft == 0)
+			
+			FILETIME lastModifTime = getFileLastModifiedTime("../data-files/scripts/optimizationSettings.txt");
+			if (isLaterFileTime(lastModifTime, currentOptimization.lastRenderEndTime))
 			{
-				popNotification("Optimization complete", "Finished all job!", 15);
+				if (bUpdateProbesOnOptimizationPass)
+				{
+					//m_probeStructure->generateProbes("all", bShowOptimizationOutput);
+					//sw.after("Regenerated probes");
+					m_probeStructure->extractSHCoeffs();
+					//sw.after("Extracted SH coeffs");
+				}
+				else
+				{
+					m_probeStructure->uploadToGPU();
+				}
+
+				//sw.after("Finished iteration!");
+
+				numPassesLeft--;
+				currentOptimization.lastRenderEndTime = lastModifTime;
+				currentOptimization.bWaitingForRenderingFinished = false;
+
+				if (numPassesLeft == 0)
+				{
+					popNotification("Optimization complete", "Finished all job!", 15);
+				}
 			}
 		}
 	}
@@ -835,7 +866,7 @@ void App::onAI()
         }
         else
         {
-            shouldAddAProbe = !tryOptimization();
+            //shouldAddAProbe = !tryOptimization();
         }
 
         if (shouldAddAProbe && (m_probeStructure->probeCount() == 6))
@@ -1267,7 +1298,21 @@ void App::makeGui() {
 	tab->addCheckBox("Show output", &bShowOptimizationOutput);
 	tab->addButton("Start engine", [this]() 
 	{
+		std::stringstream ss;
+		ss << m_scene->m_name.c_str() << " dummy";
+		runPythonScriptFromDataFiles("onecamera_continuous.py", ss.str(), true, false);
+	});
 
+	tab->addButton("Stop", [this]()
+	{
+		if (numPassesLeft > 0)
+		{
+			numPassesLeft == 0;
+		}
+		std::string settingsPath = "../data-files/scripts/optimizationSettings.txt";
+		std::fstream file(settingsPath.c_str(), std::fstream::out);
+		file << "__STOP";
+		file.close();
 	});
 
 	tab->addButton("GO!", GuiControl::Callback(this, &App::startOptimizationPasses), GuiTheme::TOOL_BUTTON_STYLE);

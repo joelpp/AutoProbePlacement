@@ -145,9 +145,9 @@ public:
 
 	void addProbe(const G3D::Vector3& position);
 
-	void generateProbes(std::string type, bool showOutput);
+	void generateProbes(std::string type, bool generateGradients, bool showOutput);
 
-    void extractSHCoeffs();
+    void extractSHCoeffs(bool generateGradients, bool bUploadToGPU);
 
 	void loadProbeStructureInfo();
 
@@ -157,9 +157,9 @@ public:
 
     void uploadToGPU();
 
-	void setIntegrator(String& integrator);
+	void setIntegrator(String integrator);
 
-	void setType(String& type);
+	void setType(String type);
 
 	void saveInfoFile();
 
@@ -172,6 +172,8 @@ public:
 	void deleteAllProbes();
 
 	void removeProbe(int i);
+
+	void createDirectoryTree();
 
 	std::vector<int> m_dimensions;
 	Array<Probe*> probeList;

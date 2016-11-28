@@ -119,6 +119,10 @@ void App::onInit() {
 	bPreventErrorIncrease =			  false;
 	bSceneLoaded =					  false;
 	bFlipShadingNormals =			  false;
+	bWaitingForRenderFinished =		  false;
+	bPreventOOBDisplacement =		  false;
+	bScreenShot =					  false;
+
     //Decide how many bands we want to use for the interpolation
     numBands =				2;
     maxDrawBand =			8;
@@ -252,6 +256,7 @@ void App::initializeProbeStructure(String sceneName, String probeStructureName)
 	try
 	{
 		m_probeStructure = new ProbeStructure(sceneName, probeStructureName);
+		m_probeStructure->uploadToGPU();
 		sw.after("Loaded ProbeStructure");
 	}
 	catch (std::exception e)
@@ -508,7 +513,7 @@ void App::onGraphics3D(RenderDevice* rd, Array<shared_ptr<Surface> >& surface3D)
 	//rd->clear();
     m_film->exposeAndRender(rd, activeCamera()->filmSettings(), m_framebuffer->texture(0), 0, 0);
 
-    if (optimizing || numPassesLeft > 0)
+    if (optimizing || ((numPassesLeft > 0) && !currentOptimization.bWaitingForRenderingFinished))
     {
     	const shared_ptr<Image> screen(rd->screenshotPic());
 
@@ -520,7 +525,7 @@ void App::onGraphics3D(RenderDevice* rd, Array<shared_ptr<Surface> >& surface3D)
     	int num = screenshotList.size();
 
     	String filename = currentOptimizationFolderPath() + "/screens/" + String(std::to_string(num).c_str()) + ".jpg";
-    	debugPrintf("%s", filename.c_str());
+    	debugPrintf("%s\n", filename.c_str());
     	screen->save(filename);
 
     	debugPrintf("%d optimization passes left \n", numPassesLeft);
@@ -535,6 +540,26 @@ void App::onGraphics3D(RenderDevice* rd, Array<shared_ptr<Surface> >& surface3D)
 
         bTakeRefScreenshot = false;
     }
+
+	if (bScreenShot)
+	{
+		const shared_ptr<Image> screen(rd->screenshotPic());
+
+		FileSystem::ListSettings ls;
+		ls.includeParentPath = false;
+		ls.recursive = false;
+		G3D::Array<G3D::String> screenshotList;
+		String rootPath = "C:/temp/";
+		FileSystem::list(rootPath + "*", screenshotList, ls);
+		int num = screenshotList.size();
+
+		String filename = rootPath + "screenshot_" + String(std::to_string(num).c_str()) + ".jpg";
+		screen->save(filename);
+
+		debugPrintf("Screenshot saved to %s\n", filename);
+
+		bScreenShot = false;
+	}
 }
 
 void App::drawModel(RenderDevice* rd, String shaderName, shared_ptr<ArticulatedModel> model, CFrame frame, Args args){
@@ -823,6 +848,13 @@ void App::onAI()
 			//sw.after("Displaced probes");
 			m_probeStructure->savePositions(false);
 			//sw.after("Saved new positions");
+
+			std::string settingsFilePath = "../data-files/scripts/optimizationSettings.txt";
+			std::fstream settingsFile = createEmptyFile(settingsFilePath.c_str());
+			settingsFile << m_probeStructure->name().c_str();
+			settingsFile.close();
+
+			currentOptimization.lastRenderEndTime = getFileLastModifiedTime("../data-files/scripts/optimizationSettings.txt");
 			currentOptimization.bWaitingForRenderingFinished = true;
 		}
 		else
@@ -835,7 +867,7 @@ void App::onAI()
 				{
 					//m_probeStructure->generateProbes("all", bShowOptimizationOutput);
 					//sw.after("Regenerated probes");
-					m_probeStructure->extractSHCoeffs();
+					m_probeStructure->extractSHCoeffs(true, true);
 					//sw.after("Extracted SH coeffs");
 				}
 				else
@@ -856,6 +888,14 @@ void App::onAI()
 			}
 		}
 	}
+
+	//if (bWaitingForRenderFinished)
+	//{
+	//	FILETIME lastModifTime = getFileLastModifiedTime("../data-files/scripts/optimizationSettings.txt");
+	//	if (isLaterFileTime(lastModifTime, currentOptimization.lastRenderEndTime))
+	//	{
+	//	}
+	//}
 
     if (optimizing)
     {
@@ -945,9 +985,9 @@ void App::offlineRender()
 	command << m_activeCamera->frame().lookVector().x << " ";
 	command << m_activeCamera->frame().lookVector().y << " ";
 	command << m_activeCamera->frame().lookVector().z << " ";
-	command << actors[0].getPosition().x << " ";
-	command << actors[0].getPosition().y << " ";
-	command << actors[0].getPosition().z << " ";
+	command << /*actors[0].getPosition().x <<*/ "0 ";
+	command << /*actors[0].getPosition().y <<*/ "0 ";
+	command << /*actors[0].getPosition().z <<*/ "0 ";
 	command << offlineRenderingOptions.numSamples.c_str() << " ";
 	command << offlineRenderingOptions.width.c_str() << " ";
 	command << offlineRenderingOptions.height.c_str() << " ";
@@ -997,14 +1037,16 @@ void App::createNewProbeStructure(String& sceneName, String& newProbeStructureNa
     createEmptyFile(probeStructurePath + "/info.txt");
 
     std::fstream infoFile( (probeStructurePath + "/info.txt").c_str() , std::fstream::out);
-    infoFile << "type wNN"     << std::endl;
-    infoFile << "dimensions 0" << std::endl;
-    infoFile << "width 128"    << std::endl;
-    infoFile << "height 64"    << std::endl;
-    infoFile << "gamma 1"      << std::endl;
-    infoFile << "type wNN"     << std::endl;
+    infoFile << "type wNN"			<< std::endl;
+    infoFile << "dimensions 0"		<< std::endl;
+    infoFile << "width 128"			<< std::endl;
+    infoFile << "height 64"			<< std::endl;
+	infoFile << "gamma 1"			<< std::endl;
+	infoFile << "sampleCount 4"		<< std::endl;
+	infoFile << "integrator direct" << std::endl;
 
     createEmptyFile(probeStructurePath + "/probeList.txt");
+	infoFile.close();
 }
 
 void App::createCopyProbeStructureWindow()
@@ -1211,6 +1253,7 @@ void App::makeGui() {
 	tab->addTextBox("SHBand", &optimizationSHBand);
 	tab->addCheckBox("Update probes", &bUpdateProbesOnOptimizationPass);
 	tab->addCheckBox("Prevent error increase", &bPreventErrorIncrease);
+	tab->addCheckBox("Prevent OOB", &bPreventOOBDisplacement);
 	tab->endRow();
 
 	tab->beginRow();
@@ -1295,6 +1338,14 @@ void App::makeGui() {
 	}
 	, GuiTheme::TOOL_BUTTON_STYLE);
 
+	tab->addButton("error", [this]()
+	{
+		float error = computeError(false);
+
+		debugPrintf("Error is currently %f\n", error);
+	}
+	, GuiTheme::TOOL_BUTTON_STYLE);
+
 	tab->addCheckBox("Show output", &bShowOptimizationOutput);
 	tab->addButton("Start engine", [this]() 
 	{
@@ -1305,14 +1356,7 @@ void App::makeGui() {
 
 	tab->addButton("Stop", [this]()
 	{
-		if (numPassesLeft > 0)
-		{
-			numPassesLeft == 0;
-		}
-		std::string settingsPath = "../data-files/scripts/optimizationSettings.txt";
-		std::fstream file(settingsPath.c_str(), std::fstream::out);
-		file << "__STOP";
-		file.close();
+		stopPythonRenderingEngine();
 	});
 
 	tab->addButton("GO!", GuiControl::Callback(this, &App::startOptimizationPasses), GuiTheme::TOOL_BUTTON_STYLE);
@@ -1345,6 +1389,28 @@ void App::makeGui() {
 		G3D::Vector3 cameraPos = activeCamera()->frame().translation;
 		debugPrintf("camera inside entity : %s\n", pointInsideEntity(cameraPos) ? "true" : "false");
 	});
+
+	tab->addButton("Random offset probes", [this]()
+	{
+		int NumberOfProbes = m_probeStructure->probeCount();
+
+		std::vector<float> displacement;
+
+		for (int i = 0; i < NumberOfProbes; ++i)
+		{
+			for (int j = 0; j < 3; ++j)
+			{
+				float random = m_random.uniform(-2, 2);
+				displacement.push_back(random);
+			}
+		}
+
+		m_probeStructure->displaceProbesWithGradient(displacement, std::stof(maxProbeStepLength.c_str()));
+		m_probeStructure->savePositions(false);
+		m_probeStructure->generateProbes("all", true, bShowOptimizationOutput);
+		m_probeStructure->extractSHCoeffs(true, true);
+	});
+
 	tab->endRow();
 
 	tab = tabPane->addTab("Display");
@@ -1515,8 +1581,8 @@ void App::updateProbeStructurePane()
 
 		}
 		m_probeStructure->savePositions(true);
-		m_probeStructure->generateProbes("all", bShowOptimizationOutput);
-		m_probeStructure->extractSHCoeffs();
+		m_probeStructure->generateProbes("all", true, bShowOptimizationOutput);
+		m_probeStructure->extractSHCoeffs(true, true);
 
 		popNotification("Job finished", "Probe structure update complete", 15);
 	}
@@ -1528,8 +1594,16 @@ void App::updateProbeStructurePane()
     } 
     , GuiTheme::TOOL_BUTTON_STYLE);
 
-    probeStructurePane->addButton(GuiText("Update textures"), [this]() { m_probeStructure->generateProbes("all", bShowProbeGenerationOutput); }, GuiTheme::TOOL_BUTTON_STYLE);
-	probeStructurePane->addButton(GuiText("Extract coeffs"), [this]() { m_probeStructure->extractSHCoeffs(); }, GuiTheme::TOOL_BUTTON_STYLE);
+    probeStructurePane->addButton(GuiText("Update textures"), [this]() 
+	{ 
+		m_probeStructure->generateProbes("all", true, bShowProbeGenerationOutput); 
+	}, GuiTheme::TOOL_BUTTON_STYLE);
+
+	probeStructurePane->addButton(GuiText("Extract coeffs"), [this]() 
+	{
+		m_probeStructure->extractSHCoeffs(true, true); 
+	}, GuiTheme::TOOL_BUTTON_STYLE);
+
 	probeStructurePane->addCheckBox("Show output", &bShowProbeGenerationOutput);
 	probeStructurePane->addCheckBox("Use gradients", &useSHGradients);
 	probeStructurePane->endRow();
@@ -1618,6 +1692,11 @@ void App::updateProbeStructurePane()
 
 }
 
+void App::updateProbeRenders()
+{
+
+}
+
 
 void App::addSampleSetPane(GuiTabPane* tabPane)
 {
@@ -1651,7 +1730,12 @@ void App::addSampleSetPane(GuiTabPane* tabPane)
 	tab->addTextBox("samplesToSave", samplesToSave);
 	tab->addButton("Generate Positions", GuiControl::Callback(this, &App::generateSampleSetPositions), GuiTheme::TOOL_BUTTON_STYLE);
     tab->addButton("Generate Values (mitsuba)", GuiControl::Callback(this, &App::generateSampleSetValues), GuiTheme::TOOL_BUTTON_STYLE);
-    tab->addButton("Generate Values (probes)", GuiControl::Callback(this, &App::generateSampleSetValuesFromProbes), GuiTheme::TOOL_BUTTON_STYLE);
+	tab->addButton("Generate Values (probes)", GuiControl::Callback(this, &App::generateSampleSetValuesFromProbes), GuiTheme::TOOL_BUTTON_STYLE);
+	tab->addButton("Generate Values (probes2)", [this]()
+	{
+		computeSampleSetValuesFromIndividualProbe();
+	}
+	, GuiTheme::TOOL_BUTTON_STYLE);
     tab->addCheckBox("write samples", &saveSample);
 	tab->endRow();
 }
@@ -1692,22 +1776,26 @@ void App::onUserInput(UserInput* userInput)
 {
     GApp::onUserInput(userInput);
 
-    if (userInput->keyDown(GKey('u')))
+    if (userInput->keyPressed(GKey('u')))
     {
         bShouldUpdateProbeStructurePane = true;
     }
-    else if (userInput->keyDown(GKey('0')))
+    else if (userInput->keyPressed(GKey('0')))
     {
         numPassesLeft = 0;
     }
-    else if (userInput->keyDown(GKey('p')))
+    else if (userInput->keyPressed(GKey('p')))
     {
         showAllProbes = !showAllProbes;
     }
-	else if (userInput->keyDown(GKey('m')))
+	else if (userInput->keyPressed(GKey('m')))
 	{
 		bRenderIndirect = !bRenderIndirect;
 		showSamples = !showSamples;
+	}
+	else if (userInput->keyPressed(GKey('o')))
+	{
+		bScreenShot = true;
 	}
 }
 
@@ -1802,6 +1890,7 @@ void App::saveOptions()
 	SAVE_BOOL(bPreventErrorIncrease);
 	SAVE_BOOL(bManipulateProbesEnabled);
 	SAVE_BOOL(bFlipShadingNormals);
+	SAVE_BOOL(bPreventOOBDisplacement);
 	SAVE_BOOL(bShowOptimizationOutput);
 	SAVE_BOOL(bShowProbeGenerationOutput);
 
@@ -1885,6 +1974,7 @@ void App::loadOptions()
 	LOAD_BOOL(showAllProbes);
 	LOAD_BOOL(bRenderDirect);
 	LOAD_BOOL(bShowOptimizationOutput);
+	LOAD_BOOL(bPreventOOBDisplacement);
 	LOAD_BOOL(bShowProbeGenerationOutput);
 
 	LOAD_STRING(m_sNumICTries); 
@@ -1973,9 +2063,60 @@ bool App::onEvent(const GEvent& event)
 {
 	if (event.type == GEventType::QUIT)
 	{
+		stopPythonRenderingEngine();
 		saveOptions();
 		exit(0);
 	}
 
 	return GApp::onEvent(event);
+}
+void App::stopPythonRenderingEngine()
+{
+	if (numPassesLeft > 0)
+	{
+		numPassesLeft = 0;
+	}
+	std::string settingsPath = "../data-files/scripts/optimizationSettings.txt";
+	std::fstream file(settingsPath.c_str(), std::fstream::out);
+	file << "__STOP";
+	file.close();
+}
+
+bool App::probeStructureExists(String sceneName, String structureName)
+{
+	return FileSystem::exists("../data-files/Scenes/" + sceneName + "/ProbeStructures/" + structureName);
+}
+
+void App::computeSampleSetValuesFromIndividualProbe()
+{
+	String structureName = "__SAMPLESET";
+	if (!probeStructureExists(m_scene->m_name, structureName))
+	{
+		createNewProbeStructure(m_scene->m_name, structureName);
+	}
+
+	ProbeStructure* ps = new ProbeStructure(m_scene->m_name, structureName);
+	ps->setType("closest");
+	ps->setIntegrator("direct");
+	ps->deleteAllProbes();
+
+	int numSamples = std::stoi((*samplesToSave).c_str());
+
+	for (int i = 0; i < numSamples; ++i)
+	{
+		SceneSample& ss = sampleSet->m_samples[i];
+		G3D::Vector3& SamplePos = ss.position;
+		G3D::Vector3& SampleNormal = ss.normal;
+
+		ps->addProbe(SamplePos + 0.05 * SampleNormal);
+	}
+
+	ps->saveInfoFile();
+	ps->savePositions(false);
+	ps->generateProbes("all", false, true);
+	ps->extractSHCoeffs(false, false);
+
+	sampleSet->probeStructure = ps;
+	int numCoeffs = std::atoi(optimizationSHBand.c_str());
+	sampleSet->generateRGBValuesFromProbes(numSamples, numCoeffs);
 }

@@ -124,6 +124,8 @@ private:
     void createCopyProbeStructureWindow();
     void copyProbeStructure(String& sceneName, String& sourceProbeStructureName, String& newProbeStructureName);
     void createNewOptimizationSettings();
+	void updateProbeRenders();
+	bool probeStructureExists(String sceneName, String structureName);
 
 	ScenePane scenePane;
 	GuiPane* probeStructurePane;
@@ -329,6 +331,8 @@ private:
 	bool useBakedSceneTextures;
 	bool interpolateCoefficients;
 	bool bUpdateProbesOnOptimizationPass;
+	bool bWaitingForRenderFinished;
+	FILETIME lastRenderEndTime;
 
 	std::string tetgenString;
 
@@ -378,7 +382,8 @@ public:
 	bool bRenderShadowMaps;
 	bool bRenderAO;
 	bool bFlipShadingNormals;
-
+	bool bPreventOOBDisplacement;
+	bool bScreenShot;
 
 	static App* instance;
 	App(const GApp::Settings& settings = GApp::Settings());
@@ -458,6 +463,9 @@ public:
 	NativeTriTree m_triTree;
 
 	bool bSceneLoaded;
+
+	void stopPythonRenderingEngine();
+	void computeSampleSetValuesFromIndividualProbe();
 };
 
 #endif

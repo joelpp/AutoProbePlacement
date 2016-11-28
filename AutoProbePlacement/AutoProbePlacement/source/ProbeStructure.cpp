@@ -50,6 +50,13 @@ ProbeStructure::ProbeStructure(String sceneName, String probeStructureName, int 
 }
 
 ProbeStructure::ProbeStructure(String sceneName, String probeStructureName)
+	: m_gamma(1.0f)
+	, m_NumSamples(4)
+	, m_integrator("direct")
+	, m_dimensions(0)
+	, m_type(EProbeStructureType::WeightedNearestNeighbour)
+	, m_width(128)
+	, m_height(64)
 {
 	createTypeMap();
 
@@ -57,9 +64,18 @@ ProbeStructure::ProbeStructure(String sceneName, String probeStructureName)
 	this->m_name = probeStructureName;
 	this->probeStructurePath = "../data-files/Scenes/" + sceneName + "/ProbeStructures/" + probeStructureName;;
 
-	loadSceneInfo();
-	loadProbeStructureInfo();
-	makeProbeList();
+	if (FileSystem::exists(this->probeStructurePath))
+	{
+		loadSceneInfo();
+		loadProbeStructureInfo();
+		makeProbeList();
+	}
+	else
+	{
+		createDirectoryTree();
+	}
+
+
 
     m_NumCoefficients = 9;
     m_NumColors = 3;
@@ -74,7 +90,12 @@ ProbeStructure::ProbeStructure(String sceneName, String probeStructureName)
 		computeTetVertexNormals();
 	}
  
-    uploadToGPU();
+}
+
+void ProbeStructure::createDirectoryTree()
+{
+	createFolder(probeStructurePath);
+	createFolder(probeStructurePath + "");
 }
 
 void ProbeStructure::loadSceneInfo()
@@ -158,10 +179,8 @@ void ProbeStructure::loadProbeStructureInfo()
 		{
 			this->m_integrator = splitLine[0];
 		}
-
-
-
 	}
+	structureInformationFile.close();
 }
 
 std::fstream openFile(String& path)
@@ -1183,7 +1202,7 @@ void ProbeStructure::displaceProbesWithGradient(std::vector<float>& displacement
 
 		App* app = App::instance;
 
-		if (app->m_scene->isOOB(newPosition, 0.01f) || app->pointInsideEntity(newPosition))
+		if (app->bPreventOOBDisplacement && (app->m_scene->isOOB(newPosition, 0.01f) || app->pointInsideEntity(newPosition + displacement * 2)))
 		{
 			continue;
 		}
@@ -1309,11 +1328,14 @@ G3D::Vector3 ProbeStructure::reconstructSH(const G3D::Vector3& position, const G
     return rgb;
 }
 
-void ProbeStructure::generateProbes(std::string type, bool showOutput)
+void ProbeStructure::generateProbes(std::string type, bool generateGradients, bool showOutput)
 {
     // system call to mitsuba
     std::stringstream args;
-    args << m_sceneName.c_str() << " " << m_name.c_str() << " " << type;
+    args << m_sceneName.c_str() << " " 
+		 << m_name.c_str() << " " 
+		 << type << " "
+		 << generateGradients;
 
     runPythonScriptFromDataFiles("onecamera.py", args.str(), showOutput, true);
 
@@ -1325,19 +1347,22 @@ void ProbeStructure::generateProbes(std::string type, bool showOutput)
 
 }
 
-void ProbeStructure::extractSHCoeffs()
+void ProbeStructure::extractSHCoeffs(bool generateGradients, bool bUploadToGPU)
 {
     for (int i = 0; i < probeList.size(); ++i)
     {
         Probe* p = probeList[i];
 
-        p->computeCoefficientsFromTexture(true, m_gradientDisplacement);
+        p->computeCoefficientsFromTexture(true, generateGradients, m_gradientDisplacement);
 		p->saveCoefficients();
 
 		p->bNeedsUpdate = false;
     }
 
-    uploadToGPU();
+	if (bUploadToGPU)
+	{
+		uploadToGPU();
+	}
 }
 
 void ProbeStructure::savePositions(bool useManipulator)
@@ -1463,7 +1488,7 @@ void ProbeStructure::uploadToGPU()
     glBindBuffer(GL_SHADER_STORAGE_BUFFER, 0);
 }
 
-void ProbeStructure::setIntegrator(String& integrator)
+void ProbeStructure::setIntegrator(String integrator)
 {
 	this->m_integrator = integrator;
 
@@ -1474,7 +1499,7 @@ void ProbeStructure::setGamma(float gamma)
 	this->m_gamma = gamma;
 }
 
-void ProbeStructure::setType(String& type)
+void ProbeStructure::setType(String type)
 {
 	this->m_type = (EProbeStructureType)(int)(typeMap.findIndex(type));
 }
@@ -1507,6 +1532,8 @@ void ProbeStructure::saveInfoFile()
 	{
 		infoFile << "dimensions" << " " << probeCount() << std::endl;
 	}
+
+	infoFile.close();
 }
 
 void ProbeStructure::addProbe(const G3D::Vector3& position)
@@ -1545,8 +1572,8 @@ void ProbeStructure::updateAll(bool showOutput)
 {
 	saveInfoFile();
 	savePositions(false);
-	generateProbes("all", showOutput);
-	extractSHCoeffs();
+	generateProbes("all", true, showOutput);
+	extractSHCoeffs(true, true);
 }
 
 void ProbeStructure::deleteAllProbes()

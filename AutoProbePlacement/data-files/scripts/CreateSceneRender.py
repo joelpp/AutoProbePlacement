@@ -53,9 +53,9 @@ filmTypeOption = sys.argv[18]
 
 print(origin);
 print(direction);
-fs = FileStream("../Scenes/" + sceneName + "/MitsubaScene.serialized", FileStream.EReadWrite)
-scene = Scene(fs, imgr)
-#scene = SceneHandler.loadScene(path + "/MitsubaScene.xml", paramMap)
+# fs = FileStream("../Scenes/" + sceneName + "/MitsubaScene.serialized", FileStream.EReadWrite)
+# scene = Scene(fs, imgr)
+scene = SceneHandler.loadScene(path + "/MitsubaScene.xml", paramMap)
 #scene = SceneHandler.loadScene("C:/git/g3d/data10/common/model/crytek_sponza/sponza.xml", paramMap)
 
 #Initialise Mitsuba stuff

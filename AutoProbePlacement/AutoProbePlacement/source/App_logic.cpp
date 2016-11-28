@@ -91,9 +91,6 @@ void App::startOptimizationPasses()
 	numPassesLeft = std::atoi(tbNumPassesLeft.c_str());	
 
 	std::string settingsFilePath = "../data-files/scripts/optimizationSettings.txt";
-	std::fstream settingsFile = createEmptyFile(settingsFilePath.c_str());
-	settingsFile << m_probeStructure->name().c_str();
-	settingsFile.close();
 
 	currentOptimization.bWaitingForRenderingFinished = false;
 	currentOptimization.lastRenderEndTime = getFileLastModifiedTime(settingsFilePath.c_str());
@@ -460,8 +457,8 @@ void App::displaceProbes()
 		}
 		//m_probeStructure->updateProbes(true);
         m_probeStructure->savePositions(false);
-        m_probeStructure->generateProbes("all", bShowOptimizationOutput);
-        m_probeStructure->extractSHCoeffs();
+        m_probeStructure->generateProbes("all", true, bShowOptimizationOutput);
+        m_probeStructure->extractSHCoeffs(true, true);
 		//updateProbeStructure();
 
 		G3D::Vector3 displacementV = Vector3(1,1,1).unit();
@@ -482,8 +479,8 @@ void App::displaceProbes()
 
 		//m_probeStructure->updateProbes(true);
 		//updateProbeStructure();
-        m_probeStructure->generateProbes("all", bShowOptimizationOutput);
-        m_probeStructure->extractSHCoeffs();
+        m_probeStructure->generateProbes("all", true, bShowOptimizationOutput);
+        m_probeStructure->extractSHCoeffs(true, true);
 		//computeSamplesRGB();
 		//computeError("C:/temp/errorlog2.txt");
 		renderedCoeffs = m_probeStructure->getProbe(0)->coeffs;

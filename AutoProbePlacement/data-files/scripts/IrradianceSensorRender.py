@@ -57,8 +57,8 @@ originalScene = SceneHandler.loadScene(fileResolver.resolve("MitsubaScene.xml"),
 originalScene.initialize();
 
 # Integrator properties
-integratorType = 'direct_samples'
-# integratorType = 'path_samples'
+# integratorType = 'direct_samples'
+integratorType = 'path_samples'
 # integratorType = 'path'
 # integratorType = 'direct'
 
@@ -100,7 +100,7 @@ def render(sampleNumber):
 	print((position, normal));
 	#Create integrator
 	integrator = pmgr.create({
-		'type' : "path_samples2",
+		'type' : "path_samples",
 		'samplePosition': Point(position[0], position[1], position[2]),
 		'sampleNormal': Normal(normal[0], normal[1], normal[2]),
 		'pointSampling': 1,

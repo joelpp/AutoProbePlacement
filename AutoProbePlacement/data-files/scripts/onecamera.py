@@ -41,7 +41,7 @@ fileResolver.appendPath(path);
 
 
 renderType = sys.argv[3];
-
+renderGradients = sys.argv[4];
 
 scene = SceneHandler.loadScene("../Scenes/" + sceneName + "/MitsubaScene.xml", paramMap)
 # scene = SceneHandler.loadScene("C:/git/g3d/data10/common/model/crytek_sponza/sponza.xml", paramMap)
@@ -160,7 +160,7 @@ def makeProbe(x, y, z, probeCount, rootPath, pRenderType):
 	queue.join()
 	print("made it here! 0");
 	# render the 6 surrounding probes
-	if (pRenderType == "Probes"):
+	if ((renderGradients == '1') and (pRenderType == "Probes")):
 		for i in xrange(6):
 			lScene = Scene(scene);
 
@@ -288,22 +288,9 @@ def renderProbe(rootPath, id):
 rootPath = "../Scenes/" + sceneName + "/ProbeStructures/" + structureName;
 print(rootPath);
 	
-settingsPath ="optimizationSettings.txt"
-lastModifTime = os.path.getmtime(settingsPath)
 
-while (True):
-	if (os.path.getmtime(settingsPath) != lastModifTime):
-		# If we want to render a single probe
-		if (len(sys.argv) == 5):
-			id = int(sys.argv[4]);
-			renderProbe(rootPath, id);
-		else:
-		# elif (globalInfo["type"] != "trilinear"):
-			makeProbeList(rootPath);
-		# else:
-			# makeProbeGrid(rootPath, globalInfo["firstProbePosition"], globalInfo["step"], globalInfo["dimensions"]);
+makeProbeList(rootPath);
 
-		lastModifTime = os.path.getmtime(settingsPath);
 file = open("C:/temp/log2.txt", 'w');
 file.write("EVEN MORE LOL");
 file.close();

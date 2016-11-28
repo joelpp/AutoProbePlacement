@@ -282,7 +282,7 @@ CoeffGradients Probe::computeProbeCoeffGradients(float gradientDisplacement)
 	return toReturn;
 }
 
-void Probe::computeCoefficientsFromTexture(bool alsoSet, float gradientDisplacement)
+void Probe::computeCoefficientsFromTexture(bool alsoSet, bool computeGradients, float gradientDisplacement)
 {
 	int NumCoeffs = 9;
 
@@ -308,7 +308,10 @@ void Probe::computeCoefficientsFromTexture(bool alsoSet, float gradientDisplacem
 	if (alsoSet)
 	{
 		this->coeffs = tempCoeffs;
-		this->coeffGradients = computeProbeCoeffGradients(gradientDisplacement);
+		if (computeGradients)
+		{
+			this->coeffGradients = computeProbeCoeffGradients(gradientDisplacement);
+		}
 	}
 }
 

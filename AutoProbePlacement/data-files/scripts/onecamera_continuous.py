@@ -254,6 +254,7 @@ def makeProbeList(rootPath):
 	fileList = open(rootPath + '/probeList.txt', 'r');
 	probeCount = 0;
 	for line in fileList:
+		print(line);
 		splitLine = line.split();
 		print(splitLine);
 		(x, y, z) = (float(x) for x in splitLine);
@@ -301,6 +302,9 @@ while (True):
 		print(structureName)
 		if (structureName == "__STOP"):
 			break;
+		if (structureName == ""):
+			settingsFile.close();
+			continue;
 
 		rootPath = "../Scenes/" + sceneName + "/ProbeStructures/" + structureName;
 

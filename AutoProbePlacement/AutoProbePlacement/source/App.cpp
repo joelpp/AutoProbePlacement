@@ -1227,6 +1227,8 @@ void App::createNewOptimizationSettings()
 	
 }
 
+#define ALONE_ON_ROW(tab, b) tab->beginRow(); b; tab->endRow();
+
 void App::makeGui() {
 	shared_ptr<GuiWindow> gui = GuiWindow::create("Parameters");
 	GuiPane* pane = gui->pane();
@@ -1268,6 +1270,12 @@ void App::makeGui() {
 
 	tab->addButton("Compute ref_values", [this]() 
     {
+		if (!sampleSetLoaded())
+		{
+			debugPrintf("No sample set loaded");
+			return;
+		}
+
         int numSamples = std::atoi(numOptimizationSamples.c_str());
         int numCoeffs = std::atoi(optimizationSHBand.c_str());
         String outputFile = currentOptimizationFolderPath() + "/ref_values.txt";

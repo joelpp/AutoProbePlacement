@@ -36,7 +36,7 @@ public:
     void generateRGBValuesFromSamples(int NumberOfSamples, String savePath, Eigen::VectorXd* eigenVector = 0);
     void generateInterpolatedCoefficientsFromProbes(int NumberOfSamples, int NumberOfCoeffs, String savePath, Eigen::VectorXd* eigenVector = 0);
 	void save();
-	void load(int maxSamples);
+	bool load(int maxSamples);
 	std::vector<float> tryOptimizationPass(int NumberOfSamples, int NumberOfCoeffs, bool optimizeForMitsubaSamples, String optimizationFolderPath);
 	bool probeOptimizationPass(WeightMatrixType& A, Eigen::VectorXd& b, Eigen::VectorXd* result);
     void createbVector(Eigen::VectorXd* bVector, const Eigen::VectorXd* rgbColumn, String& optimizationFolderPath);

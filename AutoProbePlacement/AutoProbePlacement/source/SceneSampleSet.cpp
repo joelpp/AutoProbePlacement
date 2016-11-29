@@ -41,9 +41,12 @@ SceneSampleSet::SceneSampleSet(std::string sceneName, std::string sampleSetName,
 	m_sceneName = sceneName;
 	m_sampleSetName = sampleSetName;
 	m_scale = scale;
-	load(numSamplesToLoad);
+	if (!load(numSamplesToLoad))
+	{
+		throw std::exception("Sample set load failed");
+	}
 }
-void SceneSampleSet::load(int maxSamples)
+bool SceneSampleSet::load(int maxSamples)
 {
 	m_samples.clear();
 	std::fstream samplesFile, irradianceFile;
@@ -68,13 +71,13 @@ void SceneSampleSet::load(int maxSamples)
 	if (!samplesFile.is_open())
 	{
 		debugPrintf("Couldn't open position samples file!\n");
-		return;
+		return false;
 	}
 
 	if (!irradianceFile.is_open())
 	{
 		debugPrintf("Couldn't open irradiance results file!\n");
-		return;
+		return false;
 	}
 
 	int NumberOfLinesPerSample = 6;
@@ -149,6 +152,8 @@ void SceneSampleSet::load(int maxSamples)
 		}
 		
 	}
+
+	return true;
 }
 
 void SceneSampleSet::addSample(SceneSample sample)

@@ -30,7 +30,7 @@
 #define GENERATE_COEFFICIENTS_FITTING_MATRIX 0
 
 //#define USE_CUSTOM_FUNCTION
-
+#define ONE_ROW_PER_SH_BAND
 
 bool invertNormal = true;
 void probeOptimizationPass(std::vector<int> matrixRows, std::vector<int> matrixColumns, std::vector<float> matrixElements, std::vector<float> rgb);
@@ -284,6 +284,14 @@ float SceneSampleSet::dRdX(const G3D::Vector3& position, const G3D::Vector3& nor
 	return 1;
 #else
 	float value = 0;
+#ifdef ONE_ROW_PER_SH_BAND
+	float gradient = probeStructure->getProbe(m)->coeffGradients[NumberOfCoeffs][color][axis];
+	std::pair<int, int> lm = SH::kToLM(NumberOfCoeffs);
+	float sh = SH::SHxyz_yup(lm.first, lm.second, normal);
+	float phong = phongCoeffs(lm.first, 1.0f);
+	value += gradient * phong * sh;
+
+#else
 	for (int coeff = 0; coeff < NumberOfCoeffs; ++coeff)
 	{
 		float gradient = probeStructure->getProbe(m)->coeffGradients[coeff][color][axis];
@@ -294,6 +302,7 @@ float SceneSampleSet::dRdX(const G3D::Vector3& position, const G3D::Vector3& nor
 		value += gradient * phong * sh;
 	}
 
+#endif // ONE_ROW_PER_SH_BAND
 	return value;
 #endif
 }
@@ -304,6 +313,14 @@ float SceneSampleSet::R(const G3D::Vector3& position,  const G3D::Vector3& norma
 	return probeStructure->getProbe(m)->getPosition()[color];
 #else
 	float value = 0;
+#ifdef ONE_ROW_PER_SH_BAND
+	float coeffval = probeStructure->getProbe(m)->coeffs[NumberOfCoeffs][color];
+
+	std::pair<int, int> lm = SH::kToLM(NumberOfCoeffs);
+	float phong = phongCoeffs(lm.first, 1.0f);
+	float sh = SH::SHxyz_yup(lm.first, lm.second, normal);
+	value += coeffval * phong * sh;
+#else
 	for (int coeff = 0; coeff < NumberOfCoeffs; ++coeff)
 	{
 		float coeffval = probeStructure->getProbe(m)->coeffs[coeff][color];
@@ -313,7 +330,7 @@ float SceneSampleSet::R(const G3D::Vector3& position,  const G3D::Vector3& norma
 		float sh = SH::SHxyz_yup(lm.first, lm.second, normal);
 		value += coeffval * phong * sh;
 	}
-
+#endif // ONE_ROW_PER_SH_BAND
 	return value;
 #endif
 }
@@ -373,41 +390,54 @@ void SceneSampleSet::generateTriplets(int NumberOfSamples,
 
 		for (int color = COLOR_RED; color <= COLOR_BLUE; ++color)
 		{
-			col = 0;
-
-			for (int pn = 0; pn < NumberOfProbes; ++pn)
+			
+#ifdef ONE_ROW_PER_SH_BAND
+			for (int coeff = 0; coeff < NumberOfCoeffs; ++coeff)
 			{
-				float dRGB_color_axis = 0;
+#endif
+				col = 0;
 
-				for (int axis = 0; axis <= AXIS_Z; ++axis)
+				for (int pn = 0; pn < NumberOfProbes; ++pn)
 				{
-					int probeIndex = iRec.probeIndices[pn];
-					float weight = iRec.weights[pn];
+					float dRGB_color_axis = 0;
 
-					Probe* n = probeStructure->getProbe(probeIndex);
-
-
-					for (int pm = 0; pm < NumberOfProbes; ++pm)
+					for (int axis = 0; axis <= AXIS_Z; ++axis)
 					{
-						Probe* m = probeStructure->getProbe(pm);
+						int probeIndex = iRec.probeIndices[pn];
+						float weight = iRec.weights[pn];
 
-						float Wval = dWeightMdProbeN(SamplePosition, SampleNormal, pm, pn, axis, color);
-						float Rval = R(SamplePosition, SampleNormal, NumberOfCoeffs, pm, axis, color);
-						float Bval = B(SamplePosition, SampleNormal, NumberOfCoeffs, pm, pn, axis, color);
+						Probe* n = probeStructure->getProbe(probeIndex);
 
-						float computedWeights = inverseSumOf1OverSquaredProbeDistances * powf(distanceToProbe(SamplePosition, pm), -2);
-						
-						dRGB_color_axis += Wval * Rval + computedWeights * Bval;
+
+						for (int pm = 0; pm < NumberOfProbes; ++pm)
+						{
+							Probe* m = probeStructure->getProbe(pm);
+
+							float Wval = dWeightMdProbeN(SamplePosition, SampleNormal, pm, pn, axis, color);
+#ifdef ONE_ROW_PER_SH_BAND
+							float Rval = R(SamplePosition, SampleNormal, coeff, pm, axis, color);
+							float Bval = B(SamplePosition, SampleNormal, coeff, pm, pn, axis, color);
+#else
+							float Rval = R(SamplePosition, SampleNormal, NumberOfCoeffs, pm, axis, color);
+							float Bval = B(SamplePosition, SampleNormal, NumberOfCoeffs, pm, pn, axis, color);
+#endif
+
+							float computedWeights = inverseSumOf1OverSquaredProbeDistances * powf(distanceToProbe(SamplePosition, pm), -2);
+
+							dRGB_color_axis += Wval * Rval + computedWeights * Bval;
+						}
+
+						if (eigenTriplets)
+						{
+							eigenTriplets->push_back(Eigen::Triplet<float>(row, col, dRGB_color_axis));
+						}
+						col++;
 					}
-
-					if (eigenTriplets)
-					{
-						eigenTriplets->push_back(Eigen::Triplet<float>(row, col, dRGB_color_axis));
-					}
-					col++;
+					row++;
+#ifdef ONE_ROW_PER_SH_BAND
 				}
+#endif
 			}
-			row++;
 		}
 	}
 }

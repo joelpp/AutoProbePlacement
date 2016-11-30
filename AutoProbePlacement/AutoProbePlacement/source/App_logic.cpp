@@ -390,7 +390,14 @@ void App::computeSamplesRGB()
 	int numSamples = std::atoi(numOptimizationSamples.c_str());
     int numCoeffs = std::atoi(optimizationSHBand.c_str());
     String outputFile = currentOptimizationFolderPath() + "/values.txt";
-    sampleSet->generateRGBValuesFromProbes(numSamples, numCoeffs, outputFile, 0);
+	if (bOptimizeForCoeffs)
+	{
+		sampleSet->generateInterpolatedCoefficientsFromProbes(numSamples, numCoeffs, outputFile, 0);
+	}
+	else
+	{
+		sampleSet->generateRGBValuesFromProbes(numSamples, numCoeffs, outputFile, 0);
+	}
 }
 void App::computeSamplesRGBRef()
 {

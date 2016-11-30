@@ -1234,18 +1234,19 @@ TProbeCoefficients ProbeStructure::interpolatedCoefficients(const G3D::Vector3& 
 	ProbeInterpolationRecord record = getInterpolationProbeIndicesAndWeights(position);
 
 	TProbeCoefficients interpolatedCoeffs;
-
-	for (int p = 0; p < record.probeIndices.size(); ++p)
+	for (int c = 0; c < NumberOfCoeffs; ++c)
 	{
-		int index = record.probeIndices[p];
-		float weight = record.weights[p];
+		interpolatedCoeffs.push_back(Vector3());
 
-		TProbeCoefficients& probeCoeffs = probeList[index]->coeffs;
-		for (int c = 0; c < NumberOfCoeffs; ++c)
+		for (int p = 0; p < record.probeIndices.size(); ++p)
 		{
+			int index = record.probeIndices[p];
+			float weight = record.weights[p];
+
+			TProbeCoefficients& probeCoeffs = probeList[index]->coeffs;
+
 			Vector3& coeffs = probeCoeffs[c];
 
-            interpolatedCoeffs.push_back(Vector3());
 			interpolatedCoeffs[c].x += weight * coeffs.x;
 			interpolatedCoeffs[c].y += weight * coeffs.y;
 			interpolatedCoeffs[c].z += weight * coeffs.z;
@@ -1255,7 +1256,6 @@ TProbeCoefficients ProbeStructure::interpolatedCoefficients(const G3D::Vector3& 
 
 	return interpolatedCoeffs;
 }
-
 
 G3D::Vector3 ProbeStructure::reconstructSH(const G3D::Vector3& position, const G3D::Vector3& normal, int NumberOfCoeffs)
 {

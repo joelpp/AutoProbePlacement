@@ -239,7 +239,7 @@ void App::initializeProbeStructure(String sceneName, String probeStructureName)
 	G3D::StopWatch sw;
 
 
-	if (previousProbeStructure != "")
+	if (probeStructureLoaded() && previousProbeStructure != "")
 	{
 		previousProbeStructure = m_probeStructure->m_name;
 	}
@@ -798,6 +798,8 @@ void App::loadPreviousProbeStructure()
     {
         sampleSet->probeStructure = m_probeStructure;
     }
+
+	bShouldUpdateProbeStructurePane = true;
 }
 
 void App::updateSampleSet()
@@ -841,7 +843,8 @@ void App::onAI()
 			if (displacements.size() == 0)
 			{
 				numPassesLeft = 0;
-				popNotification("Optimization terminated", "Error would've increased!", 15);
+				popNotification("Optimization terminated", "Solve step failed", 15);
+				return;
 			}
 
 			m_probeStructure->displaceProbesWithGradient(displacements, std::stof(maxProbeStepLength.c_str()));
@@ -1380,15 +1383,15 @@ void App::makeGui() {
 	});
 
 	tab->addButton("GO!", GuiControl::Callback(this, &App::startOptimizationPasses), GuiTheme::TOOL_BUTTON_STYLE);
-    tab->addTextBox("Num passes", &tbNumPassesLeft);
-    tab->addTextBox("Num samples", &numOptimizationSamples);
+    tab->addTextBox("Num passes", &tbNumPassesLeft)->setWidth(120);
+    tab->addTextBox("Num samples", &numOptimizationSamples)->setWidth(120);
 	tab->addCheckBox("log", &logSampleSet);
 	tab->endRow();
 
 	tab->beginRow();
 	tab->addButton("Find Initial Conditions", GuiControl::Callback(this, &App::findBestInitialConditions), GuiTheme::TOOL_BUTTON_STYLE);
-	tab->addTextBox("NumTries", &m_sNumICTries);
-	tab->addTextBox("NumProbes", &m_sNumICProbes);
+	tab->addTextBox("NumTries", &m_sNumICTries)->setWidth(120);
+	tab->addTextBox("NumProbes", &m_sNumICProbes)->setWidth(120);
 	tab->addButton("tryTotal", [this]()
 	{
 		
@@ -1893,6 +1896,9 @@ void App::saveOptions()
 	SAVE_STRING(numOptimizationSamples);
 	SAVE_STRING(m_sNumICTries);
 	SAVE_STRING(m_sNumICProbes);
+	SAVE_STRING(m_sNumICProbes);
+	SAVE_STRING(previousProbeStructure);
+		
 	optionJSON["probeStructureName"] =				m_probeStructure->m_name.c_str();
 	optionJSON["sampleSetName"] =					sampleSet->m_sampleSetName.c_str();
 
@@ -2001,11 +2007,12 @@ void App::loadOptions()
 
 	LOAD_STRING(m_sNumICTries); 
 	LOAD_STRING(m_sNumICProbes);
-
+	LOAD_STRING(previousProbeStructure);
 	LOAD_STRING(offlineRenderingOptions.numSamples);
 	LOAD_STRING(offlineRenderingOptions.height);
 	LOAD_STRING(offlineRenderingOptions.width);
 	LOAD_STRING(offlineRenderingOptions.gamma);
+
 	LOAD_INT(offlineRenderingOptions.filmTypeIndex);
 	LOAD_INT(offlineRenderingOptions.integratorIndex);
 

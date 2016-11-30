@@ -470,9 +470,6 @@ void SceneSampleSet::generateRGBValuesFromProbes(int NumberOfSamples, int Number
 
 void SceneSampleSet::generateInterpolatedCoefficientsFromProbes(int NumberOfSamples, int NumberOfCoeffs, String savePath, Eigen::VectorXd* eigenVector)
 {
-	int NumberOfProbes = probeStructure->probeCount();
-	int NumberOfElements = NumberOfProbes * NumberOfCoeffs;
-
 	//	// Scene (probe structure) Parameters
 	std::fstream samplesRGBFile;
 	std::fstream logFile;

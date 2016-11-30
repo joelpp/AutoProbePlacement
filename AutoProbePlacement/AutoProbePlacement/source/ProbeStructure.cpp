@@ -1256,6 +1256,7 @@ TProbeCoefficients ProbeStructure::interpolatedCoefficients(const G3D::Vector3& 
 	return interpolatedCoeffs;
 }
 
+
 G3D::Vector3 ProbeStructure::reconstructSH(const G3D::Vector3& position, const G3D::Vector3& normal, int NumberOfCoeffs)
 {
     ProbeInterpolationRecord record = getInterpolationProbeIndicesAndWeights(position);

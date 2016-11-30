@@ -1237,25 +1237,28 @@ void App::makeGui() {
 	GuiPane* tab = tabPane->addTab("General Controls");
 
 	tab->beginRow();
-	tab->addCheckBox("Interpolate Coefficients", &interpolateCoefficients);
-    tab->addButton("displace", GuiControl::Callback(this, &App::displaceProbes), GuiTheme::TOOL_BUTTON_STYLE);
+	//tab->addCheckBox("Interpolate Coefficients", &interpolateCoefficients);
+ //   tab->addButton("displace", GuiControl::Callback(this, &App::displaceProbes), GuiTheme::TOOL_BUTTON_STYLE);
     tab->addButton("New optimization", [this]()
     {
         createNewOptimizationSettings();
     }
     , GuiTheme::TOOL_BUTTON_STYLE);
+	tab->addButton("Rename current optimization", [this]()
+	{
+		windowRenameOptimization->setVisible(true);
+	}
+	, GuiTheme::TOOL_BUTTON_STYLE);
+
 	tab->addCheckBox("Keep ref values", &bKeepRefValuesOnNewOptimization);
 	tab->addCheckBox("Stored Samples", &bOptimizeWithMitsubaSamples);
-    tab->addButton("Rename current optimization", [this]()
-    {
-        windowRenameOptimization->setVisible(true);
-    }
-    , GuiTheme::TOOL_BUTTON_STYLE);
-	tab->addTextBox("Max probe step", &maxProbeStepLength);
-	tab->addTextBox("SHBand", &optimizationSHBand);
+
+	tab->addTextBox("Max probe step", &maxProbeStepLength)->setWidth(120);
+	tab->addTextBox("SHBand", &optimizationSHBand)->setWidth(120);
 	tab->addCheckBox("Update probes", &bUpdateProbesOnOptimizationPass);
 	tab->addCheckBox("Prevent error increase", &bPreventErrorIncrease);
 	tab->addCheckBox("Prevent OOB", &bPreventOOBDisplacement);
+	tab->addCheckBox("Coeffs only", &bOptimizeForCoeffs);
 	tab->endRow();
 
 	tab->beginRow();
@@ -1268,7 +1271,7 @@ void App::makeGui() {
     }
     , GuiTheme::TOOL_BUTTON_STYLE);
 
-	tab->addButton("Compute ref_values", [this]() 
+	tab->addButton("Compute ref values", [this]() 
     {
 		if (!sampleSetLoaded())
 		{
@@ -1285,7 +1288,16 @@ void App::makeGui() {
         }
         else
         {
-            sampleSet->generateRGBValuesFromProbes(numSamples, numCoeffs, outputFile, 0);
+			if (bOptimizeForCoeffs)
+			{
+				sampleSet->generateInterpolatedCoefficientsFromProbes(numSamples, numCoeffs, outputFile, 0);
+
+			}
+			else
+			{
+				sampleSet->generateRGBValuesFromProbes(numSamples, numCoeffs, outputFile, 0);
+
+			}
         }
 
 		std::fstream infoFile((currentOptimizationFolderPath() + "/infos.txt").c_str(), std::fstream::out | std::fstream::app);
@@ -1891,13 +1903,14 @@ void App::saveOptions()
 	SAVE_INT(offlineRenderingOptions.filmTypeIndex);
 	SAVE_INT(offlineRenderingOptions.integratorIndex);
 
-	optionJSON["bShowAllProbes"] =					showAllProbes;
+	optionJSON["showAllProbes"] =					showAllProbes;
 	SAVE_BOOL(bUpdateProbesOnOptimizationPass);
 	SAVE_BOOL(bRenderDirect);
 	SAVE_BOOL(bRenderIndirect);
 	SAVE_BOOL(bPreventErrorIncrease);
 	SAVE_BOOL(bManipulateProbesEnabled);
 	SAVE_BOOL(bFlipShadingNormals);
+	SAVE_BOOL(bOptimizeForCoeffs);
 	SAVE_BOOL(bPreventOOBDisplacement);
 	SAVE_BOOL(bShowOptimizationOutput);
 	SAVE_BOOL(bShowProbeGenerationOutput);
@@ -1984,6 +1997,7 @@ void App::loadOptions()
 	LOAD_BOOL(bShowOptimizationOutput);
 	LOAD_BOOL(bPreventOOBDisplacement);
 	LOAD_BOOL(bShowProbeGenerationOutput);
+	LOAD_BOOL(bOptimizeForCoeffs);
 
 	LOAD_STRING(m_sNumICTries); 
 	LOAD_STRING(m_sNumICProbes);

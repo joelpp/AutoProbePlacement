@@ -349,7 +349,8 @@ std::vector<float> App::tryOptimization()
 	std::stringstream ss;
 	std::vector<float> displacements;
 
-    sampleSet->generateRGBValuesFromProbes(numSamples, numCoeffs, currentOptimizationFolderPath() + "/values.txt", 0);
+	//sampleSet->generateRGBValuesFromProbes(numSamples, numCoeffs, currentOptimizationFolderPath() + "/values.txt", 0);
+	sampleSet->generateInterpolatedCoefficientsFromProbes(numSamples, numCoeffs, currentOptimizationFolderPath() + "/values.txt", 0);
 	sw.after("Generated RGB values from probes");
 
     float error = computeError(false);

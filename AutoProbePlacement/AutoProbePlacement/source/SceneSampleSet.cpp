@@ -294,7 +294,7 @@ float SceneSampleSet::dRdX(const G3D::Vector3& position, const G3D::Vector3& nor
 	std::pair<int, int> lm = SH::kToLM(NumberOfCoeffs);
 	float sh = SH::SHxyz_yup(lm.first, lm.second, normal);
 	float phong = phongCoeffs(lm.first, 1.0f);
-	value += gradient * phong * sh;
+	value += gradient /** phong * sh*/;
 
 #else
 	for (int coeff = 0; coeff < NumberOfCoeffs; ++coeff)
@@ -324,7 +324,7 @@ float SceneSampleSet::R(const G3D::Vector3& position,  const G3D::Vector3& norma
 	std::pair<int, int> lm = SH::kToLM(NumberOfCoeffs);
 	float phong = phongCoeffs(lm.first, 1.0f);
 	float sh = SH::SHxyz_yup(lm.first, lm.second, normal);
-	value += coeffval * phong * sh;
+	value += coeffval /** phong * sh*/;
 #else
 	for (int coeff = 0; coeff < NumberOfCoeffs; ++coeff)
 	{
@@ -393,14 +393,16 @@ void SceneSampleSet::generateTriplets(int NumberOfSamples,
 		//float weightDenum = C(SamplePosition);
 		float inverseSumOf1OverSquaredProbeDistances = InverseSumOf1OverSquaredProbeDistances(SamplePosition);
 
-		for (int color = COLOR_RED; color <= COLOR_BLUE; ++color)
-		{
-			
 #ifdef ONE_ROW_PER_SH_BAND
-			for (int coeff = 0; coeff < NumberOfCoeffs; ++coeff)
-			{
+		for (int coeff = 0; coeff < NumberOfCoeffs; ++coeff)
+		{
 #endif
+
+			for (int color = COLOR_RED; color <= COLOR_BLUE; ++color)
+			{
 				col = 0;
+
+
 
 				for (int pn = 0; pn < NumberOfProbes; ++pn)
 				{
@@ -438,12 +440,12 @@ void SceneSampleSet::generateTriplets(int NumberOfSamples,
 						}
 						col++;
 					}
-					row++;
-#ifdef ONE_ROW_PER_SH_BAND
 				}
-#endif
+				row++;
 			}
+#ifdef ONE_ROW_PER_SH_BAND
 		}
+#endif
 	}
 }
 
@@ -488,11 +490,11 @@ void SceneSampleSet::generateInterpolatedCoefficientsFromProbes(int NumberOfSamp
 
 		if (eigenVector)
 		{
-			for (int j = 0; j < interpolatedCoeffs.size(); ++i)
+			for (int j = 0; j < NumberOfCoeffs; ++j)
 			{
-				(*eigenVector)(i * 3 + j) = interpolatedCoeffs[j][0];
-				(*eigenVector)(i * 3 + j) = interpolatedCoeffs[j][1];
-				(*eigenVector)(i * 3 + j) = interpolatedCoeffs[j][2];
+				(*eigenVector)(i * (3 * NumberOfCoeffs) + j * 3 + 0) = interpolatedCoeffs[j][0];
+				(*eigenVector)(i * (3 * NumberOfCoeffs) + j * 3 + 1) = interpolatedCoeffs[j][1];
+				(*eigenVector)(i * (3 * NumberOfCoeffs) + j * 3 + 2) = interpolatedCoeffs[j][2];
 			}
 		}
 	}
@@ -581,7 +583,9 @@ void SceneSampleSet::createbVector(Eigen::VectorXd* bVector, const Eigen::Vector
 	while (std::getline(refFile, line))
 	{
 		float value = std::stof(line.c_str());
-		(*bVector)(counter) = value - (*rgbColumn)(counter);
+		float value2 = (*rgbColumn)(counter);
+		float toWrite = value - value2;
+		(*bVector)(counter) = toWrite;
 		counter++;
 	}
 	refFile.close();
@@ -701,16 +705,17 @@ std::vector<float> SceneSampleSet::tryOptimizationPass(int NumberOfSamples,
 	eigenTriplets->reserve(NumberOfSamples * 3 * NumElementsPerRow);
 
 
-	Eigen::VectorXd* rgbColumn = new Eigen::VectorXd(NumberOfSamples * 3);
+	Eigen::VectorXd* rgbColumn = new Eigen::VectorXd(NumberOfSamples * 3 * NumberOfCoeffs);
 
 	generateTriplets(NumberOfSamples, NumberOfCoeffs, optimizationFolderPath + "/triplets.txt", eigenTriplets, optimizeForMitsubaSamples);
 	sw.after("Generated Triplets");
-    generateRGBValuesFromProbes(NumberOfSamples, NumberOfCoeffs, optimizationFolderPath + "/values.txt", rgbColumn);
-
-	Eigen::VectorXd bVector(NumberOfSamples * 3);
+	//generateRGBValuesFromProbes(NumberOfSamples, NumberOfCoeffs, optimizationFolderPath + "/values.txt", rgbColumn);
+	generateInterpolatedCoefficientsFromProbes(NumberOfSamples, NumberOfCoeffs, optimizationFolderPath + "/values.txt", rgbColumn);
+	
+	Eigen::VectorXd bVector(NumberOfSamples * 3 * NumberOfCoeffs);
 	createbVector(&bVector, rgbColumn, optimizationFolderPath);
 
-	WeightMatrixType A(NumberOfSamples * 3, NumElementsPerRow);
+	WeightMatrixType A(NumberOfSamples * 3 * NumberOfCoeffs, NumElementsPerRow);
 	A.setFromTriplets(eigenTriplets->begin(), eigenTriplets->end());
 	sw.after("Set matrices");
 
@@ -771,8 +776,8 @@ bool SceneSampleSet::probeOptimizationPass(WeightMatrixType& A, Eigen::VectorXd&
 
 	Eigen::ConjugateGradient<WeightMatrixType> solver;
 	debugPrintf("Compute step...\n");
-	solver.setTolerance(1e-5);
-	solver.setMaxIterations(1e8);
+	solver.setTolerance(1e-4);
+	solver.setMaxIterations(1e12);
 	solver.compute(AtA);
 
 	if (solver.info() != Eigen::Success)

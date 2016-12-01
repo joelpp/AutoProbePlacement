@@ -12,7 +12,8 @@ class ProbeStructure;
 enum ESSFile
 {
     Samples = 0,
-    Values = 1
+    Values = 1,
+	Coeffs
 };
 
 class SceneSampleSet
@@ -34,7 +35,8 @@ public:
 	void generateRGBValuesFromProbes(int NumberOfSamples, int NumberOfCoeffs, String savePath, Eigen::VectorXd* eigenVector);
     void generateRGBValuesFromProbes(int NumberOfSamples, int NumberOfCoeffs);
     void generateRGBValuesFromSamples(int NumberOfSamples, String savePath, Eigen::VectorXd* eigenVector = 0);
-    void generateInterpolatedCoefficientsFromProbes(int NumberOfSamples, int NumberOfCoeffs, String savePath, Eigen::VectorXd* eigenVector = 0);
+	void generateInterpolatedCoefficientsFromProbes(int NumberOfSamples, int NumberOfCoeffs);
+	void generateInterpolatedCoefficientsFromProbes(int NumberOfSamples, int NumberOfCoeffs, String savePath, Eigen::VectorXd* eigenVector = 0);
 	void save();
 	bool load(int maxSamples);
 	std::vector<float> tryOptimizationPass(int NumberOfSamples, int NumberOfCoeffs, bool optimizeForMitsubaSamples, String optimizationFolderPath);

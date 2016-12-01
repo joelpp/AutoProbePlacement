@@ -1,13 +1,13 @@
 Application Log
-Start: Wed Nov 30 15:05:32 2016
+Start: Thu Dec  1 14:53:13 2016
 
-Initializing System::findDataFile took 0.003893s
+Initializing System::findDataFile took 0.003966s
 WARNING: AudioDevice is not enabled. Set G3DSpecification::audio = true before invoking initGLG3D() to enable audio.
 
 Entering GApp::GApp()
 cwd = C:\git\AutoProbePlacement\AutoProbePlacement\AutoProbePlacement
 System::setAppDataDir("C:\git\AutoProbePlacement\data-files")
-Initializing System::findDataFile took 0.000810s
+Initializing System::findDataFile took 0.000694s
 Setting video mode
 wglSwapIntervalEXT(0);
 Setting initial rendering state.
@@ -573,4 +573,52 @@ Fragment info
 1(33) : warning C7050: "surfel.shadingNormal" might be used before being initialized
 
 
+
+
+
+
+
+
+
+
+
+
+
+Vertex info
+-----------
+1(42) : warning C7050: "tex0" might be used before being initialized
+
+
+
+Fragment info
+-------------
+1(33) : warning C7050: "surfel.shadingNormal" might be used before being initialized
+
+Vertex info
+-----------
+1(42) : warning C7050: "tex0" might be used before being initialized
+
+Fragment info
+-------------
+1(33) : warning C7050: "surfel.shadingNormal" might be used before being initialized
+1(33) : warning C7050: "surfel.glossyShadingNormal" might be used before being initialized
+
+Vertex info
+-----------
+1(42) : warning C7050: "tex0" might be used before being initialized
+
+Fragment info
+-------------
+1(33) : warning C7050: "surfel.shadingNormal" might be used before being initialized
+1(33) : warning C7050: "surfel.glossyShadingNormal" might be used before being initialized
+
+Fragment info
+-------------
+1(33) : warning C7050: "surfel.shadingNormal" might be used before being initialized
+1(33) : warning C7050: "surfel.glossyShadingNormal" might be used before being initialized
+
+Fragment info
+-------------
+1(33) : warning C7050: "surfel.shadingNormal" might be used before being initialized
+1(33) : warning C7050: "surfel.glossyShadingNormal" might be used before being initialized
 

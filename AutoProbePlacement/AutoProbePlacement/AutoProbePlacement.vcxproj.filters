@@ -16,6 +16,7 @@
   </ItemGroup>
   <ItemGroup>
     <Text Include="ReadMe.txt" />
+    <Text Include="..\data-files\options.txt" />
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="include\stdafx.h">

@@ -1243,6 +1243,11 @@ TProbeCoefficients ProbeStructure::interpolatedCoefficients(const G3D::Vector3& 
 			int index = record.probeIndices[p];
 			float weight = record.weights[p];
 
+			if (weight == 0)
+			{
+				continue;
+			}
+
 			TProbeCoefficients& probeCoeffs = probeList[index]->coeffs;
 
 			Vector3& coeffs = probeCoeffs[c];

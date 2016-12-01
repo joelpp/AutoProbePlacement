@@ -468,6 +468,23 @@ void SceneSampleSet::generateRGBValuesFromProbes(int NumberOfSamples, int Number
     file.close();
 }
 
+void SceneSampleSet::generateInterpolatedCoefficientsFromProbes(int NumberOfSamples, int NumberOfCoeffs)
+{
+	m_colors.clear();
+
+	std::fstream file = openFile(ESSFile::Coeffs, false);
+	for (int i = 0; i < NumberOfSamples; ++i)
+	{
+		const SceneSample& ss = m_samples[i];
+
+		TProbeCoefficients interpolatedCoeffs = probeStructure->interpolatedCoefficients(ss.position, ss.normal, NumberOfCoeffs);
+
+		dumpToFile(file, interpolatedCoeffs);
+	}
+
+	file.close();
+}
+
 void SceneSampleSet::generateInterpolatedCoefficientsFromProbes(int NumberOfSamples, int NumberOfCoeffs, String savePath, Eigen::VectorXd* eigenVector)
 {
 	//	// Scene (probe structure) Parameters
@@ -595,10 +612,14 @@ std::fstream SceneSampleSet::openFile(ESSFile type, bool reading)
     {
         val = "SamplePositions.txt";
     }
-    else
+    else if (type == ESSFile::Values)
     {
         val = "IrradianceResults2.txt";
     }
+	else if (type == ESSFile::Coeffs)
+	{
+		val = "InterpolatedCoeffs.txt";
+	}
 
     int operation;
 
@@ -773,7 +794,7 @@ bool SceneSampleSet::probeOptimizationPass(WeightMatrixType& A, Eigen::VectorXd&
 
 	Eigen::ConjugateGradient<WeightMatrixType> solver;
 	debugPrintf("Compute step...\n");
-	solver.setTolerance(1e-4);
+	solver.setTolerance(1e-2);
 	solver.setMaxIterations(1e12);
 	solver.compute(AtA);
 

@@ -1267,10 +1267,7 @@ void App::makeGui() {
 	tab->beginRow();
     tab->addButton("Compute samplesRGB", [this]() 
     {
-        int numSamples = std::atoi(numOptimizationSamples.c_str());
-        int numCoeffs = std::atoi(optimizationSHBand.c_str());
-        String outputFile = currentOptimizationFolderPath() + "/values.txt";
-        sampleSet->generateRGBValuesFromProbes(numSamples, numCoeffs, outputFile, 0);
+		computeSamplesRGB();
     }
     , GuiTheme::TOOL_BUTTON_STYLE);
 
@@ -1287,7 +1284,14 @@ void App::makeGui() {
         String outputFile = currentOptimizationFolderPath() + "/ref_values.txt";
         if (bOptimizeWithMitsubaSamples)
         {
-            sampleSet->generateRGBValuesFromSamples(numSamples, outputFile, 0);
+			if (bOptimizeForCoeffs)
+			{
+				copyFile(currentSampleSetPath() + "/InterpolatedCoeffs.txt", outputFile);
+			}
+			else
+			{
+				sampleSet->generateRGBValuesFromSamples(numSamples, outputFile, 0);
+			}
         }
         else
         {
@@ -1853,6 +1857,11 @@ G3D::String App::sampleSetFoldersPath()
     return "../data-files/Scenes/" + selectedSceneName() + "/SampleSets";
 }
 
+G3D::String App::currentSampleSetPath()
+{
+	return "../data-files/Scenes/" + selectedSceneName() + "/SampleSets/" + String(sampleSet->m_sampleSetName.c_str());
+}
+
 G3D::String App::loadedProbeStructurePath()
 {
     String name = m_probeStructure->m_name;
@@ -2142,10 +2151,11 @@ void App::computeSampleSetValuesFromIndividualProbe()
 
 	ps->saveInfoFile();
 	ps->savePositions(false);
-	ps->generateProbes("all", false, true);
+	ps->generateProbes("all", false, false);
 	ps->extractSHCoeffs(false, false);
 
 	sampleSet->probeStructure = ps;
 	int numCoeffs = std::atoi(optimizationSHBand.c_str());
-	sampleSet->generateRGBValuesFromProbes(numSamples, numCoeffs);
+	//sampleSet->generateRGBValuesFromProbes(numSamples, numCoeffs);
+	sampleSet->generateInterpolatedCoefficientsFromProbes(numSamples, numCoeffs);
 }

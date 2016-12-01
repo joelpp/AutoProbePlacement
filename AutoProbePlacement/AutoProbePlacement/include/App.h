@@ -161,6 +161,7 @@ private:
     G3D::String currentOptimizationFolderPath();
     G3D::String probeStructureFoldersPath();
     G3D::String sampleSetFoldersPath();
+	G3D::String currentSampleSetPath();
     G3D::String loadedProbeStructurePath();
 
     bool probeStructureLoaded();

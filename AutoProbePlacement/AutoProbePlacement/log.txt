@@ -1,13 +1,13 @@
 Application Log
-Start: Thu Dec  1 14:53:13 2016
+Start: Fri Dec  2 16:50:07 2016
 
-Initializing System::findDataFile took 0.003966s
+Initializing System::findDataFile took 0.008222s
 WARNING: AudioDevice is not enabled. Set G3DSpecification::audio = true before invoking initGLG3D() to enable audio.
 
 Entering GApp::GApp()
 cwd = C:\git\AutoProbePlacement\AutoProbePlacement\AutoProbePlacement
 System::setAppDataDir("C:\git\AutoProbePlacement\data-files")
-Initializing System::findDataFile took 0.000694s
+Initializing System::findDataFile took 0.003622s
 Setting video mode
 wglSwapIntervalEXT(0);
 Setting initial rendering state.
@@ -132,7 +132,7 @@ Done initializing RenderDevice.
 Network StartupStarting WinSock networking.
 System = { 
     App { 
-        Name = "C:\\git\\AutoProbePlacement\\AutoProbePlacement\\x64\\Release\\AutoProbePlacement.exe"
+        Name = "C:\\git\\AutoProbePlacement\\AutoProbePlacement\\x64\\Debug\\AutoProbePlacement.exe"
         cwd = "C:\\git\\AutoProbePlacement\\AutoProbePlacement\\AutoProbePlacement"
     } 
     
@@ -155,7 +155,7 @@ System = {
     
     G3D { 
         Link version = 100100 
-        Compile version = "G3D Innovation Engine 10.01, 64-bit"
+        Compile version = "G3D Innovation Engine 10.01, 64-bit (Debug)"
         G3DSpecification::deployMode = No 
         G3D10DATA = "C:\\git\\g3d\\G3D10\\data-files;C:\\git\\g3d\\data10\\common;C:\\git\\g3d\\data10\\game;C:\\git\\g3d\\data10\\research;C:\\git\\g3d\\G3D10\\build\\data;"
     } 
@@ -568,57 +568,17 @@ Vertex info
 -----------
 1(42) : warning C7050: "tex0" might be used before being initialized
 
-Fragment info
--------------
-1(33) : warning C7050: "surfel.shadingNormal" might be used before being initialized
-
-
-
-
-
-
-
-
-
-
-
-
-
 Vertex info
 -----------
 1(42) : warning C7050: "tex0" might be used before being initialized
 
 
 
-Fragment info
--------------
-1(33) : warning C7050: "surfel.shadingNormal" might be used before being initialized
 
-Vertex info
------------
-1(42) : warning C7050: "tex0" might be used before being initialized
 
 Fragment info
 -------------
 1(33) : warning C7050: "surfel.shadingNormal" might be used before being initialized
-1(33) : warning C7050: "surfel.glossyShadingNormal" might be used before being initialized
 
-Vertex info
------------
-1(42) : warning C7050: "tex0" might be used before being initialized
 
-Fragment info
--------------
-1(33) : warning C7050: "surfel.shadingNormal" might be used before being initialized
-1(33) : warning C7050: "surfel.glossyShadingNormal" might be used before being initialized
-
-Fragment info
--------------
-1(33) : warning C7050: "surfel.shadingNormal" might be used before being initialized
-1(33) : warning C7050: "surfel.glossyShadingNormal" might be used before being initialized
-
-Fragment info
--------------
-1(33) : warning C7050: "surfel.shadingNormal" might be used before being initialized
-1(33) : warning C7050: "surfel.glossyShadingNormal" might be used before being initialized
 

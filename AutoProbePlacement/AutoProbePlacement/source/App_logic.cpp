@@ -349,8 +349,15 @@ std::vector<float> App::tryOptimization()
 	std::stringstream ss;
 	std::vector<float> displacements;
 
-	//sampleSet->generateRGBValuesFromProbes(numSamples, numCoeffs, currentOptimizationFolderPath() + "/values.txt", 0);
-	sampleSet->generateInterpolatedCoefficientsFromProbes(numSamples, numCoeffs, currentOptimizationFolderPath() + "/values.txt", 0);
+	if (bOptimizeForCoeffs)
+	{
+		sampleSet->generateInterpolatedCoefficientsFromProbes(numSamples, numCoeffs, currentOptimizationFolderPath() + "/values.txt", 0);
+	}
+	else
+	{
+		sampleSet->generateRGBValuesFromProbes(numSamples, numCoeffs, currentOptimizationFolderPath() + "/values.txt", 0);
+	}
+
 	sw.after("Generated RGB values from probes");
 
     float error = computeError(false);
@@ -379,6 +386,7 @@ std::vector<float> App::tryOptimization()
 
 	currentOptimization.errors.push_back(error);
 
+	sampleSet->coeffReference = bOptimizeForCoeffs;
 	displacements = sampleSet->tryOptimizationPass(numSamples, numCoeffs, bOptimizeWithMitsubaSamples, currentOptimizationFolderPath());
 	sw.after("Finished optimization pass");
 	return displacements;
@@ -401,10 +409,45 @@ void App::computeSamplesRGB()
 }
 void App::computeSamplesRGBRef()
 {
+	if (!sampleSetLoaded())
+	{
+		debugPrintf("No sample set loaded");
+		return;
+	}
+
 	int numSamples = std::atoi(numOptimizationSamples.c_str());
-    int numCoeffs = std::atoi(optimizationSHBand.c_str());
-    String outputFile = currentOptimizationFolderPath() + "/ref_values.txt";
-	sampleSet->generateRGBValuesFromProbes(numSamples, numCoeffs, outputFile, 0);
+	int numCoeffs = std::atoi(optimizationSHBand.c_str());
+	String outputFile = currentOptimizationFolderPath() + "/ref_values.txt";
+	if (bOptimizeWithMitsubaSamples)
+	{
+		if (bOptimizeForCoeffs)
+		{
+			copyFile(currentSampleSetPath() + "/InterpolatedCoeffs.txt", outputFile);
+		}
+		else
+		{
+			sampleSet->generateRGBValuesFromSamples(numSamples, outputFile, 0);
+		}
+	}
+	else
+	{
+		if (bOptimizeForCoeffs)
+		{
+			sampleSet->generateInterpolatedCoefficientsFromProbes(numSamples, numCoeffs, outputFile, 0);
+
+		}
+		else
+		{
+			sampleSet->generateRGBValuesFromProbes(numSamples, numCoeffs, outputFile, 0);
+		}
+	}
+
+	std::fstream infoFile((currentOptimizationFolderPath() + "/infos.txt").c_str(), std::fstream::out | std::fstream::app);
+	infoFile << "refProbeStructure " << m_probeStructure->name().c_str() << std::endl;
+	infoFile << "numSamples " << numSamples << std::endl << std::endl;
+	infoFile.close();
+
+	bTakeRefScreenshot = true;
 }
 
 void App::computeTriplets()

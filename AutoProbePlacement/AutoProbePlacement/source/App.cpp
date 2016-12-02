@@ -1273,46 +1273,7 @@ void App::makeGui() {
 
 	tab->addButton("Compute ref values", [this]() 
     {
-		if (!sampleSetLoaded())
-		{
-			debugPrintf("No sample set loaded");
-			return;
-		}
-
-        int numSamples = std::atoi(numOptimizationSamples.c_str());
-        int numCoeffs = std::atoi(optimizationSHBand.c_str());
-        String outputFile = currentOptimizationFolderPath() + "/ref_values.txt";
-        if (bOptimizeWithMitsubaSamples)
-        {
-			if (bOptimizeForCoeffs)
-			{
-				copyFile(currentSampleSetPath() + "/InterpolatedCoeffs.txt", outputFile);
-			}
-			else
-			{
-				sampleSet->generateRGBValuesFromSamples(numSamples, outputFile, 0);
-			}
-        }
-        else
-        {
-			if (bOptimizeForCoeffs)
-			{
-				sampleSet->generateInterpolatedCoefficientsFromProbes(numSamples, numCoeffs, outputFile, 0);
-
-			}
-			else
-			{
-				sampleSet->generateRGBValuesFromProbes(numSamples, numCoeffs, outputFile, 0);
-
-			}
-        }
-
-		std::fstream infoFile((currentOptimizationFolderPath() + "/infos.txt").c_str(), std::fstream::out | std::fstream::app);
-		infoFile << "refProbeStructure " << m_probeStructure->name().c_str() << std::endl;
-		infoFile << "numSamples " << numSamples << std::endl << std::endl;
-		infoFile.close();
-
-        bTakeRefScreenshot = true;
+		computeSamplesRGBRef();
     }
     ,GuiTheme::TOOL_BUTTON_STYLE);
 

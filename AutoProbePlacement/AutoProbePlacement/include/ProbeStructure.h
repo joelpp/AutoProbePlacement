@@ -141,6 +141,8 @@ public:
 
 	TProbeCoefficients interpolatedCoefficients(const G3D::Vector3& position, const G3D::Vector3& normal, int NumberOfCoeffs);
 
+	Array<G3D::Vector3> ProbeStructure::reconstructSHPerBand(const G3D::Vector3& position, const G3D::Vector3& normal, int NumberOfCoeffs);
+
     G3D::Vector3 reconstructSH(const G3D::Vector3& position, const G3D::Vector3& normal, int NumberOfCoeffs);
 
 	void addProbe(const G3D::Vector3& position);

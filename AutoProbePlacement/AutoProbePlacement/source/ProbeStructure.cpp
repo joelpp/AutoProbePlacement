@@ -1334,6 +1334,87 @@ G3D::Vector3 ProbeStructure::reconstructSH(const G3D::Vector3& position, const G
     return rgb;
 }
 
+Array<G3D::Vector3> ProbeStructure::reconstructSHPerBand(const G3D::Vector3& position, const G3D::Vector3& normal, int NumberOfCoeffs)
+{
+	Array<G3D::Vector3> toReturn;
+
+	ProbeInterpolationRecord record = getInterpolationProbeIndicesAndWeights(position);
+
+	for (int c = 0; c < NumberOfCoeffs; ++c)
+	{
+		toReturn.push_back(Vector3(0, 0, 0));
+	}
+	
+
+	for (int i = 0; i < record.weights.size(); ++i)
+	{
+		//int probeIndex = getProbeStartIndex(coords[i], firstProbePosition, dimensions, 1);
+		int probeIndex = record.probeIndices[i];
+
+		if ((probeIndex < 0) || probeIndex >= probeCount())
+		{
+			continue;
+		}
+
+		float weight = record.weights[i];
+		if (weight == 0)
+		{
+			continue;
+		}
+
+		//if (this->outputToLog)
+		//{
+		//    logFile << "Probe " << i << std::endl;
+		//    //logFile << "position =  " << coords[i].toString().c_str() << std::endl;
+		//    logFile << "weight =  " << weight << std::endl;
+		//}
+
+		// For all SH bands
+		for (int coeff = 0; coeff < NumberOfCoeffs; ++coeff)
+		{
+			std::pair<int, int> lm = SH::kToLM(coeff);
+
+			// We multiply the inter weight by the geometric term and the SH function value in this direction
+			float phong = phongCoeffs(lm.first, 1.0f);
+			float sh = SH::SHxyz_yup(lm.first, lm.second, normal);
+			float factors = weight *
+				//NDotOmegaCoeff(lm(0)) *
+				phong *
+				sh;
+			try
+			{
+				Vector3& probeCoeffs = getProbe(probeIndex)->coeffs[coeff];
+				Vector3 accumulation = factors * probeCoeffs;
+				toReturn[coeff] += accumulation;
+
+			}
+			catch (std::exception e)
+			{
+
+			}
+
+
+			//if (this->outputToLog)
+			//{
+			//    logFile << "SH band: ( " << lm.first << ", " << lm.second << " )" << std::endl;
+			//    logFile << "phong = " << phong << std::endl;
+			//    logFile << "shFunctionEvaluation = " << sh << std::endl;
+			//    logFile << "weight * phong * sh = " << factors << std::endl;
+			//    logFile << "probeCoeffs (R,G,B) = " << probeCoeffs.toString().c_str() << std::endl;
+			//    logFile << "weight * phong * sh * probeCoeffs = " << accumulation.toString().c_str() << std::endl;
+			//    logFile << "accumulatedRGB(" << coeff << ") = " << rgb.toString().c_str() << std::endl << std::endl;
+			//}
+
+		}
+	}
+	for (int c = 0; c < NumberOfCoeffs; ++c)
+	{
+		toReturn[c] /= 3.141592654f;
+	}
+
+	return toReturn;
+}
+
 void ProbeStructure::generateProbes(std::string type, bool generateGradients, bool showOutput)
 {
     // system call to mitsuba

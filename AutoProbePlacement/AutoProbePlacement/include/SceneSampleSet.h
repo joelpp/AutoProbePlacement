@@ -70,5 +70,7 @@ public:
 	float m_scale;
 	ProbeStructure* probeStructure;
 	bool outputToLog;
+	bool coeffReference; //as opposed to RGB reference
+	bool oneRowPerSHBand; //as opposed to RGB reference
 
 };

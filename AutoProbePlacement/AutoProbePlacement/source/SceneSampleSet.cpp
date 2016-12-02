@@ -294,7 +294,15 @@ float SceneSampleSet::dRdX(const G3D::Vector3& position, const G3D::Vector3& nor
 	std::pair<int, int> lm = SH::kToLM(NumberOfCoeffs);
 	float sh = SH::SHxyz_yup(lm.first, lm.second, normal);
 	float phong = phongCoeffs(lm.first, 1.0f);
-	value += gradient /** phong * sh*/;
+
+	if (coeffReference)
+	{
+		value += gradient /** phong * sh*/;
+	}
+	else
+	{
+		value += gradient * phong * sh;
+	}
 
 #else
 	for (int coeff = 0; coeff < NumberOfCoeffs; ++coeff)
@@ -324,7 +332,15 @@ float SceneSampleSet::R(const G3D::Vector3& position,  const G3D::Vector3& norma
 	std::pair<int, int> lm = SH::kToLM(NumberOfCoeffs);
 	float phong = phongCoeffs(lm.first, 1.0f);
 	float sh = SH::SHxyz_yup(lm.first, lm.second, normal);
-	value += coeffval /** phong * sh*/;
+
+	if (coeffReference)
+	{
+		value += coeffval /** phong * sh*/;
+}
+	else
+	{
+		value += coeffval * phong * sh;
+	}
 #else
 	for (int coeff = 0; coeff < NumberOfCoeffs; ++coeff)
 	{
@@ -500,15 +516,33 @@ void SceneSampleSet::generateInterpolatedCoefficientsFromProbes(int NumberOfSamp
 
 		TProbeCoefficients interpolatedCoeffs = probeStructure->interpolatedCoefficients(ss.position, ss.normal, NumberOfCoeffs);
 
+
+#ifdef ONE_ROW_PER_SH_BAND
 		dumpToFile(samplesRGBFile, interpolatedCoeffs);
+#else
+		Vector3 sum = Vector3::zero();
+		for (int c = 0; c < NumberOfCoeffs; ++c)
+		{
+			sum += interpolatedCoeffs[c];
+		}
+		samplesRGBFile << sum.x << std::endl;
+		samplesRGBFile << sum.y << std::endl;
+		samplesRGBFile << sum.z << std::endl;
+#endif
 
 		if (eigenVector)
 		{
 			for (int j = 0; j < NumberOfCoeffs; ++j)
 			{
-				(*eigenVector)(i * (3 * NumberOfCoeffs) + j * 3 + 0) = interpolatedCoeffs[j][0];
-				(*eigenVector)(i * (3 * NumberOfCoeffs) + j * 3 + 1) = interpolatedCoeffs[j][1];
-				(*eigenVector)(i * (3 * NumberOfCoeffs) + j * 3 + 2) = interpolatedCoeffs[j][2];
+#ifdef ONE_ROW_PER_SH_BAND
+				int index = i * (3 * NumberOfCoeffs) + j * 3;
+#else
+				int index = i * 3;
+#endif
+
+				(*eigenVector)(index + 0) += interpolatedCoeffs[j][0];
+				(*eigenVector)(index + 1) += interpolatedCoeffs[j][1];
+				(*eigenVector)(index + 2) += interpolatedCoeffs[j][2];
 			}
 		}
 	}
@@ -566,24 +600,41 @@ void SceneSampleSet::generateRGBValuesFromProbes(int NumberOfSamples, int Number
 		}
 
 #else
-		
+
+#ifdef ONE_ROW_PER_SH_BAND
+		Array<Vector3> rgbPerBand = probeStructure->reconstructSHPerBand(ss.position, ss.normal, NumberOfCoeffs);
+#else
 		Vector3 rgb = probeStructure->reconstructSH(ss.position, ss.normal, NumberOfCoeffs);
 #endif
 
+#endif
 
-        if (output)
-        {
-            samplesRGBFile << rgb.x << std::endl;
-            samplesRGBFile << rgb.y << std::endl;
-            samplesRGBFile << rgb.z << std::endl;
-        }
-
-		if (eigenVector)
+#ifdef ONE_ROW_PER_SH_BAND
+		for (int c = 0; c < NumberOfCoeffs; ++c)
 		{
-			(*eigenVector)(i * 3 + 0) = rgb.x;
-			(*eigenVector)(i * 3 + 1) = rgb.y;
-			(*eigenVector)(i * 3 + 2) = rgb.z;
+			Vector3& rgb = rgbPerBand[c];
+			int index = i * (3 * NumberOfCoeffs) + c * 3;
+#else
+		int index = i * 3;
+#endif
+
+			if (output)
+			{
+				samplesRGBFile << rgb.x << std::endl;
+				samplesRGBFile << rgb.y << std::endl;
+				samplesRGBFile << rgb.z << std::endl;
+			}
+
+			if (eigenVector)
+			{
+				(*eigenVector)(index + 0) = rgb.x;
+				(*eigenVector)(index + 1) = rgb.y;
+				(*eigenVector)(index + 2) = rgb.z;
+			}
+
+#ifdef ONE_ROW_PER_SH_BAND
 		}
+#endif
 	}
 }
 
@@ -722,18 +773,31 @@ std::vector<float> SceneSampleSet::tryOptimizationPass(int NumberOfSamples,
 	std::vector<Eigen::Triplet<float>>* eigenTriplets = new std::vector<Eigen::Triplet<float>>;
 	eigenTriplets->reserve(NumberOfSamples * 3 * NumElementsPerRow);
 
-
+#ifdef ONE_ROW_PER_SH_BAND
 	Eigen::VectorXd* rgbColumn = new Eigen::VectorXd(NumberOfSamples * 3 * NumberOfCoeffs);
+	Eigen::VectorXd bVector(NumberOfSamples * 3 * NumberOfCoeffs);
+	WeightMatrixType A(NumberOfSamples * 3 * NumberOfCoeffs, NumElementsPerRow);
+#else
+	WeightMatrixType A(NumberOfSamples * 3, NumElementsPerRow);
+	Eigen::VectorXd bVector(NumberOfSamples * 3);
+	Eigen::VectorXd* rgbColumn = new Eigen::VectorXd(NumberOfSamples * 3);
+
+#endif
+	rgbColumn->setZero();
 
 	generateTriplets(NumberOfSamples, NumberOfCoeffs, optimizationFolderPath + "/triplets.txt", eigenTriplets, optimizeForMitsubaSamples);
 	sw.after("Generated Triplets");
-	//generateRGBValuesFromProbes(NumberOfSamples, NumberOfCoeffs, optimizationFolderPath + "/values.txt", rgbColumn);
-	generateInterpolatedCoefficientsFromProbes(NumberOfSamples, NumberOfCoeffs, optimizationFolderPath + "/values.txt", rgbColumn);
+	if (coeffReference)
+	{
+		generateInterpolatedCoefficientsFromProbes(NumberOfSamples, NumberOfCoeffs, optimizationFolderPath + "/values.txt", rgbColumn);
+	}
+	else
+	{
+		generateRGBValuesFromProbes(NumberOfSamples, NumberOfCoeffs, optimizationFolderPath + "/values.txt", rgbColumn);
+	}
 	
-	Eigen::VectorXd bVector(NumberOfSamples * 3 * NumberOfCoeffs);
 	createbVector(&bVector, rgbColumn, optimizationFolderPath);
 
-	WeightMatrixType A(NumberOfSamples * 3 * NumberOfCoeffs, NumElementsPerRow);
 	A.setFromTriplets(eigenTriplets->begin(), eigenTriplets->end());
 	sw.after("Set matrices");
 
@@ -794,7 +858,7 @@ bool SceneSampleSet::probeOptimizationPass(WeightMatrixType& A, Eigen::VectorXd&
 
 	Eigen::ConjugateGradient<WeightMatrixType> solver;
 	debugPrintf("Compute step...\n");
-	solver.setTolerance(1e-2);
+	solver.setTolerance(1e-3);
 	solver.setMaxIterations(1e12);
 	solver.compute(AtA);
 

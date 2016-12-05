@@ -33,8 +33,8 @@ Array<Vector3> App::getRandomPoint(int modelNumber, Vector3* P, Vector3* N, Vect
     return toReturn;
 }
 
-SceneSample App::generateSceneSample(int* _selectedModel, Vector3 *_P, Vector2* _UV, Vector3* _N, int sampleID){
-
+SceneSample App::generateSceneSample(int* _selectedModel, Vector3 *_P, Vector2* _UV, Vector3* _N, int sampleID)
+{
     Vector3* baryWeights = new Vector3();
     Vector3* P = new Vector3();
     Vector3* N = new Vector3();
@@ -48,9 +48,6 @@ SceneSample App::generateSceneSample(int* _selectedModel, Vector3 *_P, Vector2* 
     //*_UV = UV;
     *_N = *N;
 	*_P = *P;
-
-		
-
 
 	Vector2 IJ = Vector2(0, 0);
     Color4 uvColor = Color4(0, 0, 0, 0);
@@ -348,6 +345,7 @@ std::vector<float> App::tryOptimization()
 	int numCoeffs = std::atoi(optimizationSHBand.c_str());
 	std::stringstream ss;
 	std::vector<float> displacements;
+	sampleSet->oneRowPerSHBand = bOneRowPerSHBand;
 
 	if (bOptimizeForCoeffs)
 	{
@@ -418,6 +416,7 @@ void App::computeSamplesRGBRef()
 	int numSamples = std::atoi(numOptimizationSamples.c_str());
 	int numCoeffs = std::atoi(optimizationSHBand.c_str());
 	String outputFile = currentOptimizationFolderPath() + "/ref_values.txt";
+	sampleSet->oneRowPerSHBand = bOneRowPerSHBand;
 	if (bOptimizeWithMitsubaSamples)
 	{
 		if (bOptimizeForCoeffs)

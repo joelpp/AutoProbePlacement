@@ -363,9 +363,11 @@ private:
 	bool showSamples;
 	bool useSHGradients;
 	bool bOptimizeForCoeffs;
+	bool bOneRowPerSHBand;
 	bool bPreventErrorIncrease;
 	bool bShowOptimizationOutput;
 	bool bShowProbeGenerationOutput;
+	bool bGenerateVolumeSamples;
 
 	TriTree triTree;
 	//Index* trisIndex;

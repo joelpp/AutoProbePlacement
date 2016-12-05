@@ -108,7 +108,8 @@ void App::onInit() {
 	useSHGradients =				  false;
 	bManipulateProbesEnabled =		  false;
 	hideActors =					  false;
-    bOptimizeForCoeffs =			  false;
+	bOptimizeForCoeffs =			  false;
+	bOneRowPerSHBand =				  false;
 	bRenderDirect =					  true;
 	bRenderIndirect =				  true;
 	bRenderMultiplyIndirectByBRDF =   false;
@@ -711,6 +712,7 @@ void App::generateSampleSetPositions()
         sampleSet->addSample(ss);
 
     }
+
     sampleSet->save();
 }
 
@@ -1262,6 +1264,7 @@ void App::makeGui() {
 	tab->addCheckBox("Prevent error increase", &bPreventErrorIncrease);
 	tab->addCheckBox("Prevent OOB", &bPreventOOBDisplacement);
 	tab->addCheckBox("Coeffs only", &bOptimizeForCoeffs);
+	tab->addCheckBox("One row per SH", &bOneRowPerSHBand);
 	tab->endRow();
 
 	tab->beginRow();
@@ -1726,6 +1729,10 @@ void App::addSampleSetPane(GuiTabPane* tabPane)
 	, GuiTheme::TOOL_BUTTON_STYLE);
     tab->addCheckBox("write samples", &saveSample);
 	tab->endRow();
+
+	tab->beginRow();
+
+	tab->addCheckBox("Volume samples", &bGenerateVolumeSamples);
 }
 
 void App::updateSelectedScenePane()
@@ -1890,6 +1897,8 @@ void App::saveOptions()
 	SAVE_BOOL(bPreventOOBDisplacement);
 	SAVE_BOOL(bShowOptimizationOutput);
 	SAVE_BOOL(bShowProbeGenerationOutput);
+	SAVE_BOOL(bOneRowPerSHBand);
+	SAVE_BOOL(bGenerateVolumeSamples);
 
 	SAVE_FLOAT(sampleMultiplier);
 
@@ -1974,6 +1983,8 @@ void App::loadOptions()
 	LOAD_BOOL(bPreventOOBDisplacement);
 	LOAD_BOOL(bShowProbeGenerationOutput);
 	LOAD_BOOL(bOptimizeForCoeffs);
+	LOAD_BOOL(bOneRowPerSHBand);
+	LOAD_BOOL(bGenerateVolumeSamples);
 
 	LOAD_STRING(m_sNumICTries); 
 	LOAD_STRING(m_sNumICProbes);

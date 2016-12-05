@@ -289,33 +289,35 @@ float SceneSampleSet::dRdX(const G3D::Vector3& position, const G3D::Vector3& nor
 	return 1;
 #else
 	float value = 0;
-#ifdef ONE_ROW_PER_SH_BAND
-	float gradient = probeStructure->getProbe(m)->coeffGradients[NumberOfCoeffs][color][axis];
-	std::pair<int, int> lm = SH::kToLM(NumberOfCoeffs);
-	float sh = SH::SHxyz_yup(lm.first, lm.second, normal);
-	float phong = phongCoeffs(lm.first, 1.0f);
-
-	if (coeffReference)
+	if (oneRowPerSHBand)
 	{
-		value += gradient /** phong * sh*/;
+		float gradient = probeStructure->getProbe(m)->coeffGradients[NumberOfCoeffs][color][axis];
+		std::pair<int, int> lm = SH::kToLM(NumberOfCoeffs);
+		float sh = SH::SHxyz_yup(lm.first, lm.second, normal);
+		float phong = phongCoeffs(lm.first, 1.0f);
+
+		if (coeffReference)
+		{
+			value += gradient /** phong * sh*/;
+		}
+		else
+		{
+			value += gradient * phong * sh;
+		}
 	}
 	else
 	{
-		value += gradient * phong * sh;
+		for (int coeff = 0; coeff < NumberOfCoeffs; ++coeff)
+		{
+			float gradient = probeStructure->getProbe(m)->coeffGradients[coeff][color][axis];
+
+			std::pair<int, int> lm = SH::kToLM(coeff);
+			float phong = phongCoeffs(lm.first, 1.0f);
+			float sh = SH::SHxyz_yup(lm.first, lm.second, normal);
+			value += gradient * phong * sh;
+		}
 	}
 
-#else
-	for (int coeff = 0; coeff < NumberOfCoeffs; ++coeff)
-	{
-		float gradient = probeStructure->getProbe(m)->coeffGradients[coeff][color][axis];
-		
-		std::pair<int, int> lm = SH::kToLM(coeff);
-		float phong = phongCoeffs(lm.first, 1.0f);
-		float sh = SH::SHxyz_yup(lm.first, lm.second, normal);
-		value += gradient * phong * sh;
-	}
-
-#endif // ONE_ROW_PER_SH_BAND
 	return value;
 #endif
 }
@@ -326,33 +328,37 @@ float SceneSampleSet::R(const G3D::Vector3& position,  const G3D::Vector3& norma
 	return probeStructure->getProbe(m)->getPosition()[color];
 #else
 	float value = 0;
-#ifdef ONE_ROW_PER_SH_BAND
-	float coeffval = probeStructure->getProbe(m)->coeffs[NumberOfCoeffs][color];
-
-	std::pair<int, int> lm = SH::kToLM(NumberOfCoeffs);
-	float phong = phongCoeffs(lm.first, 1.0f);
-	float sh = SH::SHxyz_yup(lm.first, lm.second, normal);
-
-	if (coeffReference)
+	if (oneRowPerSHBand)
 	{
-		value += coeffval /** phong * sh*/;
-}
-	else
-	{
-		value += coeffval * phong * sh;
-	}
-#else
-	for (int coeff = 0; coeff < NumberOfCoeffs; ++coeff)
-	{
-		float coeffval = probeStructure->getProbe(m)->coeffs[coeff][color];
+		float coeffval = probeStructure->getProbe(m)->coeffs[NumberOfCoeffs][color];
 
-		std::pair<int, int> lm = SH::kToLM(coeff);
+		std::pair<int, int> lm = SH::kToLM(NumberOfCoeffs);
 		float phong = phongCoeffs(lm.first, 1.0f);
 		float sh = SH::SHxyz_yup(lm.first, lm.second, normal);
-		value += coeffval * phong * sh;
+
+		if (coeffReference)
+		{
+			value += coeffval /** phong * sh*/;
+		}
+		else
+		{
+			value += coeffval * phong * sh;
+		}
 	}
-#endif // ONE_ROW_PER_SH_BAND
+	else
+	{
+		for (int coeff = 0; coeff < NumberOfCoeffs; ++coeff)
+		{
+			float coeffval = probeStructure->getProbe(m)->coeffs[coeff][color];
+
+			std::pair<int, int> lm = SH::kToLM(coeff);
+			float phong = phongCoeffs(lm.first, 1.0f);
+			float sh = SH::SHxyz_yup(lm.first, lm.second, normal);
+			value += coeffval * phong * sh;
+		}
+	}
 	return value;
+
 #endif
 }
 
@@ -397,6 +403,9 @@ void SceneSampleSet::generateTriplets(int NumberOfSamples,
 	int counter = 0;
 	int row = 0;
 	int col = 0;
+
+	int rowsOuter = oneRowPerSHBand ? NumberOfCoeffs : 1;
+
 	// Iterate over all wanted samples
 	for (int sampleNumber = 0; sampleNumber < NumberOfSamples; ++sampleNumber)
 	{
@@ -409,10 +418,8 @@ void SceneSampleSet::generateTriplets(int NumberOfSamples,
 		//float weightDenum = C(SamplePosition);
 		float inverseSumOf1OverSquaredProbeDistances = InverseSumOf1OverSquaredProbeDistances(SamplePosition);
 
-#ifdef ONE_ROW_PER_SH_BAND
-		for (int coeff = 0; coeff < NumberOfCoeffs; ++coeff)
+		for (int coeff = 0; coeff < rowsOuter; ++coeff)
 		{
-#endif
 
 			for (int color = COLOR_RED; color <= COLOR_BLUE; ++color)
 			{
@@ -437,13 +444,10 @@ void SceneSampleSet::generateTriplets(int NumberOfSamples,
 							Probe* m = probeStructure->getProbe(pm);
 
 							float Wval = dWeightMdProbeN(SamplePosition, SampleNormal, pm, pn, axis, color);
-#ifdef ONE_ROW_PER_SH_BAND
-							float Rval = R(SamplePosition, SampleNormal, coeff, pm, axis, color);
-							float Bval = B(SamplePosition, SampleNormal, coeff, pm, pn, axis, color);
-#else
-							float Rval = R(SamplePosition, SampleNormal, NumberOfCoeffs, pm, axis, color);
-							float Bval = B(SamplePosition, SampleNormal, NumberOfCoeffs, pm, pn, axis, color);
-#endif
+
+							int coeffsToPass = oneRowPerSHBand ? coeff : NumberOfCoeffs;
+							float Rval = R(SamplePosition, SampleNormal, coeffsToPass, pm, axis, color);
+							float Bval = B(SamplePosition, SampleNormal, coeffsToPass, pm, pn, axis, color);
 
 							float computedWeights = inverseSumOf1OverSquaredProbeDistances * powf(distanceToProbe(SamplePosition, pm), -2);
 
@@ -459,9 +463,7 @@ void SceneSampleSet::generateTriplets(int NumberOfSamples,
 				}
 				row++;
 			}
-#ifdef ONE_ROW_PER_SH_BAND
 		}
-#endif
 	}
 }
 
@@ -516,29 +518,27 @@ void SceneSampleSet::generateInterpolatedCoefficientsFromProbes(int NumberOfSamp
 
 		TProbeCoefficients interpolatedCoeffs = probeStructure->interpolatedCoefficients(ss.position, ss.normal, NumberOfCoeffs);
 
-
-#ifdef ONE_ROW_PER_SH_BAND
-		dumpToFile(samplesRGBFile, interpolatedCoeffs);
-#else
-		Vector3 sum = Vector3::zero();
-		for (int c = 0; c < NumberOfCoeffs; ++c)
+		if (oneRowPerSHBand)
 		{
-			sum += interpolatedCoeffs[c];
+			dumpToFile(samplesRGBFile, interpolatedCoeffs);
 		}
-		samplesRGBFile << sum.x << std::endl;
-		samplesRGBFile << sum.y << std::endl;
-		samplesRGBFile << sum.z << std::endl;
-#endif
+		else
+		{
+			Vector3 sum = Vector3::zero();
+			for (int c = 0; c < NumberOfCoeffs; ++c)
+			{
+				sum += interpolatedCoeffs[c];
+			}
+			samplesRGBFile << sum.x << std::endl;
+			samplesRGBFile << sum.y << std::endl;
+			samplesRGBFile << sum.z << std::endl;
+		}
 
 		if (eigenVector)
 		{
 			for (int j = 0; j < NumberOfCoeffs; ++j)
 			{
-#ifdef ONE_ROW_PER_SH_BAND
-				int index = i * (3 * NumberOfCoeffs) + j * 3;
-#else
-				int index = i * 3;
-#endif
+				int index = oneRowPerSHBand ? i * (3 * NumberOfCoeffs) + j * 3 : i * 3;
 
 				(*eigenVector)(index + 0) += interpolatedCoeffs[j][0];
 				(*eigenVector)(index + 1) += interpolatedCoeffs[j][1];
@@ -601,22 +601,15 @@ void SceneSampleSet::generateRGBValuesFromProbes(int NumberOfSamples, int Number
 
 #else
 
-#ifdef ONE_ROW_PER_SH_BAND
-		Array<Vector3> rgbPerBand = probeStructure->reconstructSHPerBand(ss.position, ss.normal, NumberOfCoeffs);
-#else
-		Vector3 rgb = probeStructure->reconstructSH(ss.position, ss.normal, NumberOfCoeffs);
-#endif
+		Array<Vector3> rgbPerBand = oneRowPerSHBand ? probeStructure->reconstructSHPerBand(ss.position, ss.normal, NumberOfCoeffs) : Array<Vector3>();
 
 #endif
 
-#ifdef ONE_ROW_PER_SH_BAND
-		for (int c = 0; c < NumberOfCoeffs; ++c)
+		int totalIterations = oneRowPerSHBand ? NumberOfCoeffs : 1;
+		for (int c = 0; c < totalIterations; ++c)
 		{
-			Vector3& rgb = rgbPerBand[c];
-			int index = i * (3 * NumberOfCoeffs) + c * 3;
-#else
-		int index = i * 3;
-#endif
+			Vector3& rgb = oneRowPerSHBand ? rgbPerBand[c] : probeStructure->reconstructSH(ss.position, ss.normal, NumberOfCoeffs);;
+			int index = oneRowPerSHBand ?  i * (3 * NumberOfCoeffs) + c * 3 : i * 3;
 
 			if (output)
 			{
@@ -632,9 +625,7 @@ void SceneSampleSet::generateRGBValuesFromProbes(int NumberOfSamples, int Number
 				(*eigenVector)(index + 2) = rgb.z;
 			}
 
-#ifdef ONE_ROW_PER_SH_BAND
 		}
-#endif
 	}
 }
 
@@ -773,16 +764,15 @@ std::vector<float> SceneSampleSet::tryOptimizationPass(int NumberOfSamples,
 	std::vector<Eigen::Triplet<float>>* eigenTriplets = new std::vector<Eigen::Triplet<float>>;
 	eigenTriplets->reserve(NumberOfSamples * 3 * NumElementsPerRow);
 
-#ifdef ONE_ROW_PER_SH_BAND
-	Eigen::VectorXd* rgbColumn = new Eigen::VectorXd(NumberOfSamples * 3 * NumberOfCoeffs);
-	Eigen::VectorXd bVector(NumberOfSamples * 3 * NumberOfCoeffs);
-	WeightMatrixType A(NumberOfSamples * 3 * NumberOfCoeffs, NumElementsPerRow);
-#else
-	WeightMatrixType A(NumberOfSamples * 3, NumElementsPerRow);
-	Eigen::VectorXd bVector(NumberOfSamples * 3);
-	Eigen::VectorXd* rgbColumn = new Eigen::VectorXd(NumberOfSamples * 3);
-
-#endif
+	int rows = NumberOfSamples * 3;
+	if (oneRowPerSHBand)
+	{
+		rows *= NumberOfCoeffs;
+	}
+	Eigen::VectorXd* rgbColumn = new Eigen::VectorXd(rows);
+	Eigen::VectorXd bVector(rows);
+	WeightMatrixType A(rows, NumElementsPerRow);
+	
 	rgbColumn->setZero();
 
 	generateTriplets(NumberOfSamples, NumberOfCoeffs, optimizationFolderPath + "/triplets.txt", eigenTriplets, optimizeForMitsubaSamples);

@@ -1,9 +1,10 @@
 {
     "bFlipShadingNormals": false,
     "bManipulateProbesEnabled": false,
+    "bOneRowPerSHBand": true,
     "bOptimizeForCoeffs": true,
     "bPreventErrorIncrease": false,
-    "bPreventOOBDisplacement": false,
+    "bPreventOOBDisplacement": true,
     "bRenderDirect": false,
     "bRenderIndirect": true,
     "bShowOptimizationOutput": true,

@@ -42,6 +42,10 @@ fileResolver.appendPath(path);
 
 renderType = sys.argv[3];
 renderGradients = sys.argv[4];
+numArgumentsBeforeProbes = 5;
+numProbesToRender = len(sys.argv) - numArgumentsBeforeProbes;
+probesToRender = [int(x) for x in sys.argv[5:len(sys.argv)]]
+print(("probesToRender",probesToRender));
 
 scene = SceneHandler.loadScene("../Scenes/" + sceneName + "/MitsubaScene.xml", paramMap)
 # scene = SceneHandler.loadScene("C:/git/g3d/data10/common/model/crytek_sponza/sponza.xml", paramMap)
@@ -258,6 +262,10 @@ def makeProbeList(rootPath):
 		print(splitLine);
 		(x, y, z) = (float(x) for x in splitLine);
 		print((x,y,z));
+
+		if not (probeCount in probesToRender):
+			probeCount += 1;
+			continue
 		
 		if (renderType == "all"):
 			makeProbe(x,y,z,probeCount, rootPath, "Probes");

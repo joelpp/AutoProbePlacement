@@ -166,6 +166,7 @@ void App::onInit() {
 
 	loadOptions();
 	makeGui();
+	stopPythonRenderingEngine();
 }//end of onInit 
 
 void App::loadScene(String sceneName)
@@ -701,16 +702,12 @@ void App::generateSampleSetPositions()
 {
     // generate n random points and store their colors, compare to the color in the corresponding texture , add to a cost function
     int n = atoi(samplesToSave->c_str());
-    Vector2 UV, IJ;
-    Vector3 N, P;
-    int selectedModel;
 
     for (int i = 0; i < n; i++)
     {
         clearAllActors();
-        SceneSample ss = generateSceneSample(&selectedModel, &P, &UV, &N, i);
+        SceneSample ss = generateSceneSample();
         sampleSet->addSample(ss);
-
     }
 
     sampleSet->save();
@@ -1276,7 +1273,31 @@ void App::makeGui() {
 
 	tab->addButton("Compute ref values", [this]() 
     {
-		computeSamplesRGBRef();
+		if (bOptimizeForCoeffs)
+		{
+			// copy samples interpolated coefficients
+
+			std::fstream coeffsFile = sampleSet->openFile(ESSFile::Coeffs, true);
+
+			int numSamples = std::atoi(numOptimizationSamples.c_str());
+			int numCoeffs = std::atoi(optimizationSHBand.c_str());
+			String outputPath = currentOptimizationFolderPath() + "/ref_values.txt";
+			std::fstream outputFile(outputPath.c_str(), std::fstream::out);
+
+			int numLines = 3 * numSamples * numCoeffs;
+			std::string line;
+			for (int i = 0; i < numLines; ++i)
+			{
+				std::getline(coeffsFile, line);
+				outputFile << line << std::endl;
+			}
+			outputFile.close();
+			coeffsFile.close();
+		}
+		else
+		{
+			computeSamplesRGBRef();
+		}
     }
     ,GuiTheme::TOOL_BUTTON_STYLE);
 

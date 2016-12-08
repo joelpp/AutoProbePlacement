@@ -797,14 +797,18 @@ std::vector<float> SceneSampleSet::tryOptimizationPass(int NumberOfSamples,
 	bool success = probeOptimizationPass(A, bVector, &optimizationResult);
 	sw.after("Optimization finished");
 
-	std::fstream logFile;
-	logFile.open((optimizationFolderPath + "/log.txt").c_str(), std::ios::app);
-	logFile << "After optimization \n";
-	logFile << "A\n" << A << "\n";
-	logFile << "b\n" << bVector << "\n";
-    logFile << "x\n" << optimizationResult << "\n";
-    logFile << "A*x\n" << A*optimizationResult << "\n";
-	logFile.close();
+	if (outputToLog)
+	{
+		std::fstream logFile;
+		logFile.open((optimizationFolderPath + "/log.txt").c_str(), std::ios::app);
+		logFile << "After optimization \n";
+		logFile << "A\n" << A << "\n";
+		logFile << "b\n" << bVector << "\n";
+		logFile << "x\n" << optimizationResult << "\n";
+		logFile << "A*x\n" << A*optimizationResult << "\n";
+		logFile.close();
+
+	}
 
 	std::vector<float> toReturn;
 	if (success)
@@ -815,7 +819,7 @@ std::vector<float> SceneSampleSet::tryOptimizationPass(int NumberOfSamples,
 		}
 		
 		std::fstream outputFile;
-		outputFile.open((optimizationFolderPath + "/dp.txt").c_str(), std::ios::out);
+		outputFile.open((optimizationFolderPath + "/dp.txt").c_str(), std::ios::out); 
 		outputFile.precision(20);
 		outputFile << optimizationResult;
 		outputFile.close();
@@ -845,10 +849,9 @@ bool SceneSampleSet::probeOptimizationPass(WeightMatrixType& A, Eigen::VectorXd&
 	WeightMatrixType AtA = At * A;
 	Eigen::VectorXd Atb = At * b;
 
-
 	Eigen::ConjugateGradient<WeightMatrixType> solver;
 	debugPrintf("Compute step...\n");
-	solver.setTolerance(1e-3);
+	solver.setTolerance(1e-2);
 	solver.setMaxIterations(1e12);
 	solver.compute(AtA);
 
@@ -857,25 +860,15 @@ bool SceneSampleSet::probeOptimizationPass(WeightMatrixType& A, Eigen::VectorXd&
 		debugPrintf("Compute step failed!");
 		return false;
 	}
-	std::fstream logFile;
-	logFile.open("C:/temp/log.txt", std::ios::out);
-	//logFile << A << "\n";
-	//logFile << At << "\n";
-	//logFile << AtA << "\n";
-	logFile << "b\n" << b << "\n\n";
-	logFile << "Atb\n" << Atb << "\n\n";
+
 	debugPrintf("Solve step...\n");
 	Eigen::VectorXd tempResult = solver.solve(Atb);
-	//
-	logFile << "Result\n" << AtA * tempResult << "\n\n";
-	logFile << "Result2\n" << A * tempResult;
-	logFile.close();
-	//
+
 	for (int i = 0; i < tempResult.size(); ++i)
 	{
-		//debugPrintf("%f\n", tempResult(i));
 		(*result)(i) = tempResult(i);
 	}
+
 	if (solver.info() != Eigen::Success)
 	{
 		debugPrintf("Solve step FAILED!\n");

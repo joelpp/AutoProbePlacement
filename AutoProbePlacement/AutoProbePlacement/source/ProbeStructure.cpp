@@ -1202,11 +1202,29 @@ void ProbeStructure::displaceProbesWithGradient(std::vector<float>& displacement
 
 		App* app = App::instance;
 
-		if (app->bPreventOOBDisplacement && (app->m_scene->isOOB(newPosition, 0.01f) || app->pointInsideEntity(newPosition + displacement * 2)))
+		TriTree::Hit hit;
+
+		if (app->bPreventOOBDisplacement && (/*app->m_scene->isOOB(newPosition, 0.01f) ||*/ app->displacementCrossesSurface(newPosition, displacement * 5, hit)))
+		{
+			//continue;
+
+			// change the displacement vector so it slides along the surface
+			G3D::Vector3 p0 = probe->frame.translation;
+			G3D::Vector3 p1 = probe->frame.translation + hit.distance * displacement.unit();
+
+			G3D::Vector3 v = p1 - p0;
+			G3D::Vector3 n = app->m_triTree[hit.triIndex].normal(app->m_triTree.vertexArray());
+
+			G3D::Vector3 d = v - v.dot(n) * n.unit();
+
+			displacement = d;
+			newPosition = probe->frame.translation + displacement;
+		}
+			 
+		if (app->bPreventOOBDisplacement && app->m_scene->isOOB(newPosition, 0.01f))
 		{
 			continue;
 		}
-			 
 		probe->frame.translation = newPosition;
 		probe->manipulator->frame().translation = probe->frame.translation;
 		probe->bNeedsUpdate = true;
@@ -1422,7 +1440,16 @@ void ProbeStructure::generateProbes(std::string type, bool generateGradients, bo
     args << m_sceneName.c_str() << " " 
 		 << m_name.c_str() << " " 
 		 << type << " "
-		 << generateGradients;
+		 << generateGradients << " ";
+
+	for (int i = 0; i < probeCount(); ++i)
+	{
+		Probe* p = probeList[i];
+		if (p->bNeedsUpdate)
+		{
+			args << i << " ";
+		}
+	}
 
     runPythonScriptFromDataFiles("onecamera.py", args.str(), showOutput, true);
 

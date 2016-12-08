@@ -33,30 +33,32 @@ Array<Vector3> App::getRandomPoint(int modelNumber, Vector3* P, Vector3* N, Vect
     return toReturn;
 }
 
-SceneSample App::generateSceneSample(int* _selectedModel, Vector3 *_P, Vector2* _UV, Vector3* _N, int sampleID)
+SceneSample App::generateSceneSample()
 {
     Vector3* baryWeights = new Vector3();
     Vector3* P = new Vector3();
     Vector3* N = new Vector3();
     startingIndex = new int(0);
     selectedModel = (int)(m_scene->numModels() * Random::common().uniform());
-    //selectedModel = 3;
-    Array<Vector3> vertices = getRandomPoint(selectedModel, P, N, baryWeights, startingIndex);
 
+	if (bGenerateVolumeSamples)
+	{
+		G3D::Vector3 sceneExtent = m_scene->m_maxBound - m_scene->m_minBound;
+		
+		G3D::Vector3 pt = G3D::Vector3(m_random.uniform(0, sceneExtent.x), m_random.uniform(0, sceneExtent.y), m_random.uniform(0, sceneExtent.z));
 
-    *_selectedModel = selectedModel;
-    //*_UV = UV;
-    *_N = *N;
-	*_P = *P;
+		while (pointInsideEntity(pt))
+		{
+			pt = G3D::Vector3(m_random.uniform(0, sceneExtent.x), m_random.uniform(0, sceneExtent.y), m_random.uniform(0, sceneExtent.z));
+		}
 
-	Vector2 IJ = Vector2(0, 0);
-    Color4 uvColor = Color4(0, 0, 0, 0);
-
-
+		*P = pt;
+	}
+	else
+	{
+		Array<Vector3> vertices = getRandomPoint(selectedModel, P, N, baryWeights, startingIndex);
+	}
 	SceneSample ss = SceneSample(*P, *N);
-	//if (saveSample) ss->writeToFile("C:/libraries/g3d/samples/aTest/data-files/Scenes/" + 
-	//								scenePane.selectedSceneList->selectedValue() + "/SampleSets/" + 
-	//								*SampleSetOutputName + "/SamplePositions.txt");
 
 	delete baryWeights;
 	delete P;
@@ -150,14 +152,32 @@ void App::createTempProbeStructure(G3D::Array<G3D::Vector3>& probePositions)
 
 }
 
-bool App::pointInsideEntity(G3D::Vector3 point)
+bool App::displacementCrossesSurface(G3D::Vector3 startPoint, G3D::Vector3 displacement, TriTree::Hit& hit)
+{
+	Ray ray = Ray::fromOriginAndDirection(startPoint, displacement.unit(), 0.0f, 100.f);
+
+	int score = 0;
+	int counter = 0;
+	if (m_triTree.intersectRay(ray, hit, TriTree::DO_NOT_CULL_BACKFACES))
+	{
+		return (hit.distance <= displacement.length());
+	}
+	return false;
+}
+
+bool App::pointInsideEntity(G3D::Vector3 point, TriTree::Hit& hit)
 {
 	Ray ray = Ray::fromOriginAndDirection(point, Vector3(1,0,0), 0.0f, 100.f);
 
 	int score = 0;
-	TriTree::Hit hit;
-	while (m_triTree.intersectRay(ray, hit, TriTree::DO_NOT_CULL_BACKFACES))
+	int counter = 0;
+	TriTree::Hit h;
+	while (m_triTree.intersectRay(ray, h, TriTree::DO_NOT_CULL_BACKFACES))
 	{
+		if (counter++ == 0)
+		{
+			hit = h;
+		}
 		if (hit.backface)
 		{
 			score -= 1;
@@ -172,26 +192,13 @@ bool App::pointInsideEntity(G3D::Vector3 point)
 	}
 
 	return score <= 0;
-	//Array<shared_ptr<Entity> > entities;
-	//scene()->getEntityArray(entities);
-
-	//for (int i = 0; i < entities.size(); ++i)
-	//{
-	//	shared_ptr<Entity> entity = entities[i];
-	//	Ray ray = Ray(point, Vector3(1, 0, 0));
-	//	Model::HitInfo info;
-	//	float maxDist = 1000.f;
-	//	entity->intersect(ray, maxDist, info);
-
-	//	if ((info.point != Point3::nan()) && (entity == info.entity) && (dot(info.normal, ray.direction()) > 0.0f))
-	//	{
-	//		return true;
-	//	}
-	//}
-	//return false;
 }
 
-
+bool App::pointInsideEntity(G3D::Vector3 point)
+{
+	TriTree::Hit hit;
+	return pointInsideEntity(point, hit);
+}
 
 G3D::Array<G3D::Vector3> App::generateRandomPositions(int NumberOfPositions)
 {

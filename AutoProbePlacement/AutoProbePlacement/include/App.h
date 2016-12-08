@@ -197,7 +197,7 @@ private:
 
 	Array<Vector3> getRandomPoint(int modelNumber, Vector3* P, Vector3* N, Vector3* barycentricWeights, int* startingIndex);
   
-	SceneSample generateSceneSample(int* _selectedModel, Vector3 *_P, Vector2* _IJ, Vector3* _N, int sampleID);
+	SceneSample generateSceneSample();
 
 	void computeSamplesRGB();
 	void computeSamplesRGBRef();
@@ -374,6 +374,8 @@ private:
 
 public:
 	bool pointInsideEntity(G3D::Vector3 point);
+	bool pointInsideEntity(G3D::Vector3 point, TriTree::Hit& hit);
+	bool displacementCrossesSurface(G3D::Vector3 startPoint, G3D::Vector3 displacement, TriTree::Hit& hit);
 
 
 	float shadingMultiplier;

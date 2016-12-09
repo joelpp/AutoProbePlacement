@@ -111,9 +111,9 @@ bool SceneSampleSet::load(int maxSamples)
 
 		if (currentLine == 2)
 		{ // Samples Positions
-			ss.position = Vector3(std::stof(splitLine[0].c_str()) * m_scale,
-								  std::stof(splitLine[1].c_str()) * m_scale,
-								  std::stof(splitLine[2].c_str()) * m_scale);
+			ss.position = Vector3(std::stof(splitLine[0].c_str()),
+								  std::stof(splitLine[1].c_str()),
+								  std::stof(splitLine[2].c_str()));
 		}
 
 		if (currentLine == 4)

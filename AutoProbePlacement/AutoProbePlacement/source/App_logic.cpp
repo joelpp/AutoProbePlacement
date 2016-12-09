@@ -45,11 +45,15 @@ SceneSample App::generateSceneSample()
 	{
 		G3D::Vector3 sceneExtent = m_scene->m_maxBound - m_scene->m_minBound;
 		
-		G3D::Vector3 pt = G3D::Vector3(m_random.uniform(0, sceneExtent.x), m_random.uniform(0, sceneExtent.y), m_random.uniform(0, sceneExtent.z));
+		G3D::Vector3 pt = G3D::Vector3(m_random.uniform(m_scene->m_minBound.x, m_scene->m_maxBound.x),
+									   m_random.uniform(m_scene->m_minBound.y, m_scene->m_maxBound.y),
+									   m_random.uniform(m_scene->m_minBound.z, m_scene->m_maxBound.z));
 
-		while (pointInsideEntity(pt))
+		while (bPreventOOBDisplacement && pointInsideEntity(pt))
 		{
-			pt = G3D::Vector3(m_random.uniform(0, sceneExtent.x), m_random.uniform(0, sceneExtent.y), m_random.uniform(0, sceneExtent.z));
+			pt = G3D::Vector3(m_random.uniform(m_scene->m_minBound.x, m_scene->m_maxBound.x),
+							  m_random.uniform(m_scene->m_minBound.y, m_scene->m_maxBound.y),
+							  m_random.uniform(m_scene->m_minBound.z, m_scene->m_maxBound.z));
 		}
 
 		*P = pt;
@@ -256,20 +260,9 @@ void App::findBestInitialConditions()
 	G3D::Array<G3D::Vector3> bestPositions;
 	bestPositions.resize(NumberOfProbes);
 
-	//m_probeStructure->setGamma(1.0f);
-	//m_probeStructure->setHeight(64);
-	//m_probeStructure->setWidth(128);
-	//m_probeStructure->setIntegrator(String("direct"));
-	//m_probeStructure->setNumSamples(4);
-	//m_probeStructure->setType(String("wNN"));
-
 	for (int tryNumber = 0; tryNumber < NumberOfTries; ++tryNumber)
 	{
 		G3D::Array<G3D::Vector3> positions = generateRandomPositions(NumberOfProbes);
-
-		//createTempProbeStructure(positions);
-
-		//initializeProbeStructure(m_scene->m_name, "temp");
 
 
 		for (G3D::Vector3& v : positions)
@@ -306,11 +299,7 @@ void App::findBestInitialConditions()
 
 	}
 	m_probeStructure->updateAll(bShowOptimizationOutput);
-	// generate 
 
-	//createTempProbeStructure(bestPositions);
-	//exit(0);
-	//initializeProbeStructure(m_scene->m_name, "temp");
 }
 
 void App::logOptimizationIteration(float error)

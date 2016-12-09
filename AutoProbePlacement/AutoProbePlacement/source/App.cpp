@@ -123,19 +123,21 @@ void App::onInit() {
 	bWaitingForRenderFinished =		  false;
 	bPreventOOBDisplacement =		  false;
 	bScreenShot =					  false;
+	bFindingNewProbeLocation =		  false;
 
     //Decide how many bands we want to use for the interpolation
-    numBands =				2;
-    maxDrawBand =			8;
-    shadingMultiplier =		1.0f;
-    sampleMultiplier =		4.0f;
-    lightIntensity =		1;
-    sceneTextureIntensity = 1.0;
-    extrapolationT =		0;
-    smallestBaryCoord =		-1;
-    numPassesLeft =			0;
-    timer =					0;
-	sampleDropDownIndex =	0;
+    numBands =					2;
+    maxDrawBand =				8;
+    shadingMultiplier =			1.0f;
+    sampleMultiplier =			4.0f;
+    lightIntensity =			1;
+    sceneTextureIntensity =		1.0;
+    extrapolationT =			0;
+    smallestBaryCoord =			-1;
+    numPassesLeft =				0;
+    timer =						0;
+	sampleDropDownIndex =		0;
+	probeLocationPassesLeft =	0;
 	maxProbeStepLength =	  "0.1";
 	numOptimizationSamples =  "0";
     maxSamplesPointsToDraw =  "0";
@@ -891,6 +893,72 @@ void App::onAI()
 		}
 	}
 
+	if (probeFinder.numPassesLeft > 0)
+	{
+		if (!probeFinder.bWaitingForRenderingFinished)
+		{
+			int NumberOfProbes = std::atoi(m_sNumICProbes.c_str());
+
+			probeFinder.currentPositions = generateRandomPositions(NumberOfProbes);
+
+
+			for (G3D::Vector3& v : probeFinder.currentPositions)
+			{
+				m_probeStructure->addProbe(v);
+			}
+			
+			m_probeStructure->savePositions(false);
+			//sw.after("Saved new positions");
+
+			std::string settingsFilePath = "../data-files/scripts/optimizationSettings.txt";
+			std::fstream settingsFile = createEmptyFile(settingsFilePath.c_str());
+			settingsFile << m_probeStructure->name().c_str();
+			settingsFile.close();
+
+			probeFinder.lastRenderEndTime = getFileLastModifiedTime("../data-files/scripts/optimizationSettings.txt");
+
+			probeFinder.bWaitingForRenderingFinished = true;
+		}
+		else
+		{
+			FILETIME lastModifTime = getFileLastModifiedTime("../data-files/scripts/optimizationSettings.txt");
+			if (isLaterFileTime(lastModifTime, currentOptimization.lastRenderEndTime))
+			{
+				computeSamplesRGB();
+
+				float error = computeError(false);
+
+				if (error < probeFinder.bestError)
+				{
+					debugPrintf(" (best yet!)");
+					probeFinder.bestError = error;
+					probeFinder.bestPositions = probeFinder.currentPositions;
+				}
+				
+				int NumberOfProbes = std::atoi(m_sNumICProbes.c_str());
+				for (int i = 0; i < NumberOfProbes; ++i)
+				{
+					m_probeStructure->removeProbe(m_probeStructure->probeCount() - 1);
+				}
+				probeFinder.bWaitingForRenderingFinished = true;
+			}
+
+		}
+
+		if (probeFinder.numPassesLeft == 1)
+		{
+			for (G3D::Vector3& v : probeFinder.bestPositions)
+			{
+				debugPrintf("v: %s \n", v.toString().c_str());
+				m_probeStructure->addProbe(v);
+
+			}
+			m_probeStructure->updateAll(bShowOptimizationOutput);
+		}
+
+		probeFinder.numPassesLeft--;
+	}
+
 	//if (bWaitingForRenderFinished)
 	//{
 	//	FILETIME lastModifTime = getFileLastModifiedTime("../data-files/scripts/optimizationSettings.txt");
@@ -1378,17 +1446,23 @@ void App::makeGui() {
 	tab->endRow();
 
 	tab->beginRow();
-	tab->addButton("Find Initial Conditions", GuiControl::Callback(this, &App::findBestInitialConditions), GuiTheme::TOOL_BUTTON_STYLE);
+	tab->addButton("Find Initial Conditions", [this]()
+	{
+		//findBestInitialConditions();
+		int NumberOfProbes = std::atoi(m_sNumICProbes.c_str());
+		int NumberOfTries = std::atoi(m_sNumICTries.c_str());
+
+		probeFinder = SBestProbeLocationQuery(NumberOfProbes, NumberOfTries);
+
+	}, GuiTheme::TOOL_BUTTON_STYLE)	;
+
 	tab->addTextBox("NumTries", &m_sNumICTries)->setWidth(120);
 	tab->addTextBox("NumProbes", &m_sNumICProbes)->setWidth(120);
 	tab->addButton("tryTotal", [this]()
 	{
-		
 		findBestInitialConditions();
 		shouldAddAProbe = false;
         optimizing = true;
-
-
 	}, GuiTheme::TOOL_BUTTON_STYLE);
 
 	tab->addButton("Save settings", [this]()

@@ -54,6 +54,35 @@ struct SProbeOptimization
 	bool bWaitingForRenderingFinished;
 };
 
+struct SBestProbeLocationQuery
+{
+	SBestProbeLocationQuery()
+		: numPassesLeft(0)
+		, bestError(999999999999999)
+		, bestPositions(G3D::Array<G3D::Vector3>())
+		, currentPositions(G3D::Array<G3D::Vector3>())
+		, bWaitingForRenderingFinished(false)
+	{ }
+
+	SBestProbeLocationQuery(int numProbes, int numTries)
+		: numPassesLeft(numTries)
+		, bestError(999999999999999)
+		, bestPositions(G3D::Array<G3D::Vector3>())
+		, currentPositions(G3D::Array<G3D::Vector3>())
+		, bWaitingForRenderingFinished(false)
+	{
+		bestPositions.resize(numProbes);
+		currentPositions.resize(numProbes);
+	}
+
+	float bestError;
+	int numPassesLeft;
+	G3D::Array<G3D::Vector3> bestPositions;
+	G3D::Array<G3D::Vector3> currentPositions;
+	bool bWaitingForRenderingFinished;
+	FILETIME lastRenderEndTime;
+};
+
 struct ScenePane
 {
 	G3D::GuiDropDownList* selectedSceneList;
@@ -333,6 +362,9 @@ private:
 	bool interpolateCoefficients;
 	bool bUpdateProbesOnOptimizationPass;
 	bool bWaitingForRenderFinished;
+	bool bFindingNewProbeLocation;
+	int probeLocationPassesLeft;
+
 	FILETIME lastRenderEndTime;
 
 	std::string tetgenString;
@@ -445,7 +477,8 @@ public:
 
     int m_currentOptimization;
     String sCurrentOptimizationName;
-    SProbeOptimization currentOptimization;
+	SProbeOptimization currentOptimization;
+	SBestProbeLocationQuery probeFinder;
 
     bool bShouldUpdateProbeStructurePane;
     bool bKeepRefValuesOnNewOptimization; 

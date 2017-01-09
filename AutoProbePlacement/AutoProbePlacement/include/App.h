@@ -58,7 +58,7 @@ struct SBestProbeLocationQuery
 {
 	SBestProbeLocationQuery()
 		: numPassesLeft(0)
-		, bestError(999999999999999)
+		, bestError(9999)
 		, bestPositions(G3D::Array<G3D::Vector3>())
 		, currentPositions(G3D::Array<G3D::Vector3>())
 		, bWaitingForRenderingFinished(false)
@@ -66,7 +66,7 @@ struct SBestProbeLocationQuery
 
 	SBestProbeLocationQuery(int numProbes, int numTries)
 		: numPassesLeft(numTries)
-		, bestError(999999999999999)
+		, bestError(9999)
 		, bestPositions(G3D::Array<G3D::Vector3>())
 		, currentPositions(G3D::Array<G3D::Vector3>())
 		, bWaitingForRenderingFinished(false)
@@ -81,6 +81,7 @@ struct SBestProbeLocationQuery
 	G3D::Array<G3D::Vector3> currentPositions;
 	bool bWaitingForRenderingFinished;
 	FILETIME lastRenderEndTime;
+
 };
 
 struct ScenePane
@@ -408,13 +409,15 @@ public:
 	bool pointInsideEntity(G3D::Vector3 point);
 	bool pointInsideEntity(G3D::Vector3 point, TriTree::Hit& hit);
 	bool displacementCrossesSurface(G3D::Vector3 startPoint, G3D::Vector3 displacement, TriTree::Hit& hit);
+	bool displacementCrossesSurface(G3D::Vector3 startPoint, G3D::Vector3 displacement);
 
 
 	float shadingMultiplier;
 	ProbeStructure *m_probeStructure;
 
 	bool bRenderDirect;
-	bool bRenderIndirect;
+	bool bRenderIndirect; 
+	bool bRenderIndirectG3D;
 	bool bRenderMultiplyIndirectByBRDF;
 	bool bRenderShadowMaps;
 	bool bRenderAO;
@@ -504,6 +507,8 @@ public:
 
 	void stopPythonRenderingEngine();
 	void computeSampleSetValuesFromIndividualProbe();
+
+	G3D::Vector3 debug_RefPoint;
 };
 
 #endif

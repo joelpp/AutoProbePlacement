@@ -169,6 +169,13 @@ bool App::displacementCrossesSurface(G3D::Vector3 startPoint, G3D::Vector3 displ
 	return false;
 }
 
+bool App::displacementCrossesSurface(G3D::Vector3 startPoint, G3D::Vector3 displacement)
+{
+	TriTree::Hit hit;
+	return displacementCrossesSurface(startPoint, displacement, hit);
+
+}
+
 bool App::pointInsideEntity(G3D::Vector3 point, TriTree::Hit& hit)
 {
 	Ray ray = Ray::fromOriginAndDirection(point, Vector3(1,0,0), 0.0f, 100.f);
@@ -392,6 +399,8 @@ void App::computeSamplesRGB()
 	int numSamples = std::atoi(numOptimizationSamples.c_str());
     int numCoeffs = std::atoi(optimizationSHBand.c_str());
     String outputFile = currentOptimizationFolderPath() + "/values.txt";
+	sampleSet->oneRowPerSHBand = bOneRowPerSHBand;
+
 	if (bOptimizeForCoeffs)
 	{
 		sampleSet->generateInterpolatedCoefficientsFromProbes(numSamples, numCoeffs, outputFile, 0);
@@ -503,7 +512,7 @@ void App::displaceProbes()
 		}
 		//m_probeStructure->updateProbes(true);
         m_probeStructure->savePositions(false);
-        m_probeStructure->generateProbes("all", true, bShowOptimizationOutput);
+        m_probeStructure->generateProbes("all", false, true, bShowOptimizationOutput);
         m_probeStructure->extractSHCoeffs(true, true);
 		//updateProbeStructure();
 
@@ -525,7 +534,7 @@ void App::displaceProbes()
 
 		//m_probeStructure->updateProbes(true);
 		//updateProbeStructure();
-        m_probeStructure->generateProbes("all", true, bShowOptimizationOutput);
+        m_probeStructure->generateProbes("all", false, true, bShowOptimizationOutput);
         m_probeStructure->extractSHCoeffs(true, true);
 		//computeSamplesRGB();
 		//computeError("C:/temp/errorlog2.txt");

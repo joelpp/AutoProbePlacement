@@ -7,8 +7,8 @@
 #include "Helpers.h"
 #include "SH.h"
 
-#define HOME_PC
-//#define LIGUM_PC
+//#define HOME_PC
+#define LIGUM_PC
 
 String generateFolderNameBaseAnySuffix(const String& prefix) 
 {
@@ -265,6 +265,14 @@ void dumpToFile(std::fstream& file, const Array<Vector3>& arr)
 			file << arr[i].x << std::endl;
 			file << arr[i].y << std::endl;
 			file << arr[i].z << std::endl;
+	}
+}
+
+void dumpToFile(std::fstream& file, const Array<float>& arr)
+{
+	for (int i = 0; i < arr.size(); ++i)
+	{
+		file << arr[i] << std::endl;
 	}
 }
 

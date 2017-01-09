@@ -1,5 +1,5 @@
 import multiprocessing
-import os, sys
+import os, sys, time
 # NOTE: remember to specify paths using FORWARD slashes (i.e. '/' instead of
 # '\' to avoid pitfalls with string escaping)
 # # Configure the search path for the Python extension module
@@ -251,22 +251,29 @@ def makeProbeGrid(rootPath, _offset, _step, _numIterations):
 				
 
 def makeProbeList(rootPath):
-	fileList = open(rootPath + '/probeList.txt', 'r');
-	probeCount = 0;
-	for line in fileList:
-		print(line);
-		splitLine = line.split();
-		print(splitLine);
-		(x, y, z) = (float(x) for x in splitLine);
-		print((x,y,z));
-		
-		if (renderType == "all"):
-			makeProbe(x,y,z,probeCount, rootPath, "Probes");
-			# makeProbe(x,y,z,probeCount, rootPath, "Positions");
-			# makeProbe(x,y,z,probeCount, rootPath, "Normals");
-		else:
-			makeProbe(x,y,z,probeCount, rootPath, renderType);
-		probeCount += 1;
+	while True:
+		fileList = open(rootPath + '/probeList.txt', 'r');
+		probeCount = 0;
+		for line in fileList:
+			print(line);
+			splitLine = line.split();
+			print(splitLine);
+			if not (len(splitLine) == 3):
+				fileList.close();
+				break;
+
+			(x, y, z) = (float(x) for x in splitLine);
+			print((x,y,z));
+			
+			if (renderType == "all"):
+				makeProbe(x,y,z,probeCount, rootPath, "Probes");
+				# makeProbe(x,y,z,probeCount, rootPath, "Positions");
+				# makeProbe(x,y,z,probeCount, rootPath, "Normals");
+			else:
+				makeProbe(x,y,z,probeCount, rootPath, renderType);
+			probeCount += 1;
+
+		return;
 
 
 def makeProbeAt(index, position):
@@ -295,7 +302,7 @@ lastModifTime = os.path.getmtime(settingsPath)
 while (True):
 	currentTime = os.path.getmtime(settingsPath)
 	if (currentTime > lastModifTime):
-
+		time.sleep(0.1);
 		settingsFile = open(settingsPath, 'r');
 
 		structureName = settingsFile.readline();

@@ -45,6 +45,9 @@ renderGradients = sys.argv[4];
 numArgumentsBeforeProbes = 5;
 numProbesToRender = len(sys.argv) - numArgumentsBeforeProbes;
 probesToRender = [int(x) for x in sys.argv[5:len(sys.argv)]]
+allProbes = False;
+if (len(probesToRender) == 0):
+	allProbes = True;
 print(("probesToRender",probesToRender));
 
 scene = SceneHandler.loadScene("../Scenes/" + sceneName + "/MitsubaScene.xml", paramMap)
@@ -263,7 +266,7 @@ def makeProbeList(rootPath):
 		(x, y, z) = (float(x) for x in splitLine);
 		print((x,y,z));
 
-		if not (probeCount in probesToRender):
+		if not allProbes and not (probeCount in probesToRender):
 			probeCount += 1;
 			continue
 		

@@ -43,7 +43,7 @@ SceneSampleSet::SceneSampleSet(std::string sceneName, std::string sampleSetName,
 	m_scale = scale;
 	if (!load(numSamplesToLoad))
 	{
-		throw std::exception("Sample set load failed");
+		//throw std::exception("Sample set load failed");
 	}
 }
 bool SceneSampleSet::load(int maxSamples)
@@ -52,17 +52,20 @@ bool SceneSampleSet::load(int maxSamples)
 	std::fstream samplesFile, irradianceFile;
 	std::string samplesPath = "../data-files/Scenes/" + m_sceneName + "/SampleSets/" + m_sampleSetName + "/SamplePositions.txt";
 
-	bool loadIrradianceResults2 = true;
+	bool loadSHCoefficients = true;
 	std::string irradiancePath;
 
-	if (loadIrradianceResults2)
+	int numValuesPerSample;
+
+	if (loadSHCoefficients)
 	{
-		irradiancePath = "../data-files/Scenes/" + m_sceneName + "/SampleSets/" + m_sampleSetName + "/IrradianceResults2.txt";
+		irradiancePath = "../data-files/Scenes/" + m_sceneName + "/SampleSets/" + m_sampleSetName + "/InterpolatedCoeffs.txt";
+		numValuesPerSample = 27;
 	}
 	else
 	{
 		irradiancePath = "../data-files/Scenes/" + m_sceneName + "/SampleSets/" + m_sampleSetName + "/IrradianceResults.txt";
-
+		numValuesPerSample = 3;
 	}
 
 	samplesFile.open(samplesPath.c_str(), std::fstream::in);
@@ -83,8 +86,10 @@ bool SceneSampleSet::load(int maxSamples)
 	int NumberOfLinesPerSample = 6;
 	int currentLine = 0;
 	std::string sampleLine, irradianceLine;
+
 	SceneSample ss;
 	int numLoaded = 0;
+
 	while (std::getline(samplesFile, sampleLine))
 	{
 		Array<String> splitLine = stringSplit(String(sampleLine.c_str()), ' ');
@@ -95,18 +100,25 @@ bool SceneSampleSet::load(int maxSamples)
 
 			if (!std::getline(irradianceFile, irradianceLine))
 			{
-                ss.irradiance = Color3::zero();
+				for (int i = 0; i < numValuesPerSample; ++i)
+				{
+					ss.values.push_back(0);
+				}
             }
             else
             {
-                Array<String> splitLine = stringSplit(String(irradianceLine.c_str()), ' ');
 
                 float divider = 1.f;
-                ss.irradiance = Color3(std::stof(splitLine[0].c_str()) / divider,
-                                       std::stof(splitLine[1].c_str()) / divider,
-                                       std::stof(splitLine[2].c_str()) / divider);
-            }
-			
+				ss.values.push_back(std::stof(irradianceLine.c_str()) / divider);
+
+				// we iterate up to -1 here cause the first value's been loaded
+				for (int i = 0; i < numValuesPerSample - 1; ++i)
+				{
+					std::getline(irradianceFile, irradianceLine);
+					//Array<String> splitLine = stringSplit(String(irradianceLine.c_str()), ' ');
+					ss.values.push_back(std::stof(irradianceLine.c_str()) / divider);
+				}
+            }			
 		}
 
 		if (currentLine == 2)
@@ -114,6 +126,7 @@ bool SceneSampleSet::load(int maxSamples)
 			ss.position = Vector3(std::stof(splitLine[0].c_str()),
 								  std::stof(splitLine[1].c_str()),
 								  std::stof(splitLine[2].c_str()));
+
 		}
 
 		if (currentLine == 4)
@@ -145,10 +158,11 @@ bool SceneSampleSet::load(int maxSamples)
 	m_colors.clear();
 	for (SceneSample& ss : m_samples)
 	{
-		if (ss.irradiance != Color3::zero())
+		Color3 rgb = Color3(ss.values[0], ss.values[1], ss.values[2]);
+		//if (rgb != Color3::zero())
 		{
 			m_points.push_back(ss.position);
-			m_colors.push_back(ss.irradiance / PI);
+			m_colors.push_back(rgb / PI);
 		}
 		
 	}
@@ -163,15 +177,19 @@ void SceneSampleSet::addSample(SceneSample sample)
 
 void SceneSampleSet::save()
 {
-	std::string savePath = "../data-files/Scenes/" + m_sceneName + "/SampleSets/" + m_sampleSetName + "/SamplePositions.txt";
-	std::fstream saveFile;
-	saveFile.open(savePath.c_str(), std::fstream::out);
+	//std::string positionsFilePath = "../data-files/Scenes/" + m_sceneName + "/SampleSets/" + m_sampleSetName + "/SamplePositions.txt";
+	//std::fstream positionsFile;
+	//positionsFile.open(positionsFilePath.c_str(), std::fstream::out);
+	
+	std::fstream positionsFile = openFile(ESSFile::Samples, false);
+	std::fstream valuesFile = openFile(ESSFile::Coeffs, false);
 
 	for (const SceneSample& ss : m_samples)
 	{
-		saveFile << ss.toString() << std::endl;
+		positionsFile << ss.toString() << std::endl;
+		dumpToFile(valuesFile, ss.values);
 	}
-	saveFile.close();
+	positionsFile.close();
 }
 
 std::string generateUniqueName(int NumberOfProbes, G3D::Vector3 baseProbePosition)
@@ -556,7 +574,7 @@ void SceneSampleSet::generateRGBValuesFromSamples(int NumberOfSamples, String sa
     for (int i = 0; i < NumberOfSamples; ++i)
     {
         const SceneSample& ss = m_samples[i];
-        Vector3 rgb = Vector3(ss.irradiance);
+        Vector3 rgb = Vector3(ss.values[0], ss.values[1], ss.values[2]);
         samplesRGBFile << rgb.x << std::endl;
         samplesRGBFile << rgb.y << std::endl;
         samplesRGBFile << rgb.z << std::endl;
@@ -851,7 +869,7 @@ bool SceneSampleSet::probeOptimizationPass(WeightMatrixType& A, Eigen::VectorXd&
 
 	Eigen::ConjugateGradient<WeightMatrixType> solver;
 	debugPrintf("Compute step...\n");
-	solver.setTolerance(1e-2);
+	solver.setTolerance(1e-1);
 	solver.setMaxIterations(1e12);
 	solver.compute(AtA);
 
@@ -876,4 +894,36 @@ bool SceneSampleSet::probeOptimizationPass(WeightMatrixType& A, Eigen::VectorXd&
 	}
 
 	return true;
+}
+
+void SceneSampleSet::removeDarkSamples()
+{
+	for (int s = 0; s < m_samples.size();)
+	{
+		SceneSample& ss = m_samples[s];
+
+		bool isDark = true;
+		for (int i = 0; i < ss.values.size(); ++i)
+		{
+			if (ss.values[i] != 0)
+			{
+				isDark = false;
+				break;
+			}
+
+		}
+		if (ss.position.x < -17)
+		{
+			isDark = true;
+		}
+
+		if (isDark)
+		{
+			m_samples.erase(m_samples.begin() + s);
+		}
+		else
+		{
+			++s;
+		}
+	}
 }

@@ -112,6 +112,7 @@ void App::onInit() {
 	bOneRowPerSHBand =				  false;
 	bRenderDirect =					  true;
 	bRenderIndirect =				  true;
+	bRenderIndirectG3D =			  false;
 	bRenderMultiplyIndirectByBRDF =   false;
     bShouldUpdateProbeStructurePane = true;
     bKeepRefValuesOnNewOptimization = false;
@@ -223,18 +224,26 @@ void App::loadCurrentOptimization()
 		}
 	}
 
-	int lastIteration = 0;
-	for (int i = tokens.size() - 1; i > 0; --i)
+	int lastIteration = -1;
+	std::vector<float> errors;
+	for (int i = 0; i < tokens.size(); ++i)
 	{
 		String& s = tokens[i];
 
 		if (s == "iteration")
 		{
 			lastIteration = std::stoi(tokens[i + 1].c_str());
-			break;
+			continue;
+		}
+
+		if (s == "error")
+		{
+			errors.push_back(std::stof(tokens[i + 1].c_str()));
+			continue;
 		}
 	}
 	currentOptimization.iteration = lastIteration;
+	currentOptimization.errors = errors;
 
 }
 
@@ -907,26 +916,59 @@ void App::onAI()
 				m_probeStructure->addProbe(v);
 			}
 			
+			m_probeStructure->saveInfoFile();
 			m_probeStructure->savePositions(false);
 			//sw.after("Saved new positions");
+			std::this_thread::sleep_for(std::chrono::milliseconds(200));
 
 			std::string settingsFilePath = "../data-files/scripts/optimizationSettings.txt";
 			std::fstream settingsFile = createEmptyFile(settingsFilePath.c_str());
 			settingsFile << m_probeStructure->name().c_str();
-			settingsFile.close();
 
 			probeFinder.lastRenderEndTime = getFileLastModifiedTime("../data-files/scripts/optimizationSettings.txt");
+			settingsFile.close();
 
 			probeFinder.bWaitingForRenderingFinished = true;
 		}
 		else
 		{
 			FILETIME lastModifTime = getFileLastModifiedTime("../data-files/scripts/optimizationSettings.txt");
-			if (isLaterFileTime(lastModifTime, currentOptimization.lastRenderEndTime))
+			if (isLaterFileTime(lastModifTime, probeFinder.lastRenderEndTime))
 			{
+				int NumberOfProbes = std::atoi(m_sNumICProbes.c_str());
+				
+				m_probeStructure->extractSHCoeffs(true, true);
+
 				computeSamplesRGB();
 
 				float error = computeError(false);
+				
+				bool isDark = true;
+
+				for (int i = 0; i < m_probeStructure->getProbe(m_probeStructure->probeCount() - 1)->coeffs.size(); ++i)
+				{
+					G3D::Vector3& val = m_probeStructure->getProbe(m_probeStructure->probeCount() - 1)->coeffs[i];
+
+					if (val != G3D::Vector3::zero())
+					{
+						isDark = false;
+						break;
+					}
+				}
+
+				if (isDark)
+				{
+					debugPrintf("Placed probe in fully dark spot, trying again... \n");
+
+					for (int i = 0; i < NumberOfProbes; ++i)
+					{
+						m_probeStructure->removeProbe(m_probeStructure->probeCount() - 1);
+					}
+
+					probeFinder.bWaitingForRenderingFinished = false;
+					return;
+				}
+				debugPrintf("- Attempt: error : %f, passesLeft : %d", error, probeFinder.numPassesLeft - 1);
 
 				if (error < probeFinder.bestError)
 				{
@@ -934,29 +976,39 @@ void App::onAI()
 					probeFinder.bestError = error;
 					probeFinder.bestPositions = probeFinder.currentPositions;
 				}
-				
-				int NumberOfProbes = std::atoi(m_sNumICProbes.c_str());
+				debugPrintf("\n");
+
 				for (int i = 0; i < NumberOfProbes; ++i)
 				{
 					m_probeStructure->removeProbe(m_probeStructure->probeCount() - 1);
 				}
-				probeFinder.bWaitingForRenderingFinished = true;
+				probeFinder.bWaitingForRenderingFinished = false;
+
+				if (probeFinder.numPassesLeft == 1)
+				{
+					if ( (currentOptimization.errors.size() == 0) || (probeFinder.bestError < currentOptimization.errors.back()))
+					{
+						for (G3D::Vector3& v : probeFinder.bestPositions)
+						{
+							debugPrintf("v: %s \n", v.toString().c_str());
+							m_probeStructure->addProbe(v);
+
+						}
+						m_probeStructure->updateAll(bShowOptimizationOutput);
+					}
+					else
+					{
+						debugPrintf("Finished, but best error at %f is no better than previous best at %f. Not adding new probe.\n", probeFinder.bestError, currentOptimization.errors.back());
+					}
+
+				}
+
+				probeFinder.numPassesLeft--;
+
 			}
 
 		}
 
-		if (probeFinder.numPassesLeft == 1)
-		{
-			for (G3D::Vector3& v : probeFinder.bestPositions)
-			{
-				debugPrintf("v: %s \n", v.toString().c_str());
-				m_probeStructure->addProbe(v);
-
-			}
-			m_probeStructure->updateAll(bShowOptimizationOutput);
-		}
-
-		probeFinder.numPassesLeft--;
 	}
 
 	//if (bWaitingForRenderFinished)
@@ -1458,22 +1510,30 @@ void App::makeGui() {
 
 	tab->addTextBox("NumTries", &m_sNumICTries)->setWidth(120);
 	tab->addTextBox("NumProbes", &m_sNumICProbes)->setWidth(120);
-	tab->addButton("tryTotal", [this]()
-	{
-		findBestInitialConditions();
-		shouldAddAProbe = false;
-        optimizing = true;
-	}, GuiTheme::TOOL_BUTTON_STYLE);
+	//tab->addButton("tryTotal", [this]()
+	//{
+	//	findBestInitialConditions();
+	//	shouldAddAProbe = false;
+ //       optimizing = true;
+	//}, GuiTheme::TOOL_BUTTON_STYLE);
 
 	tab->addButton("Save settings", [this]()
 	{
 		saveOptions();
 	});
 
+	tab->addButton("Save ref point", [this]()
+	{
+		G3D::Vector3 cameraPos = activeCamera()->frame().translation;
+		debug_RefPoint = cameraPos;
+		debugPrintf("Set debug_RefPoint at : %s\n", debug_RefPoint.toString());
+	}, GuiTheme::TOOL_BUTTON_STYLE);
+
 	tab->addButton("testcamerapos", [this]()
 	{
 		G3D::Vector3 cameraPos = activeCamera()->frame().translation;
-		debugPrintf("camera inside entity : %s\n", pointInsideEntity(cameraPos) ? "true" : "false");
+		//debugPrintf("camera inside entity : %s\n", pointInsideEntity(cameraPos) ? "true" : "false");
+		debugPrintf("displacementCrossesSurface : %s\n", displacementCrossesSurface(cameraPos, debug_RefPoint - cameraPos) ? "true" : "false");
 	});
 
 	tab->addButton("Random offset probes", [this]()
@@ -1493,7 +1553,7 @@ void App::makeGui() {
 
 		m_probeStructure->displaceProbesWithGradient(displacement, std::stof(maxProbeStepLength.c_str()));
 		m_probeStructure->savePositions(false);
-		m_probeStructure->generateProbes("all", true, bShowOptimizationOutput);
+		m_probeStructure->generateProbes("all", false, true, bShowOptimizationOutput);
 		m_probeStructure->extractSHCoeffs(true, true);
 	});
 
@@ -1517,7 +1577,7 @@ void App::makeGui() {
 	tab->beginRow();
 
 
-	tab->addCheckBox("AOF", &(bRenderAO));
+	tab->addCheckBox("Indirect (G3D)", &(bRenderIndirectG3D));
 	tab->addCheckBox("Shadow Maps", &(bRenderShadowMaps));
 	tab->addTextBox("NumSamples", &maxSamplesPointsToDraw);
 	tab->addCheckBox("Show", &showSamples);
@@ -1667,7 +1727,7 @@ void App::updateProbeStructurePane()
 
 		}
 		m_probeStructure->savePositions(true);
-		m_probeStructure->generateProbes("all", true, bShowOptimizationOutput);
+		m_probeStructure->generateProbes("all", false, true, bShowOptimizationOutput);
 		m_probeStructure->extractSHCoeffs(true, true);
 
 		popNotification("Job finished", "Probe structure update complete", 15);
@@ -1682,7 +1742,7 @@ void App::updateProbeStructurePane()
 
     probeStructurePane->addButton(GuiText("Update textures"), [this]() 
 	{ 
-		m_probeStructure->generateProbes("all", true, bShowProbeGenerationOutput); 
+		m_probeStructure->generateProbes("all", false, true, bShowProbeGenerationOutput);
 	}, GuiTheme::TOOL_BUTTON_STYLE);
 
 	probeStructurePane->addButton(GuiText("Extract coeffs"), [this]() 
@@ -1727,6 +1787,22 @@ void App::updateProbeStructurePane()
 			probeStructurePane->addTextBox("Step", &(probeStructurePanelOptions.step));
 			probeStructurePane->addTextBox("Dimensions", &(probeStructurePanelOptions.dimensions));
 		}
+
+		probeStructurePane->addButton(GuiText("Print coeffs"), [this]()
+		{
+			G3D::Vector3 sum = G3D::Vector3::zero();
+			for (int i = 0; i < m_probeStructure->probeList.size(); ++i)
+			{
+				debugPrintf("Probe %d: \n", i);
+				for (int c = 0; c < m_probeStructure->probeList[i]->coeffs.size(); ++c)
+				{
+					debugPrintf("	coeffs #%d: %s\n", c, m_probeStructure->probeList[i]->coeffs[c].toString());
+					sum += m_probeStructure->probeList[i]->coeffs[c];
+				}
+			}
+			debugPrintf("	sum %s\n", sum.toString());
+		}
+		, GuiTheme::TOOL_BUTTON_STYLE);
 
         probeStructurePane->endRow();
 
@@ -1809,7 +1885,16 @@ void App::addSampleSetPane(GuiTabPane* tabPane)
 		scenePane.sampleSetList->setSelectedValue(String(sampleSet->m_sampleSetName.c_str()));
 	}
 
-	tab->addButton(GuiText("New"), [this]() { windowNewSampleSet->setVisible(true); }, GuiTheme::TOOL_BUTTON_STYLE);
+	tab->addButton(GuiText("New"), [this]() 
+	{ 
+		windowNewSampleSet->setVisible(true); 
+	}, GuiTheme::TOOL_BUTTON_STYLE);
+
+	tab->addButton(GuiText("Save"), [this]()
+	{
+		sampleSet->save();
+	}, GuiTheme::TOOL_BUTTON_STYLE);
+
 	tab->addButton(GuiText("Clear values"), GuiControl::Callback(this, &App::clearSampleSetValues), GuiTheme::TOOL_BUTTON_STYLE);
 	tab->addButton(GuiText("Clear positions"), GuiControl::Callback(this, &App::clearSampleSetPositions), GuiTheme::TOOL_BUTTON_STYLE);
 	tab->addButton(GuiText("Reload"), GuiControl::Callback(this, &App::reloadSampleSet), GuiTheme::TOOL_BUTTON_STYLE);
@@ -1828,6 +1913,16 @@ void App::addSampleSetPane(GuiTabPane* tabPane)
 	tab->beginRow();
 
 	tab->addCheckBox("Volume samples", &bGenerateVolumeSamples);
+	tab->addButton("Remove dark samples", [this]()
+	{
+		sampleSet->removeDarkSamples();
+	}, GuiTheme::TOOL_BUTTON_STYLE);
+	tab->addButton("Add sample at camera", [this]()
+	{
+		G3D::Vector3 pos = activeCamera()->frame().translation;
+		sampleSet->addSample(SceneSample(pos, Vector3(0, 0, 0)));
+	}, GuiTheme::TOOL_BUTTON_STYLE);
+
 }
 
 void App::updateSelectedScenePane()
@@ -1994,6 +2089,9 @@ void App::saveOptions()
 	SAVE_BOOL(bShowProbeGenerationOutput);
 	SAVE_BOOL(bOneRowPerSHBand);
 	SAVE_BOOL(bGenerateVolumeSamples);
+	SAVE_BOOL(bRenderIndirectG3D);
+	SAVE_BOOL(bRenderShadowMaps);
+	SAVE_BOOL(bRenderMultiplyIndirectByBRDF);
 
 	SAVE_FLOAT(sampleMultiplier);
 
@@ -2080,6 +2178,9 @@ void App::loadOptions()
 	LOAD_BOOL(bOptimizeForCoeffs);
 	LOAD_BOOL(bOneRowPerSHBand);
 	LOAD_BOOL(bGenerateVolumeSamples);
+	LOAD_BOOL(bRenderIndirectG3D);
+	LOAD_BOOL(bRenderShadowMaps);
+	LOAD_BOOL(bRenderMultiplyIndirectByBRDF);
 
 	LOAD_STRING(m_sNumICTries); 
 	LOAD_STRING(m_sNumICProbes);
@@ -2104,7 +2205,7 @@ void App::loadOptions()
 
 	}
 
-	try
+	//try
 	{
 		json::string_t sampleSetName = optionJSON["sampleSetName"];
 		sampleSet = new SceneSampleSet(std::string(m_scene->m_name.c_str()), std::string(sampleSetName.c_str()), m_scene->m_scale, -1);
@@ -2113,10 +2214,10 @@ void App::loadOptions()
 			sampleSet->probeStructure = m_probeStructure;
 		}
 	}
-	catch (std::exception e)
-	{
+	//catch (std::exception e)
+	//{
 
-	}
+	//}
 
 	try
 	{
@@ -2218,7 +2319,7 @@ void App::computeSampleSetValuesFromIndividualProbe()
 
 	ps->saveInfoFile();
 	ps->savePositions(false);
-	ps->generateProbes("all", false, false);
+	ps->generateProbes("all", true, false, true);
 	ps->extractSHCoeffs(false, false);
 
 	sampleSet->probeStructure = ps;

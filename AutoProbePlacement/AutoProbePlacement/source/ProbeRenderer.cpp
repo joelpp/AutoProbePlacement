@@ -124,7 +124,8 @@ void ProbeRenderer::renderProbeShading(RenderDevice* rd, const shared_ptr<GBuffe
 		if (probeStructureLoaded && app->m_probeStructure->hasProbes())
 		{
             args.setMacro("NUM_PROBES", app->m_probeStructure->probeCount());
-            args.setMacro("Render_INDIRECT", app->bRenderIndirect);
+			args.setMacro("Render_INDIRECT", app->bRenderIndirect);
+			args.setMacro("Render_INDIRECTG3D", app->bRenderIndirectG3D);
 			args.setMacro("Render_INDIRECTBRDF", app->bRenderMultiplyIndirectByBRDF);
 			args.setMacro("FLIP_NORMALS", app->bFlipShadingNormals);
 

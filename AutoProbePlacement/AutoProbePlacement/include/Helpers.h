@@ -46,6 +46,7 @@ float phongCoeffs(int l, float r);
 Color3 sRGBtoRGB(const Color3& source);
 
 void dumpToFile(std::fstream& file, const Array<Vector3>& arr);
+void dumpToFile(std::fstream& file, const Array<float>& arr);
 
 void dumpZerosToFile(std::fstream& file, int amt);
 

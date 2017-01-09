@@ -60,7 +60,8 @@ public:
 	float SumOfInverseSquaredProbeDistances(const G3D::Vector3& position);
 	float dInverseDistanceSquaredMdProbeN(const G3D::Vector3& position, const G3D::Vector3& normal, int m, int n, int axis, int color);
     std::fstream openFile(ESSFile type, bool reading);
-	/*
+	void removeDarkSamples();
+		/*
 		Member variables
 	*/
 	G3D::Array<G3D::Point3> m_points;

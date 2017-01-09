@@ -1433,7 +1433,7 @@ Array<G3D::Vector3> ProbeStructure::reconstructSHPerBand(const G3D::Vector3& pos
 	return toReturn;
 }
 
-void ProbeStructure::generateProbes(std::string type, bool generateGradients, bool showOutput)
+void ProbeStructure::generateProbes(std::string type, bool allProbes, bool generateGradients, bool showOutput)
 {
     // system call to mitsuba
     std::stringstream args;
@@ -1442,14 +1442,18 @@ void ProbeStructure::generateProbes(std::string type, bool generateGradients, bo
 		 << type << " "
 		 << generateGradients << " ";
 
-	for (int i = 0; i < probeCount(); ++i)
+	if (!allProbes)
 	{
-		Probe* p = probeList[i];
-		if (p->bNeedsUpdate)
+		for (int i = 0; i < probeCount(); ++i)
 		{
-			args << i << " ";
+			Probe* p = probeList[i];
+			if (p->bNeedsUpdate)
+			{
+				args << i << " ";
+			}
 		}
 	}
+
 
     runPythonScriptFromDataFiles("onecamera.py", args.str(), showOutput, true);
 
@@ -1686,7 +1690,7 @@ void ProbeStructure::updateAll(bool showOutput)
 {
 	saveInfoFile();
 	savePositions(false);
-	generateProbes("all", true, showOutput);
+	generateProbes("all", false, true, showOutput);
 	extractSHCoeffs(true, true);
 }
 

@@ -7,7 +7,7 @@ class SceneSample{
 	public:
 		Vector3 position;
 		Vector3 normal;
-		Color3 irradiance;
+		Array<float> values;
 		Vector2 UV;
 		Color4 referenceColor;
 		Vector2 IJ;

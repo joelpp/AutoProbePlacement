@@ -850,10 +850,15 @@ void App::onAI()
 		if (!currentOptimization.bWaitingForRenderingFinished)
 		{
 			std::vector<float> displacements = tryOptimization();
-			if (displacements.size() == 0)
+			if (displacements.empty())
 			{
 				numPassesLeft = 0;
-				popNotification("Optimization terminated", "Solve step failed", 15);
+				popNotification("Optimization terminated", "Error would've increased OR Solve step failed", 15);
+
+				if (m_probeStructure->probeCount() < 15)
+				{
+					probeFinder.numPassesLeft = std::stof(m_sNumICTries.c_str());
+				}
 				return;
 			}
 
@@ -897,6 +902,7 @@ void App::onAI()
 				if (numPassesLeft == 0)
 				{
 					popNotification("Optimization complete", "Finished all job!", 15);
+					numPassesLeft = std::stof(tbNumPassesLeft.c_str());
 				}
 			}
 		}
@@ -995,6 +1001,8 @@ void App::onAI()
 
 						}
 						m_probeStructure->updateAll(bShowOptimizationOutput);
+
+						numPassesLeft = std::stof(tbNumPassesLeft.c_str());
 					}
 					else
 					{

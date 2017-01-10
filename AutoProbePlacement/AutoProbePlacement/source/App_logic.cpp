@@ -369,7 +369,7 @@ std::vector<float> App::tryOptimization()
 
 	if (currentOptimization.errors.size())
 	{
-		if (error > currentOptimization.errors[currentOptimization.errors.size() - 1])
+		if (error > currentOptimization.errors.back())
 		{
 			currentOptimization.consecutiveFailures++;
 		}
@@ -379,10 +379,12 @@ std::vector<float> App::tryOptimization()
 		}
 	}
 	
-	if (bPreventErrorIncrease && currentOptimization.consecutiveFailures >= 1)
+	if (bPreventErrorIncrease && currentOptimization.consecutiveFailures >= 3)
 	{
+		currentOptimization.consecutiveFailures = 0;
 		return displacements;
 	}
+
 	computeError(true);
 
 	currentOptimization.errors.push_back(error);

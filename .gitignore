@@ -16,3 +16,6 @@ AutoProbePlacement/AutoProbePlacement.VC.VC.opendb
 AutoProbePlacement/AutoProbePlacement.VC.db
 AutoProbePlacement/data-files/scripts/textures/
 *.serialized
+AutoProbePlacement/data-files/scripts/textures_sponza/
+AutoProbePlacement/data-files/scripts/textures_
+AutoProbePlacement/data-files/scripts/textures_*

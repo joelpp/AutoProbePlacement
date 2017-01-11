@@ -33,6 +33,7 @@ public:
     G3D::String name() { return m_name; }
 
 	G3D::String m_name;
+	float m_gradientDisplacement;
 	G3D::Vector3 m_minBound;
 	G3D::Vector3 m_maxBound;
 	float m_scale;

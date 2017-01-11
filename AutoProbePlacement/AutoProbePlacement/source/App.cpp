@@ -829,7 +829,7 @@ void App::updateSampleSet()
 		sampleSet->probeStructure = m_probeStructure;
 	}
 }
-
+#define AUTO_OPTIMIZE
 void App::onAI()
 {
     GApp::onAI();
@@ -855,10 +855,12 @@ void App::onAI()
 				numPassesLeft = 0;
 				popNotification("Optimization terminated", "Error would've increased OR Solve step failed", 15);
 
-				if (m_probeStructure->probeCount() < 15)
+#ifdef AUTO_OPTIMIZE
+				if (m_probeStructure->probeCount() < 10)
 				{
 					probeFinder.numPassesLeft = std::stof(m_sNumICTries.c_str());
 				}
+#endif
 				return;
 			}
 
@@ -902,7 +904,9 @@ void App::onAI()
 				if (numPassesLeft == 0)
 				{
 					popNotification("Optimization complete", "Finished all job!", 15);
+#ifdef AUTO_OPTIMIZE
 					numPassesLeft = std::stof(tbNumPassesLeft.c_str());
+#endif
 				}
 			}
 		}
@@ -1002,7 +1006,9 @@ void App::onAI()
 						}
 						m_probeStructure->updateAll(bShowOptimizationOutput);
 
+#ifdef AUTO_OPTIMIZE
 						numPassesLeft = std::stof(tbNumPassesLeft.c_str());
+#endif
 					}
 					else
 					{

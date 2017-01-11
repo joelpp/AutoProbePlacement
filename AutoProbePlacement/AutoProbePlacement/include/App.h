@@ -427,6 +427,7 @@ public:
 
 	static App* instance;
 	App(const GApp::Settings& settings = GApp::Settings());
+	void handleProbeFinder();
 	virtual void onAI() override;
 	virtual void onInit();
 	virtual void onGraphics3D(RenderDevice* rd, Array< shared_ptr<Surface> >& surface);

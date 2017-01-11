@@ -141,12 +141,17 @@ void JScene::load()
 				debugPrintf("Setting parameters for scene... \n");
 				while(std::getline(sceneInfoFile, line))
 				{
-					debugPrintf("read line \" %s \"\n", line.c_str());
+					debugPrintf("read line \"%s\"\n", line.c_str());
 					tokens = stringSplit(String(line.c_str()), ' ');
 					if (tokens[0] == "scale")
 					{
 						m_scale = std::stof(tokens[1].c_str());
 						debugPrintf("set scale at %f\n", m_scale);
+					}
+					else if (tokens[0] == "gradientDisplacement")
+					{
+						m_gradientDisplacement = std::stof(tokens[1].c_str());
+						debugPrintf("set gradientDisplacement at %f\n", m_gradientDisplacement);
 					}
 					else if (tokens[0] == "minBound")
 					{
@@ -160,6 +165,7 @@ void JScene::load()
 					}
 					else
 					{
+						debugPrintf("finished reading parameters\n");
 						break;
 					}
 				}

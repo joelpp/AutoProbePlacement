@@ -830,91 +830,12 @@ void App::updateSampleSet()
 	}
 }
 #define AUTO_OPTIMIZE
-void App::onAI()
+
+void App::handleProbeFinder()
 {
-    GApp::onAI();
-
-    if (bShouldUpdateProbeStructurePane)
-    {
-        updateProbeStructurePane();
-        bShouldUpdateProbeStructurePane = false;
-    }
-
-	if (actors.size() > 0)
-	{
-		screenPrintf("Actor pos: %s", actors[0].getPosition().toString().c_str());
-	}
-
-	if (numPassesLeft > 0)
-	{
-		if (!currentOptimization.bWaitingForRenderingFinished)
-		{
-			std::vector<float> displacements = tryOptimization();
-			if (displacements.empty())
-			{
-				numPassesLeft = 0;
-				popNotification("Optimization terminated", "Error would've increased OR Solve step failed", 15);
-
-#ifdef AUTO_OPTIMIZE
-				if (m_probeStructure->probeCount() < 10)
-				{
-					probeFinder.numPassesLeft = std::stof(m_sNumICTries.c_str());
-				}
-#endif
-				return;
-			}
-
-			m_probeStructure->displaceProbesWithGradient(displacements, std::stof(maxProbeStepLength.c_str()));
-			//sw.after("Displaced probes");
-			m_probeStructure->savePositions(false);
-			//sw.after("Saved new positions");
-
-			std::string settingsFilePath = "../data-files/scripts/optimizationSettings.txt";
-			std::fstream settingsFile = createEmptyFile(settingsFilePath.c_str());
-			settingsFile << m_probeStructure->name().c_str();
-			settingsFile.close();
-
-			currentOptimization.lastRenderEndTime = getFileLastModifiedTime("../data-files/scripts/optimizationSettings.txt");
-			currentOptimization.bWaitingForRenderingFinished = true;
-		}
-		else
-		{
-			
-			FILETIME lastModifTime = getFileLastModifiedTime("../data-files/scripts/optimizationSettings.txt");
-			if (isLaterFileTime(lastModifTime, currentOptimization.lastRenderEndTime))
-			{
-				if (bUpdateProbesOnOptimizationPass)
-				{
-					//m_probeStructure->generateProbes("all", bShowOptimizationOutput);
-					//sw.after("Regenerated probes");
-					m_probeStructure->extractSHCoeffs(true, true);
-					//sw.after("Extracted SH coeffs");
-				}
-				else
-				{
-					m_probeStructure->uploadToGPU();
-				}
-
-				//sw.after("Finished iteration!");
-
-				numPassesLeft--;
-				currentOptimization.lastRenderEndTime = lastModifTime;
-				currentOptimization.bWaitingForRenderingFinished = false;
-
-				if (numPassesLeft == 0)
-				{
-					popNotification("Optimization complete", "Finished all job!", 15);
-#ifdef AUTO_OPTIMIZE
-					numPassesLeft = std::stof(tbNumPassesLeft.c_str());
-#endif
-				}
-			}
-		}
-	}
-
 	if (probeFinder.numPassesLeft > 0)
 	{
-		if (!probeFinder.bWaitingForRenderingFinished)
+		if (probeFinder.bWaitingForRenderingFinished == false)
 		{
 			int NumberOfProbes = std::atoi(m_sNumICProbes.c_str());
 
@@ -925,7 +846,7 @@ void App::onAI()
 			{
 				m_probeStructure->addProbe(v);
 			}
-			
+
 			m_probeStructure->saveInfoFile();
 			m_probeStructure->savePositions(false);
 			//sw.after("Saved new positions");
@@ -946,13 +867,13 @@ void App::onAI()
 			if (isLaterFileTime(lastModifTime, probeFinder.lastRenderEndTime))
 			{
 				int NumberOfProbes = std::atoi(m_sNumICProbes.c_str());
-				
+
 				m_probeStructure->extractSHCoeffs(true, true);
 
 				computeSamplesRGB();
 
 				float error = computeError(false);
-				
+
 				bool isDark = true;
 
 				for (int i = 0; i < m_probeStructure->getProbe(m_probeStructure->probeCount() - 1)->coeffs.size(); ++i)
@@ -996,7 +917,7 @@ void App::onAI()
 
 				if (probeFinder.numPassesLeft == 1)
 				{
-					if ( (currentOptimization.errors.size() == 0) || (probeFinder.bestError < currentOptimization.errors.back()))
+					if ((currentOptimization.errors.size() == 0) || (probeFinder.bestError < currentOptimization.errors.back()))
 					{
 						for (G3D::Vector3& v : probeFinder.bestPositions)
 						{
@@ -1024,14 +945,97 @@ void App::onAI()
 		}
 
 	}
+}
 
-	//if (bWaitingForRenderFinished)
-	//{
-	//	FILETIME lastModifTime = getFileLastModifiedTime("../data-files/scripts/optimizationSettings.txt");
-	//	if (isLaterFileTime(lastModifTime, currentOptimization.lastRenderEndTime))
-	//	{
-	//	}
-	//}
+void App::handleMinimizationPass()
+{
+	if (numPassesLeft > 0)
+	{
+		if (!currentOptimization.bWaitingForRenderingFinished)
+		{
+			std::vector<float> displacements = tryOptimization();
+			if (displacements.empty())
+			{
+				numPassesLeft = 0;
+				popNotification("Optimization terminated", "Error would've increased OR Solve step failed", 15);
+
+#ifdef AUTO_OPTIMIZE
+				if (m_probeStructure->probeCount() < 10)
+				{
+					probeFinder.numPassesLeft = std::stof(m_sNumICTries.c_str());
+				}
+#endif
+				return;
+			}
+
+			m_probeStructure->displaceProbesWithGradient(displacements, std::stof(maxProbeStepLength.c_str()));
+			//sw.after("Displaced probes");
+			m_probeStructure->savePositions(false);
+			//sw.after("Saved new positions");
+
+			std::string settingsFilePath = "../data-files/scripts/optimizationSettings.txt";
+			std::fstream settingsFile = createEmptyFile(settingsFilePath.c_str());
+			settingsFile << m_probeStructure->name().c_str();
+			settingsFile.close();
+
+			currentOptimization.lastRenderEndTime = getFileLastModifiedTime("../data-files/scripts/optimizationSettings.txt");
+			currentOptimization.bWaitingForRenderingFinished = true;
+		}
+		else
+		{
+
+			FILETIME lastModifTime = getFileLastModifiedTime("../data-files/scripts/optimizationSettings.txt");
+			if (isLaterFileTime(lastModifTime, currentOptimization.lastRenderEndTime))
+			{
+				if (bUpdateProbesOnOptimizationPass)
+				{
+					//m_probeStructure->generateProbes("all", bShowOptimizationOutput);
+					//sw.after("Regenerated probes");
+					m_probeStructure->extractSHCoeffs(true, true);
+					//sw.after("Extracted SH coeffs");
+				}
+				else
+				{
+					m_probeStructure->uploadToGPU();
+				}
+
+				//sw.after("Finished iteration!");
+
+				numPassesLeft--;
+				currentOptimization.lastRenderEndTime = lastModifTime;
+				currentOptimization.bWaitingForRenderingFinished = false;
+
+				if (numPassesLeft == 0)
+				{
+					popNotification("Optimization complete", "Finished all job!", 15);
+#ifdef AUTO_OPTIMIZE
+					numPassesLeft = std::stof(tbNumPassesLeft.c_str());
+#endif
+				}
+			}
+		}
+	}
+}
+
+
+void App::onAI()
+{
+    GApp::onAI();
+
+    if (bShouldUpdateProbeStructurePane)
+    {
+        updateProbeStructurePane();
+        bShouldUpdateProbeStructurePane = false;
+    }
+
+	if (actors.size() > 0)
+	{
+		screenPrintf("Actor pos: %s", actors[0].getPosition().toString().c_str());
+	}
+
+	handleMinimizationPass();
+
+	handleProbeFinder();
 
     if (optimizing)
     {
@@ -1051,11 +1055,7 @@ void App::onAI()
         }
     }
 
-	if (m_probeStructure)
-	{
-		screenPrintf("ProbeStructure: %s", m_probeStructure->m_name.c_str());
-	}
-	
+
 	//TODO: probe ray casting one day? if i find a real use for it
     for (int i = 0 ; i < actors.size(); i++)
 	{

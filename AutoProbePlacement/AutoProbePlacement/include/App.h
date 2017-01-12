@@ -427,6 +427,7 @@ public:
 
 	static App* instance;
 	App(const GApp::Settings& settings = GApp::Settings());
+	void handleMinimizationPass();
 	void handleProbeFinder();
 	virtual void onAI() override;
 	virtual void onInit();

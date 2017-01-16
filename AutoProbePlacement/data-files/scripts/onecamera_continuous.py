@@ -45,7 +45,7 @@ renderType = "all";
 
 scene = SceneHandler.loadScene("../Scenes/" + sceneName + "/MitsubaScene.xml", paramMap)
 # scene = SceneHandler.loadScene("C:/git/g3d/data10/common/model/crytek_sponza/sponza.xml", paramMap)
-
+renderGradients = True;
 #Initialise Mitsuba stuff
 queue = RenderQueue()
 
@@ -160,7 +160,7 @@ def makeProbe(x, y, z, probeCount, rootPath, pRenderType):
 	queue.join()
 	print("made it here! 0");
 	# render the 6 surrounding probes
-	if (pRenderType == "Probes"):
+	if (renderGradients):
 		for i in xrange(6):
 			lScene = Scene(scene);
 
@@ -305,7 +305,12 @@ while (True):
 		time.sleep(0.1);
 		settingsFile = open(settingsPath, 'r');
 
-		structureName = settingsFile.readline();
+		structureName = settingsFile.readline().replace("\n", "");
+		renderGradientsString = settingsFile.readline();
+
+		if (renderGradientsString == "0"):
+			renderGradients = False;
+
 		print(structureName)
 		if (structureName == "__STOP"):
 			break;

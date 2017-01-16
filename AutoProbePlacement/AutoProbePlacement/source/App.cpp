@@ -854,7 +854,8 @@ void App::handleProbeFinder()
 
 			std::string settingsFilePath = "../data-files/scripts/optimizationSettings.txt";
 			std::fstream settingsFile = createEmptyFile(settingsFilePath.c_str());
-			settingsFile << m_probeStructure->name().c_str();
+			settingsFile << m_probeStructure->name().c_str() << "\n";
+			settingsFile << "0";
 
 			probeFinder.lastRenderEndTime = getFileLastModifiedTime("../data-files/scripts/optimizationSettings.txt");
 			settingsFile.close();
@@ -975,7 +976,8 @@ void App::handleMinimizationPass()
 
 			std::string settingsFilePath = "../data-files/scripts/optimizationSettings.txt";
 			std::fstream settingsFile = createEmptyFile(settingsFilePath.c_str());
-			settingsFile << m_probeStructure->name().c_str();
+			settingsFile << m_probeStructure->name().c_str() << std::endl;
+			settingsFile << "1";
 			settingsFile.close();
 
 			currentOptimization.lastRenderEndTime = getFileLastModifiedTime("../data-files/scripts/optimizationSettings.txt");
@@ -2317,7 +2319,10 @@ void App::computeSampleSetValuesFromIndividualProbe()
 
 	ProbeStructure* ps = new ProbeStructure(m_scene->m_name, structureName);
 	ps->setType("closest");
+	/*ps->setIntegrator("path");
+	ps->setNumSamples(128);*/
 	ps->setIntegrator("direct");
+	ps->setNumSamples(4);
 	ps->deleteAllProbes();
 
 	int numSamples = std::stoi((*samplesToSave).c_str());

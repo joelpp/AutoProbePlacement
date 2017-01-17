@@ -930,7 +930,7 @@ ProbeInterpolationRecord ProbeStructure::getInterpolationProbeIndicesAndWeights(
 			Probe* probe = probeList[i];
 			G3D::Vector3& probePosition = probe->getPosition();
 			float distanceToProbe = (probePosition - position).length();
-			float sumDenominator = 1.f / pow( distanceToProbe, p / 2.f);
+			float sumDenominator = 1.f / pow( distanceToProbe, p/* / 2.f*/);
 			SumOfInverseDistances += sumDenominator;
 
 			probeIndices.append(i);

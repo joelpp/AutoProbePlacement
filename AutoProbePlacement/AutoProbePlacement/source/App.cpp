@@ -855,7 +855,8 @@ void App::handleProbeFinder()
 			std::string settingsFilePath = "../data-files/scripts/optimizationSettings.txt";
 			std::fstream settingsFile = createEmptyFile(settingsFilePath.c_str());
 			settingsFile << m_probeStructure->name().c_str() << "\n";
-			settingsFile << "0";
+			settingsFile << "0" << "\n";
+			settingsFile << m_probeStructure->probeCount() - 1;
 
 			probeFinder.lastRenderEndTime = getFileLastModifiedTime("../data-files/scripts/optimizationSettings.txt");
 			settingsFile.close();
@@ -918,7 +919,7 @@ void App::handleProbeFinder()
 
 				if (probeFinder.numPassesLeft == 1)
 				{
-					if ((currentOptimization.errors.size() == 0) || (probeFinder.bestError < currentOptimization.errors.back()))
+					if (/*(currentOptimization.errors.size() == 0) || (probeFinder.bestError < currentOptimization.errors.back())*/true)
 					{
 						for (G3D::Vector3& v : probeFinder.bestPositions)
 						{
@@ -961,8 +962,9 @@ void App::handleMinimizationPass()
 				popNotification("Optimization terminated", "Error would've increased OR Solve step failed", 15);
 
 #ifdef AUTO_OPTIMIZE
-				if (m_probeStructure->probeCount() < 10)
+				if (m_probeStructure->probeCount() < 20)
 				{
+					probeFinder.bestError = 9999;
 					probeFinder.numPassesLeft = std::stof(m_sNumICTries.c_str());
 				}
 #endif

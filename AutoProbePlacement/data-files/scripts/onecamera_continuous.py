@@ -41,7 +41,7 @@ fileResolver.appendPath(path);
 
 
 renderType = "all";
-
+probesToRender = [];
 
 scene = SceneHandler.loadScene("../Scenes/" + sceneName + "/MitsubaScene.xml", paramMap)
 # scene = SceneHandler.loadScene("C:/git/g3d/data10/common/model/crytek_sponza/sponza.xml", paramMap)
@@ -264,6 +264,11 @@ def makeProbeList(rootPath):
 
 			(x, y, z) = (float(x) for x in splitLine);
 			print((x,y,z));
+
+			if not (len(probesToRender) = 0):
+				if probeCount not in probesToRender:
+					probeCount += 1;
+					continue;
 			
 			if (renderType == "all"):
 				makeProbe(x,y,z,probeCount, rootPath, "Probes");
@@ -306,17 +311,23 @@ while (True):
 		settingsFile = open(settingsPath, 'r');
 
 		structureName = settingsFile.readline().replace("\n", "");
-		renderGradientsString = settingsFile.readline();
 
-		if (renderGradientsString == "0"):
-			renderGradients = False;
-
-		print(structureName)
 		if (structureName == "__STOP"):
 			break;
 		if (structureName == ""):
 			settingsFile.close();
 			continue;
+
+		renderGradientsString = settingsFile.readline().replace("\n", "");
+		if (renderGradientsString == "0"):
+			renderGradients = False;
+
+		probesToRenderString = settingsFile.readline();
+		if (probesToRenderString != ""):
+			probesToRender = [int(x) for x in probesToRenderString.split(' ')]
+
+		print(structureName)
+
 
 		rootPath = "../Scenes/" + sceneName + "/ProbeStructures/" + structureName;
 

@@ -850,7 +850,7 @@ void App::handleProbeFinder()
 			m_probeStructure->saveInfoFile();
 			m_probeStructure->savePositions(false);
 			//sw.after("Saved new positions");
-			std::this_thread::sleep_for(std::chrono::milliseconds(200));
+			std::this_thread::sleep_for(std::chrono::milliseconds(50));
 
 			std::string settingsFilePath = "../data-files/scripts/optimizationSettings.txt";
 			std::fstream settingsFile = createEmptyFile(settingsFilePath.c_str());
@@ -953,8 +953,13 @@ void App::handleMinimizationPass()
 {
 	if (numPassesLeft > 0)
 	{
+
+
 		if (!currentOptimization.bWaitingForRenderingFinished)
 		{
+			G3D::StopWatch sw("First phase... ");
+			sw.setEnabled(true);
+			sw.tick();
 			std::vector<float> displacements = tryOptimization();
 			if (displacements.empty())
 			{
@@ -984,6 +989,7 @@ void App::handleMinimizationPass()
 
 			currentOptimization.lastRenderEndTime = getFileLastModifiedTime("../data-files/scripts/optimizationSettings.txt");
 			currentOptimization.bWaitingForRenderingFinished = true;
+			sw.tock();
 		}
 		else
 		{
@@ -991,6 +997,9 @@ void App::handleMinimizationPass()
 			FILETIME lastModifTime = getFileLastModifiedTime("../data-files/scripts/optimizationSettings.txt");
 			if (isLaterFileTime(lastModifTime, currentOptimization.lastRenderEndTime))
 			{
+				G3D::StopWatch sw("Second phase... ");
+				sw.setEnabled(true);
+				sw.tick();
 				if (bUpdateProbesOnOptimizationPass)
 				{
 					//m_probeStructure->generateProbes("all", bShowOptimizationOutput);
@@ -1016,6 +1025,7 @@ void App::handleMinimizationPass()
 					numPassesLeft = std::stof(tbNumPassesLeft.c_str());
 #endif
 				}
+				sw.tock();
 			}
 		}
 	}
@@ -1987,6 +1997,13 @@ void App::onUserInput(UserInput* userInput)
     {
         numPassesLeft = 0;
     }
+	else if (userInput->keyPressed(GKey('9')))
+	{
+		int NumberOfProbes = std::atoi(m_sNumICProbes.c_str());
+		int NumberOfTries = std::atoi(m_sNumICTries.c_str());
+
+		probeFinder = SBestProbeLocationQuery(NumberOfProbes, NumberOfTries);
+	}
     else if (userInput->keyPressed(GKey('p')))
     {
         showAllProbes = !showAllProbes;

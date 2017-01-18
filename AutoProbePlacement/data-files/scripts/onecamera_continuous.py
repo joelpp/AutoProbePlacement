@@ -265,7 +265,7 @@ def makeProbeList(rootPath):
 			(x, y, z) = (float(x) for x in splitLine);
 			print((x,y,z));
 
-			if not (len(probesToRender) = 0):
+			if not (len(probesToRender) == 0):
 				if probeCount not in probesToRender:
 					probeCount += 1;
 					continue;
@@ -307,7 +307,7 @@ lastModifTime = os.path.getmtime(settingsPath)
 while (True):
 	currentTime = os.path.getmtime(settingsPath)
 	if (currentTime > lastModifTime):
-		time.sleep(0.1);
+		time.sleep(0.05);
 		settingsFile = open(settingsPath, 'r');
 
 		structureName = settingsFile.readline().replace("\n", "");

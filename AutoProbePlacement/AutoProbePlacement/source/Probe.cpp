@@ -246,38 +246,46 @@ CoeffGradients Probe::computeProbeCoeffGradients(float gradientDisplacement)
 	paths[4] = buildPath(EResource::Probes_Z_NEG);
 	paths[5] = buildPath(EResource::Probes_Z_POS);
 
-	std::shared_ptr<G3D::Image> textures[6];
-	textures[0] = Image::fromFile(paths[0]);
-	textures[1] = Image::fromFile(paths[1]);
-	textures[2] = Image::fromFile(paths[2]);
-	textures[3] = Image::fromFile(paths[3]);
-	textures[4] = Image::fromFile(paths[4]);
-	textures[5] = Image::fromFile(paths[5]);
-
-	TProbeCoefficients dCoeffs[6];
-	for (int c = 0; c < 6; ++c)
+	try
 	{
-		initProbeCoefficients(dCoeffs[c]);
-		computeCoefficients(textures[c], dCoeffs[c]);
-	}
+		std::shared_ptr<G3D::Image> textures[6];
+		textures[0] = Image::fromFile(paths[0]);
+		textures[1] = Image::fromFile(paths[1]);
+		textures[2] = Image::fromFile(paths[2]);
+		textures[3] = Image::fromFile(paths[3]);
+		textures[4] = Image::fromFile(paths[4]);
+		textures[5] = Image::fromFile(paths[5]);
 
-	TProbeCoefficients gradients[3];
-
-	float distance = gradientDisplacement;
-	gradients[0] = subtractAndDivide(dCoeffs[0], dCoeffs[1], distance);
-	gradients[1] = subtractAndDivide(dCoeffs[2], dCoeffs[3], distance);
-	gradients[2] = subtractAndDivide(dCoeffs[4], dCoeffs[5], distance);
-
-	for (int band = 0; band < NumCoeffs; ++band)
-	{
-		for (int channel = 0; channel < 3; ++channel)
+		TProbeCoefficients dCoeffs[6];
+		for (int c = 0; c < 6; ++c)
 		{
-			for (int axis = 0; axis < 3; ++axis)
+			initProbeCoefficients(dCoeffs[c]);
+			computeCoefficients(textures[c], dCoeffs[c]);
+		}
+
+		TProbeCoefficients gradients[3];
+
+		float distance = gradientDisplacement;
+		gradients[0] = subtractAndDivide(dCoeffs[0], dCoeffs[1], distance);
+		gradients[1] = subtractAndDivide(dCoeffs[2], dCoeffs[3], distance);
+		gradients[2] = subtractAndDivide(dCoeffs[4], dCoeffs[5], distance);
+
+		for (int band = 0; band < NumCoeffs; ++band)
+		{
+			for (int channel = 0; channel < 3; ++channel)
 			{
-				toReturn[band][channel][axis] = gradients[axis][band][channel];
+				for (int axis = 0; axis < 3; ++axis)
+				{
+					toReturn[band][channel][axis] = gradients[axis][band][channel];
+				}
 			}
 		}
 	}
+	catch (...)
+	{
+
+	}
+	
 
 	return toReturn;
 }

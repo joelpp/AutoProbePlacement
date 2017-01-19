@@ -448,21 +448,26 @@ void SceneSampleSet::generateTriplets(int NumberOfSamples,
 
 		ProbeInterpolationRecord iRec = probeStructure->getInterpolationProbeIndicesAndWeights(SamplePosition);
 		//float weightDenum = C(SamplePosition);
-		float inverseSumOf1OverSquaredProbeDistances = InverseSumOf1OverSquaredProbeDistances(SamplePosition);
-		float squaredInverseSumOf1OverSquaredProbeDistances = powf(inverseSumOf1OverSquaredProbeDistances, 2);
+
+		// from here on "squared" really means "raised to alphath power"
+		int alpha = 2;
 
 #ifdef NEW_TABLES
 		std::vector<Vector3> sampleToProbeVectors(NumberOfProbes);
+		std::vector<float> probeDistances(NumberOfProbes);
 		std::vector<float> squaredProbeDistances(NumberOfProbes);
 		std::vector<float> inverseSquaredProbeDistances(NumberOfProbes);
 		float sumOfInverseSquaredProbeDistances = 0;
 		for (int p = 0; p < NumberOfProbes; ++p)
 		{
 			sampleToProbeVectors[p] = SamplePosition - probeStructure->getProbe(p)->getPosition();
-			squaredProbeDistances[p] = sampleToProbeVectors[p].squaredMagnitude();
+			probeDistances[p] = sampleToProbeVectors[p].length();
+			squaredProbeDistances[p] = powf(probeDistances[p], alpha);
 			inverseSquaredProbeDistances[p] = 1.f / squaredProbeDistances[p];
 			sumOfInverseSquaredProbeDistances += inverseSquaredProbeDistances[p];
 		}
+		float inverseSumOf1OverSquaredProbeDistances = 1.f / sumOfInverseSquaredProbeDistances;
+		float squaredInverseSumOf1OverSquaredProbeDistances = powf(inverseSumOf1OverSquaredProbeDistances, 2);
 
 #endif
 		// 9 coeffs, 3 colors, 3 axis, 
@@ -486,7 +491,7 @@ void SceneSampleSet::generateTriplets(int NumberOfSamples,
 					{
 
 #ifdef NEW_TABLES
-						float WvalTerm0 = -1 * squaredInverseSumOf1OverSquaredProbeDistances * 2 * powf(inverseSquaredProbeDistances[pn], 2) * sampleToProbeVectors[pn][axis];
+						float WvalTerm0 = -1 * squaredInverseSumOf1OverSquaredProbeDistances * alpha * powf(probeDistances[pn], -(alpha+ 2)) * sampleToProbeVectors[pn][axis];
 
 
 						float WvalTerm1 =
@@ -497,7 +502,7 @@ void SceneSampleSet::generateTriplets(int NumberOfSamples,
 							//* dInverseDistanceSquaredMdProbeN(position, normal, m, n, axis, color);
 							//if (m == n) 
 							//return 2 * powf(posMinusPosProbeN.length(), -4) * (position[axis] - posn[axis]);
-							* 2 * powf(inverseSquaredProbeDistances[pn], 2) * sampleToProbeVectors[pn][axis];
+							* alpha * powf(probeDistances[pn], -(alpha + 2)) * sampleToProbeVectors[pn][axis];
 #endif;
 
 						int probeIndex = iRec.probeIndices[pn];

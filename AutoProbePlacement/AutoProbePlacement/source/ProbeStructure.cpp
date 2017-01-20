@@ -777,7 +777,11 @@ G3D::Array<G3D::Vector3> ProbeStructure::getInterpolatingProbesCoords(const G3D:
 
 	return toReturn;
 }
-
+G3D::Vector3 findProbeOffset(const G3D::Vector3& wsPos, const G3D::Vector3& probe000Pos, const G3D::Vector3 firstProbePosition, float step)
+{
+	G3D::Vector3 fprobeSpaceCoords = (probe000Pos - firstProbePosition) / step;
+	return fprobeSpaceCoords;
+}
 
 G3D::Array<int> ProbeStructure::getInterpolatingProbeIndices(const G3D::Vector3& pos)
 {
@@ -837,6 +841,13 @@ int findProbeIndex(G3D::Vector3& probePosition, G3D::Vector3& startingPosition, 
     return index;
 }
 
+void roundVector3(G3D::Vector3 v)
+{
+	v.x = roundf(v.x);
+	v.y = roundf(v.y);
+	v.z = roundf(v.z);
+}
+
 ProbeInterpolationRecord ProbeStructure::getInterpolationProbeIndicesAndWeights(const G3D::Vector3& position)
 {
 	// TODO FIX THIS
@@ -848,6 +859,8 @@ ProbeInterpolationRecord ProbeStructure::getInterpolationProbeIndicesAndWeights(
         G3D::Vector3 probe000Pos = findNode000(position, firstProbePosition, m_step);
         G3D::Vector3 dimensions = G3D::Vector3(m_dimensions[0], m_dimensions[1], m_dimensions[2]);
         int index000 = findProbeIndex(probe000Pos, firstProbePosition, dimensions, m_step);
+		G3D::Vector3 probeSpaceOffset = findProbeOffset(position, probe000Pos, firstProbePosition, m_step);
+		roundVector3(probeSpaceOffset);
         G3D::Vector3 offsets = G3D::Vector3(m_dimensions[2] * m_dimensions[1], m_dimensions[2], 1);
 		Vector3 lastProbePosition = firstProbePosition + m_step * (dimensions - Vector3(1, 1, 1));
 
@@ -856,7 +869,7 @@ ProbeInterpolationRecord ProbeStructure::getInterpolationProbeIndicesAndWeights(
 		record.weights.push_back(w000.x * w000.y * w000.z);
 		record.weights.push_back(w000.x * w000.y * (1.0f - w000.z));
 		record.weights.push_back(w000.x * (1.0f - w000.y) * w000.z);
-		record.weights.push_back(w000.x *		(1.0f - w000.y) * (1.0f - w000.z));
+		record.weights.push_back(w000.x * (1.0f - w000.y) * (1.0f - w000.z));
 		record.weights.push_back((1.0f - w000.x) * w000.y * w000.z);
 		record.weights.push_back((1.0f - w000.x) * w000.y * (1.0f - w000.z));
 		record.weights.push_back((1.0f - w000.x) * (1.0f - w000.y) * w000.z);
@@ -871,6 +884,9 @@ ProbeInterpolationRecord ProbeStructure::getInterpolationProbeIndicesAndWeights(
 
 			Vector3 possiblePos = probe000Pos + Vector3(x * m_step, y * m_step, z * m_step);
 
+			Vector3 thisProbeSpaceCoords = probeSpaceOffset + Vector3(x, y, z);
+			index = (int) dot(thisProbeSpaceCoords, offsets);
+
 			z = (z + 1) % (2);
 			y = (z == 0) ? (y + 1) % (2) : y;
 			x = ((y == 0) && (z == 0)) ? x + 1 : x;
@@ -880,7 +896,10 @@ ProbeInterpolationRecord ProbeStructure::getInterpolationProbeIndicesAndWeights(
 				(possiblePos.z > lastProbePosition.z)		 ||
 				(possiblePos.x + 0.1 < firstProbePosition.x) ||
 				(possiblePos.y + 0.1 < firstProbePosition.y) ||
-				(possiblePos.z + 0.1 < firstProbePosition.z))
+				(possiblePos.z + 0.1 < firstProbePosition.z) ||
+				(thisProbeSpaceCoords.x < 0) ||
+				(thisProbeSpaceCoords.y < 0) ||
+				(thisProbeSpaceCoords.z < 0))
 			{
 				record.weights[i] = 0;
 				shouldNormalize = true;
@@ -923,7 +942,7 @@ ProbeInterpolationRecord ProbeStructure::getInterpolationProbeIndicesAndWeights(
 	{
 		G3D::Array<int> probeIndices;
 		G3D::Array<float> weights;
-		int p = 2;
+		int p = 4;
 		float SumOfInverseDistances = 0;
 		for (int i = 0 ; i < probeList.size(); ++i)
 		{
@@ -1217,7 +1236,12 @@ void ProbeStructure::displaceProbesWithGradient(std::vector<float>& displacement
 
 			G3D::Vector3 d = v - v.dot(n) * n.unit();
 
+			//experimental to force probes to get away from walls a bit, sheesh
+			d += n * 0.05;
+
 			displacement = d;
+			
+			
 			newPosition = probe->frame.translation + displacement;
 		}
 			 

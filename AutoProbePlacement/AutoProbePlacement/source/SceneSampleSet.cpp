@@ -43,7 +43,7 @@ SceneSampleSet::SceneSampleSet(std::string sceneName, std::string sampleSetName,
 	m_scale = scale;
 	if (!load(numSamplesToLoad))
 	{
-		//throw std::exception("Sample set load failed");
+		throw std::exception("Sample set load failed");
 	}
 }
 bool SceneSampleSet::load(int maxSamples)
@@ -450,7 +450,7 @@ void SceneSampleSet::generateTriplets(int NumberOfSamples,
 		//float weightDenum = C(SamplePosition);
 
 		// from here on "squared" really means "raised to alphath power"
-		int alpha = 2;
+		int alpha = 4;
 
 #ifdef NEW_TABLES
 		std::vector<Vector3> sampleToProbeVectors(NumberOfProbes);

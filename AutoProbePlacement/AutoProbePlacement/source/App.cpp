@@ -967,7 +967,7 @@ void App::handleMinimizationPass()
 				popNotification("Optimization terminated", "Error would've increased OR Solve step failed", 15);
 
 #ifdef AUTO_OPTIMIZE
-				if (m_probeStructure->probeCount() < 20)
+				//if (m_probeStructure->probeCount() < 20)
 				{
 					probeFinder.bestError = 9999;
 					probeFinder.numPassesLeft = std::stof(m_sNumICTries.c_str());

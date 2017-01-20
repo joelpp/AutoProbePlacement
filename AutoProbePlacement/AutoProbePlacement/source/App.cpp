@@ -2017,6 +2017,21 @@ void App::onUserInput(UserInput* userInput)
 	{
 		bScreenShot = true;
 	}
+	else if (userInput->keyPressed(GKey('i')))
+	{
+		Array<shared_ptr<Texture>> output;
+		//const G3D::String name("dm");
+		//Texture dm(name, 999, G3D::Texture::Dimension::DIM_2D, Texture::Encoding::writeMultiplyFirst, false, AlphaFilter::BINARY, 1);
+		renderCubeMap(renderDevice, output, activeCamera(), shared_ptr<Texture>(), 512);
+
+		int i = 0;
+		for (const shared_ptr<Texture>& tex : output)
+		{
+			shared_ptr<Image> t = tex->toImage();
+
+			t->save("C:/temp/img" + String(i++) + "_.jpg");
+		}
+	}
 }
 
 G3D::String App::scenesPath()

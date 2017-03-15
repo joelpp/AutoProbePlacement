@@ -128,10 +128,10 @@ void ProbeRenderer::renderProbeShading(RenderDevice* rd, const shared_ptr<GBuffe
 			args.setMacro("Render_INDIRECTG3D", app->bRenderIndirectG3D);
 			args.setMacro("Render_INDIRECTBRDF", app->bRenderMultiplyIndirectByBRDF);
 			args.setMacro("FLIP_NORMALS", app->bFlipShadingNormals);
+				
 
-
-			args.setMacro("WEIGHTS_WNN", app->m_probeStructure->m_type == EProbeStructureType::WeightedNearestNeighbour);
-			args.setMacro("WEIGHTS_TRILERP", app->m_probeStructure->m_type == EProbeStructureType::Trilinear);
+			args.setMacro("WEIGHTS_WNN", app->m_probeStructure->m_InterpolationMethod == EInterpolationMethod::WeightedNearestNeighbour);
+			args.setMacro("WEIGHTS_TRILERP", app->m_probeStructure->m_InterpolationMethod == EInterpolationMethod::Trilinear);
 
 			args.setUniform("SHMultiplier", app->shadingMultiplier);
 			args.setUniform("singleBandShading", 9);// std::stoi(app->shadingSHBand.c_str()));

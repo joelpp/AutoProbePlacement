@@ -43,7 +43,7 @@ SceneSampleSet::SceneSampleSet(std::string sceneName, std::string sampleSetName,
 	m_scale = scale;
 	if (!load(numSamplesToLoad))
 	{
-		throw std::exception("Sample set load failed");
+		//throw std::exception("Sample set load failed");
 	}
 }
 bool SceneSampleSet::load(int maxSamples)

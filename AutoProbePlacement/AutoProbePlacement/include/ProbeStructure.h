@@ -10,6 +10,8 @@
 #include <fstream>
 #include "Actor.h"
 
+
+
 struct SProbe
 {
     float position[4];
@@ -32,13 +34,19 @@ struct ProbeInterpolationRecord
 	G3D::Array<float> weights;
 };
 
-enum EProbeStructureType
+enum EInterpolationMethod
 {
 	Trilinear = 0,
 	Closest = 1,
 	Tetrahedral = 2,
 	WeightedNearestNeighbour = 3,
-	NUM_TYPES = 4
+	NUm_InterpolationMethodS = 4
+};
+
+enum EProbeRenderType
+{
+	EProbeType_CubeMap,
+	EProbeType_Equirectangular
 };
 
 namespace std {
@@ -51,6 +59,8 @@ namespace std {
             }
     };
 };
+
+
 
 class ProbeStructure {
 protected:
@@ -65,7 +75,8 @@ protected:
 public:
 	
 	static Array<G3D::String> typeMap;
-	EProbeStructureType m_type;
+	EInterpolationMethod m_InterpolationMethod;
+	EProbeRenderType m_ProbeRenderType;
 	inline void createTypeMap();
 
 	std::unordered_map<Vector3, Probe*> probeMap;
@@ -73,7 +84,7 @@ public:
 	ProbeStructure();
 	// TODO : remove path argument and build it in the constructor instead sheesh
 	ProbeStructure(String sceneName, String probeStructureName);
-	ProbeStructure(String sceneName, String probeStructureName, int numProbes, EProbeStructureType type);
+	ProbeStructure(String sceneName, String probeStructureName, int numProbes, EInterpolationMethod type);
 	void operator=(const ProbeStructure &p );
 	void reset();
 	void makeLineArray();
@@ -104,9 +115,9 @@ public:
 
 	String name() { return m_name; }
 
-	String type() { return String(typeMap[m_type]); }
+	String type() { return String(typeMap[m_InterpolationMethod]); }
 
-	EProbeStructureType eType() { return m_type; }
+	EInterpolationMethod eType() { return m_InterpolationMethod; }
 
 	float gamma() { return m_gamma; }
 
@@ -176,6 +187,8 @@ public:
 	void removeProbe(int i);
 
 	void createDirectoryTree();
+
+	void renderCubeMaps();
 
 	std::vector<int> m_dimensions;
 	Array<Probe*> probeList;

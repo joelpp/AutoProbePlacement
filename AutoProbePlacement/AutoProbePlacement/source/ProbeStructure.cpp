@@ -10,12 +10,12 @@ G3D::Array<G3D::String> ProbeStructure::typeMap;
 
 inline void ProbeStructure::createTypeMap()
 {
-	typeMap.resize(EProbeStructureType::NUM_TYPES);
+	typeMap.resize(EInterpolationMethod::NUm_InterpolationMethodS);
 
-	typeMap[EProbeStructureType::Trilinear] = "trilinear";;
-	typeMap[EProbeStructureType::Closest] = "closest";
-	typeMap[EProbeStructureType::Tetrahedral] = "tetrahedral";
-	typeMap[EProbeStructureType::WeightedNearestNeighbour] = "wNN";
+	typeMap[EInterpolationMethod::Trilinear] = "trilinear";;
+	typeMap[EInterpolationMethod::Closest] = "closest";
+	typeMap[EInterpolationMethod::Tetrahedral] = "tetrahedral";
+	typeMap[EInterpolationMethod::WeightedNearestNeighbour] = "wNN";
 }
 
 ProbeStructure::ProbeStructure()
@@ -23,7 +23,7 @@ ProbeStructure::ProbeStructure()
 
 }
 
-ProbeStructure::ProbeStructure(String sceneName, String probeStructureName, int numProbes, EProbeStructureType type)
+ProbeStructure::ProbeStructure(String sceneName, String probeStructureName, int numProbes, EInterpolationMethod type)
 {
 	createTypeMap();
 
@@ -38,7 +38,7 @@ ProbeStructure::ProbeStructure(String sceneName, String probeStructureName, int 
 		this->probeList.push_back(new Probe(i, probeStructurePath));
 		this->probeList[i]->bNeedsUpdate = true;
 	}
-	this->m_type = type;
+	this->m_InterpolationMethod = type;
 
 	std::fstream infoFile;
 	infoFile.open((probeStructurePath + "/info.txt").c_str(), std::fstream::out);
@@ -54,7 +54,7 @@ ProbeStructure::ProbeStructure(String sceneName, String probeStructureName)
 	, m_NumSamples(4)
 	, m_integrator("direct")
 	, m_dimensions(0)
-	, m_type(EProbeStructureType::WeightedNearestNeighbour)
+	, m_InterpolationMethod(EInterpolationMethod::WeightedNearestNeighbour)
 	, m_width(128)
 	, m_height(64)
 {
@@ -80,7 +80,7 @@ ProbeStructure::ProbeStructure(String sceneName, String probeStructureName)
     m_NumCoefficients = 9;
     m_NumColors = 3;
 
-	if (m_type == EProbeStructureType::Tetrahedral)
+	if (m_InterpolationMethod == EInterpolationMethod::Tetrahedral)
 	{
 		makeLineArray();
 		makeTetrahedraArray();
@@ -139,7 +139,7 @@ void ProbeStructure::loadProbeStructureInfo()
 			
 			String& s = splitLine[0];
 
-			this->m_type = EProbeStructureType((int)typeMap.findIndex(s) );
+			this->m_InterpolationMethod = EInterpolationMethod((int)typeMap.findIndex(s) );
 
 		}
 		if (param == "step")
@@ -740,7 +740,7 @@ G3D::Array<G3D::Vector3> ProbeStructure::getInterpolatingProbesCoords(const G3D:
 	G3D::Vector3 probe000Pos = findProbe000(pos, (float) step);
 
 	float fstep = (float)step;
-	if (m_type == EProbeStructureType::Trilinear)
+	if (m_InterpolationMethod == EInterpolationMethod::Trilinear)
 	{
 		toReturn.push_back(probe000Pos);
 
@@ -752,7 +752,7 @@ G3D::Array<G3D::Vector3> ProbeStructure::getInterpolatingProbesCoords(const G3D:
 		toReturn.push_back(probe000Pos + G3D::Vector3(fstep, fstep, 0));
 		toReturn.push_back(probe000Pos + G3D::Vector3(fstep, fstep, fstep));
 	}
-	else if (m_type == EProbeStructureType::Trilinear)
+	else if (m_InterpolationMethod == EInterpolationMethod::Trilinear)
 	{
 		G3D::Vector3 positionToReturn;
 		float minDistance = 99999;
@@ -786,7 +786,7 @@ G3D::Vector3 findProbeOffset(const G3D::Vector3& wsPos, const G3D::Vector3& prob
 G3D::Array<int> ProbeStructure::getInterpolatingProbeIndices(const G3D::Vector3& pos)
 {
 	G3D::Array<int> toReturn;
-	if (m_type == EProbeStructureType::Closest)
+	if (m_InterpolationMethod == EInterpolationMethod::Closest)
 	{
 		int bestMatch = -1;
 		float minDistance = 99999;
@@ -807,10 +807,10 @@ G3D::Array<int> ProbeStructure::getInterpolatingProbeIndices(const G3D::Vector3&
 
 		toReturn.push_back(bestMatch);
 	}
-	else if (m_type == EProbeStructureType::Tetrahedral)
+	else if (m_InterpolationMethod == EInterpolationMethod::Tetrahedral)
 	{
 	}
-	else if (m_type == EProbeStructureType::WeightedNearestNeighbour)
+	else if (m_InterpolationMethod == EInterpolationMethod::WeightedNearestNeighbour)
 	{
 	}
 
@@ -852,7 +852,7 @@ ProbeInterpolationRecord ProbeStructure::getInterpolationProbeIndicesAndWeights(
 {
 	// TODO FIX THIS
 	ProbeInterpolationRecord record;
-	if (m_type == EProbeStructureType::Trilinear)
+	if (m_InterpolationMethod == EInterpolationMethod::Trilinear)
 	{
 
         G3D::Vector3 firstProbePosition = G3D::Vector3(m_firstProbePosition);
@@ -921,14 +921,14 @@ ProbeInterpolationRecord ProbeStructure::getInterpolationProbeIndicesAndWeights(
 			}
 		}
 	}
-	else if (m_type == EProbeStructureType::Closest)
+	else if (m_InterpolationMethod == EInterpolationMethod::Closest)
 	{
 		
 		record.probeIndices = getInterpolatingProbeIndices(position);
 
 		record.weights.push_back(1.0f);
 	}
-	else if (m_type == EProbeStructureType::Tetrahedral)
+	else if (m_InterpolationMethod == EInterpolationMethod::Tetrahedral)
 	{
 		G3D::Array<int> probeIndices;
 		G3D::Array<float> weights;
@@ -938,7 +938,7 @@ ProbeInterpolationRecord ProbeStructure::getInterpolationProbeIndicesAndWeights(
 		record.weights = weights;
 	}
 
-	else if (m_type == EProbeStructureType::WeightedNearestNeighbour)
+	else if (m_InterpolationMethod == EInterpolationMethod::WeightedNearestNeighbour)
 	{
 		G3D::Array<int> probeIndices;
 		G3D::Array<float> weights;
@@ -1511,7 +1511,7 @@ void ProbeStructure::savePositions(bool useManipulator)
 {
     std::fstream probeListFile = probeListFileHandle(false);
 
-	int count = (m_type == EProbeStructureType::Trilinear) ? m_dimensions[0] * m_dimensions[1] * m_dimensions[2] : probeList.size();
+	int count = (m_InterpolationMethod == EInterpolationMethod::Trilinear) ? m_dimensions[0] * m_dimensions[1] * m_dimensions[2] : probeList.size();
 
 	if (probeList.size() == 0)
 	{
@@ -1524,7 +1524,7 @@ void ProbeStructure::savePositions(bool useManipulator)
     {
         G3D::Vector3 probePosition;
         // todo: ugh :(
-		if (m_type == EProbeStructureType::Trilinear)
+		if (m_InterpolationMethod == EInterpolationMethod::Trilinear)
 		{
 			G3D::Vector3 initialPos = probeList[0]->manipulator->frame().translation;
 			probePosition = initialPos + Vector3(x, y, z) * m_step;
@@ -1643,7 +1643,7 @@ void ProbeStructure::setGamma(float gamma)
 
 void ProbeStructure::setType(String type)
 {
-	this->m_type = (EProbeStructureType)(int)(typeMap.findIndex(type));
+	this->m_InterpolationMethod = (EInterpolationMethod)(int)(typeMap.findIndex(type));
 }
 
 void ProbeStructure::setStep(float step)
@@ -1655,14 +1655,14 @@ void ProbeStructure::saveInfoFile()
 {
 	std::fstream infoFile = infoFileHandle(false);
 
-	infoFile << "type"			<< " " << std::string(typeMap[m_type].c_str())	<< std::endl;
+	infoFile << "type"			<< " " << std::string(typeMap[m_InterpolationMethod].c_str())	<< std::endl;
 	infoFile << "integrator"	<< " " << std::string(m_integrator.c_str())		<< std::endl;
 	infoFile << "gamma"			<< " " << m_gamma								<< std::endl;
 	infoFile << "sampleCount"	<< " " << m_NumSamples							<< std::endl;
 	infoFile << "width"			<< " " << m_width								<< std::endl;
 	infoFile << "height"		<< " " << m_height								<< std::endl;
 
-	if (m_type == EProbeStructureType::Trilinear)
+	if (m_InterpolationMethod == EInterpolationMethod::Trilinear)
 	{
 		infoFile << "dimensions" << " " << m_dimensions[0] << " " << m_dimensions[1] << " " << m_dimensions[2] << std::endl;
 		infoFile << "step" << " " << m_step << std::endl;
@@ -1736,4 +1736,9 @@ void ProbeStructure::removeProbe(int i)
 
 	saveInfoFile();
 	savePositions(false);
+}
+
+void ProbeStructure::renderCubeMaps()
+{
+
 }

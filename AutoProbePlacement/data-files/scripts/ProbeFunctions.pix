@@ -12,7 +12,7 @@
 //#elif WEIGHTS_CLOSEST
 //#define AMT_INTERP_PROBES 1
 //#endif
-
+// #define NUM_PROBES 1
 
 #define CHANNEL_RED 0
 #define CHANNEL_GREEN 1
@@ -27,8 +27,8 @@ uniform int singleBandShading;
 struct ProbeInterpolationRecord
 {
 #if WEIGHTS_WNN
-	 uint probeIndices[NUM_PROBES];
-	 float weights[NUM_PROBES];
+	 uint probeIndices[20];
+	 float weights[20];
  #elif WEIGHTS_TRILERP
 	 uint probeIndices[8];
 	 float weights[8];
@@ -83,22 +83,22 @@ float phongCoeffs(uint l, float r)
 	}
 }
 
-// struct SProbe
-// {
-// 	float position[4];
-// 	float coefficients[27];
-// //#if USE_SH_GRADIENTS
-// 	float gradients[81];
-// //#endif
-// };
+struct SProbe
+{
+	float position[4];
+	float coefficients[27];
+//#if USE_SH_GRADIENTS
+	float gradients[81];
+//#endif
+};
 
-// layout(std430, binding = 0) buffer SProbeStructure
-// {
-// 	SProbe probes[343];
-// 	int dimensions[4]; // int3 padded into int4
-// 	vec4 firstProbePosition; //vec3 padded into vec4
-// 	float step;
-// } probeStructure;
+layout(std430, binding = 0) buffer SProbeStructure
+{
+	SProbe probes[343];
+	int dimensions[4]; // int3 padded into int4
+	vec4 firstProbePosition; //vec3 padded into vec4
+	float step;
+} probeStructure;
 
 vec3 getProbePosition(int i)
 {
@@ -116,6 +116,12 @@ int findProbeIndex(vec3 probePosition, vec4 startingPosition, int dimensions[4],
 				 probeSpaceCoords.z;
 
 	return index;
+}
+
+ivec3 findProbeOffset(vec3 wsPos, vec3 probe000Pos)
+{
+    vec3 fprobeSpaceCoords = (probe000Pos - probeStructure.firstProbePosition.xyz) / probeStructure.step;
+    return ivec3(round(fprobeSpaceCoords));
 }
 
 vec3 findProbePosition(uint index, vec4 startingPosition, int dimensions[4], float step)
@@ -148,6 +154,8 @@ ProbeInterpolationRecord findInterpolatingProbes(vec3 wsPos, vec3 normal, float 
 	int index000 = findProbeIndex(probe000Pos, probeStructure.firstProbePosition, probeStructure.dimensions, step);
 	ivec3 offsets = ivec3(probeStructure.dimensions[2] * probeStructure.dimensions[1], probeStructure.dimensions[2], 1);
 
+	ivec3 probeSpaceOffset = findProbeOffset(wsPos, probe000Pos);
+
 	vec3 lastProbePosition = probeStructure.firstProbePosition.xyz + step * (vec3(probeStructure.dimensions[0] , probeStructure.dimensions[1], probeStructure.dimensions[2]) - vec3(1,1,1));
 
 
@@ -163,13 +171,16 @@ ProbeInterpolationRecord findInterpolatingProbes(vec3 wsPos, vec3 normal, float 
 	iRec.weights[6] = (1.0f - w000.x) * (1.0f - w000.y) * w000.z;
 	iRec.weights[7] = (1.0f - w000.x)* (1.0f - w000.y) * (1.0f - w000.z);
 
-	// iRec.probeIndices[0] = index000;;	
-
 	int x = 0, y = 0, z = 0;
 	bool shouldNormalize = false;
 	for (int i = 0; i < 8; ++i)
 	{
 		int index = index000 + int(dot(vec3(x,y,z), offsets));
+
+
+		vec3 thisProbeSpaceCoords = probeSpaceOffset + ivec3(x,y,z);
+		index = int(dot(thisProbeSpaceCoords, offsets));
+
 		iRec.probeIndices[i] = index;
 
 		vec3 possiblePos = probe000Pos + vec3(x * step, y * step, z * step);
@@ -178,51 +189,19 @@ ProbeInterpolationRecord findInterpolatingProbes(vec3 wsPos, vec3 normal, float 
 		y = (z == 0) ? (y + 1) % (2) : y;
 		x = ((y == 0) && (z == 0)) ? x + 1 : x;
 
-		if (any(greaterThan(possiblePos, lastProbePosition)) || anyLessThanTolerance(possiblePos, probeStructure.firstProbePosition.xyz, 1e-1))
+		if (any(greaterThan(possiblePos, lastProbePosition)) 
+			|| anyLessThanTolerance(possiblePos, probeStructure.firstProbePosition.xyz, 1e-1)
+			|| (any(lessThan(thisProbeSpaceCoords, ivec3(0,0,0)))))
 		{
+			iRec.probeIndices[i] = 0;
 			iRec.weights[i] = 0;
 			shouldNormalize = true;
 			continue;
 		}
-		// if (i == 7)
-		// {
-		// 	iRec.weights[0] = possiblePos[0];
-		// 	iRec.weights[1] = possiblePos[1];
-		// 	iRec.weights[2] = possiblePos[2];
-		// }
-			
+
 	}
 
 
-			// shouldNormalize = false;
-	// iRec.weights[0] = lastProbePosition[0];
-	// iRec.weights[1] = lastProbePosition[1];
-	// iRec.weights[2] = lastProbePosition[2];
-	// iRec.probeIndices[3] = iRec.probeIndices[0] + offsets[1] + offsets[2];                 // p011
-	// iRec.probeIndices[4] = iRec.probeIndices[0] + offsets[0];                              // p100
-	// iRec.probeIndices[5] = iRec.probeIndices[0] + offsets[0] + offsets[2];                 // p101
-	// iRec.probeIndices[6] = iRec.probeIndices[0] + offsets[0] + offsets[1];                 // p110
-	// iRec.probeIndices[7] = iRec.probeIndices[0] + offsets[0] + offsets[1] + offsets[2];    // p111
-
-	// int numProbes = probeStructure.dimensions[0] * probeStructure.dimensions[1] * probeStructure.dimensions[2];
-	// bool shouldNormalize = false;
-	// for (int i = 0; i < 8; ++i)
-	// {
-	// 	if ((iRec.probeIndices[i] > numProbes) || (iRec.probeIndices[i] < 0))
-	// 	{
-	// 		iRec.weights[i] = 0;
-	// 		shouldNormalize = true;
-	// 	}
-	// }
-
-	// for (int i = 0; i < 8; ++i)
-	// {
-	// 	if ((iRec.probeIndices[i] > numProbes) || (iRec.probeIndices[i] < 0))
-	// 	{
-	// 		iRec.weights[i] = 0;
-	// 		shouldNormalize = true;
-	// 	}
-	// }
 
 	if (shouldNormalize)
 	{
@@ -278,8 +257,8 @@ ProbeInterpolationRecord findInterpolatingProbes(vec3 wsPos, vec3 normal, float 
 			vec3 probePosition = getProbePosition(i);
 			vec3 posToProbe = (probePosition - wsPos);
 
-			float distanceToProbe = pow(posToProbe.x, 2) + pow(posToProbe.y, 2) + pow(posToProbe.z, 2);
-			float sumDenominator = 1.f / pow( distanceToProbe, p / 2.f);
+			float distanceToProbe = sqrt(pow(posToProbe.x, 2) + pow(posToProbe.y, 2) + pow(posToProbe.z, 2));
+			float sumDenominator = 1.f / pow( distanceToProbe, p);
 			SumOfInverseDistances += sumDenominator;
 
 			iRec.probeIndices[i] = i;
@@ -317,6 +296,10 @@ vec3 interpolateCoefficientsOneBand(ProbeInterpolationRecord iRec, uint shBand)
 
 	for (int i = 0; i < 8; ++i)
 	{
+		if (iRec.weights[i] == 0)
+		{
+			continue;
+		}
 		// values[i] = getSHCoeffsOneProbe(iRec.probeIndices[i], shBand);
 		toReturn += getSHCoeffsOneProbe(iRec.probeIndices[i], shBand) * iRec.weights[i];
 

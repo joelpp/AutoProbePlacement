@@ -119,7 +119,7 @@ void JScene::load()
 					tokens = stringSplit(String(line.c_str()), ' ');
 					if (tokens[0] == "")
 					{
-						addModel("../data-files/Scenes/" + m_name + "/objs/" + filename, color);
+						//addModel("../data-files/Scenes/" + m_name + "/objs/" + filename, color);
 						debugPrintf("Added model, filename: %s, color: %s \n", filename, color.toString().c_str());
 					}
 					else if (tokens[0] == "filename")

@@ -7,8 +7,8 @@
 #include "Helpers.h"
 #include "SH.h"
 
-//#define HOME_PC
-#define LIGUM_PC
+#define HOME_PC
+//#define LIGUM_PC
 
 String generateFolderNameBaseAnySuffix(const String& prefix) 
 {
@@ -93,9 +93,11 @@ bool runShellCommand(std::string command, bool showOutput, bool waitForCompletio
 bool runPythonScriptFromDataFiles(std::string scriptName, std::string args, bool showOutput, bool waitForCompletion)
 {
 	std::stringstream ss;
+	//const char* PythonPath = "C:\\Users\\Joel\\Anaconda2\\python.exe";
+	const char* PythonPath = "C:\\Python34\\python.exe";
 
 #if defined(HOME_PC)
-	ss << "cmd /c \"cd C:\\git\\AutoProbePlacement\\AutoProbePlacement\\data-files\\scripts && C:\\Users\\Joel\\Anaconda2\\python.exe ";
+	ss << "cmd /c \"cd C:\\git\\AutoProbePlacement\\AutoProbePlacement\\data-files\\scripts && " << PythonPath << " ";
 #elif defined(LIGUM_PC)
 	ss << "cmd /c \"cd C:\\git\\AutoProbePlacement\\AutoProbePlacement\\data-files\\scripts && python ";
 #endif

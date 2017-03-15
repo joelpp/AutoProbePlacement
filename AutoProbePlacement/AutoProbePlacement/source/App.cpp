@@ -20,7 +20,7 @@ int main(int argc, char** argv) {
     settings.window.width       = 1440; 
     settings.window.height      = 900;
     settings.window.caption     = "Assisted probe placement";
-	settings.dataDir = "C:\\git\\AutoProbePlacement\\data-files";
+	settings.dataDir = "C:\\git\\AutoProbePlacement\\AutoProbePlacement\\data-files";
 	settings.renderer.deferredShading = true;
 	settings.renderer.factory = &(ProbeRenderer::create);
 	//settings.film.preferredColorFormats.insert(0,ImageFormat::RGBA32F());
@@ -125,6 +125,7 @@ void App::onInit() {
 	bPreventOOBDisplacement =		  false;
 	bScreenShot =					  false;
 	bFindingNewProbeLocation =		  false;
+	bUseProbeRef =					  false;
 
     //Decide how many bands we want to use for the interpolation
     numBands =					2;
@@ -170,7 +171,7 @@ void App::onInit() {
 	loadOptions();
 	makeGui();
 	stopPythonRenderingEngine();
-}//end of onInit 
+}//end of onInit																	
 
 void App::loadScene(String sceneName)
 {
@@ -198,8 +199,7 @@ void App::loadScene(String sceneName)
 	loadCurrentOptimization();
 	sw.after("Loaded optimization settings");
 
-	createTriTree();
-	sw.after("Created Tritree");
+	//sw.after("Created Tritree");
 	bSceneLoaded = true;
 }
 
@@ -361,7 +361,7 @@ void App::drawProbes(RenderDevice* rd)
 	args.setUniform("multiplier", shadingMultiplier);
 	args.setUniform("r", 1.f);
 
-	if (bManipulateProbesEnabled && m_probeStructure->eType() == EProbeStructureType::Trilinear)
+	if (bManipulateProbesEnabled && m_probeStructure->eType() == EInterpolationMethod::Trilinear)
 	{
 		shared_ptr<Texture> whiteTexture = Texture::white();
 		Sampler sampler = Sampler();
@@ -747,7 +747,7 @@ void App::switchEditProbeStructure()
 
     if (!bManipulateProbesEnabled)
     {
-		if (m_probeStructure->eType() == EProbeStructureType::Trilinear)
+		if (m_probeStructure->eType() == EInterpolationMethod::Trilinear)
 		{
 			addWidget(m_probeStructure->getProbe(0)->getManipulator());
 
@@ -763,7 +763,7 @@ void App::switchEditProbeStructure()
     }
     else
     {
-		if (m_probeStructure->eType() == EProbeStructureType::Trilinear)
+		if (m_probeStructure->eType() == EInterpolationMethod::Trilinear)
 		{
 			if (m_widgetManager->contains(m_probeStructure->getProbe(0)->getManipulator()))
 			{
@@ -829,7 +829,7 @@ void App::updateSampleSet()
 		sampleSet->probeStructure = m_probeStructure;
 	}
 }
-#define AUTO_OPTIMIZE
+//#define AUTO_OPTIMIZE
 
 void App::handleProbeFinder()
 {
@@ -1410,6 +1410,7 @@ void App::makeGui() {
 	tab->addCheckBox("Prevent OOB", &bPreventOOBDisplacement);
 	tab->addCheckBox("Coeffs only", &bOptimizeForCoeffs);
 	tab->addCheckBox("One row per SH", &bOneRowPerSHBand);
+	tab->addCheckBox("Use probe ref", &bUseProbeRef);
 	tab->endRow();
 
 	tab->beginRow();
@@ -1421,7 +1422,7 @@ void App::makeGui() {
 
 	tab->addButton("Compute ref values", [this]() 
     {
-		if (bOptimizeForCoeffs)
+		if (!bUseProbeRef)
 		{
 			// copy samples interpolated coefficients
 
@@ -1722,7 +1723,7 @@ void App::updateProbeStructurePane()
 
 	probeStructurePane->addButton(GuiText("Update all"), [this]()
 	{
-		if (m_probeStructure->eType() == EProbeStructureType::Trilinear)
+		if (m_probeStructure->eType() == EInterpolationMethod::Trilinear)
 		{
 			Probe* p = m_probeStructure->getProbe(0);
 			Vector3 manipulatorPos = p->getManipulator()->frame().translation;
@@ -1806,7 +1807,7 @@ void App::updateProbeStructurePane()
 		probeStructurePane->addLabel(type);
 		probeStructurePane->addLabel("Number of probes : " + String(std::to_string(m_probeStructure->probeCount())));
 
-		if (m_probeStructure->eType() == EProbeStructureType::Trilinear)
+		if (m_probeStructure->eType() == EInterpolationMethod::Trilinear)
 		{
 			std::stringstream ss;
 			ss << m_probeStructure->m_dimensions[0] << " " << m_probeStructure->m_dimensions[1] << " " << m_probeStructure->m_dimensions[2];
@@ -1857,7 +1858,7 @@ void App::updateProbeStructurePane()
 			m_probeStructure->setNumSamples(std::stoi(probeStructurePanelOptions.numSamples.c_str()));
 			m_probeStructure->setStep(std::stof(probeStructurePanelOptions.step.c_str()));
 
-			if (m_probeStructure->eType() == EProbeStructureType::Trilinear)
+			if (m_probeStructure->eType() == EInterpolationMethod::Trilinear)
 			{
 				G3D::Vector3 dim = StringToVector3(probeStructurePanelOptions.dimensions);
 
@@ -1902,6 +1903,7 @@ void App::addSampleSetPane(GuiTabPane* tabPane)
 	}
 
 	G3D::String selectedScene = selectedSceneName();
+	tab->addButton(GuiText("Generate tritree"), GuiControl::Callback(this, &App::createTriTree), GuiTheme::TOOL_BUTTON_STYLE);
 
 	tab->beginRow();
 	G3D::Array<G3D::String> sampleSetList = getFoldersInFolder(sampleSetFoldersPath());
@@ -1982,7 +1984,7 @@ void App::createTriTree()
 		}
 	}
 	m_triTree.setContents(m_surfaceArray);
-
+	
 }
 
 void App::onUserInput(UserInput* userInput)
@@ -2022,7 +2024,8 @@ void App::onUserInput(UserInput* userInput)
 		Array<shared_ptr<Texture>> output;
 		//const G3D::String name("dm");
 		//Texture dm(name, 999, G3D::Texture::Dimension::DIM_2D, Texture::Encoding::writeMultiplyFirst, false, AlphaFilter::BINARY, 1);
-		renderCubeMap(renderDevice, output, activeCamera(), shared_ptr<Texture>(), 512);
+		//renderCubeMap(renderDevice, output, activeCamera(), shared_ptr<Texture>(), 512);
+		renderCubeMap();
 
 		int i = 0;
 		for (const shared_ptr<Texture>& tex : output)
@@ -2142,6 +2145,7 @@ void App::saveOptions()
 	SAVE_BOOL(bRenderIndirectG3D);
 	SAVE_BOOL(bRenderShadowMaps);
 	SAVE_BOOL(bRenderMultiplyIndirectByBRDF);
+	SAVE_BOOL(bUseProbeRef);
 
 	SAVE_FLOAT(sampleMultiplier);
 
@@ -2231,7 +2235,8 @@ void App::loadOptions()
 	LOAD_BOOL(bRenderIndirectG3D);
 	LOAD_BOOL(bRenderShadowMaps);
 	LOAD_BOOL(bRenderMultiplyIndirectByBRDF);
-
+	LOAD_BOOL(bUseProbeRef);
+	
 	LOAD_STRING(m_sNumICTries); 
 	LOAD_STRING(m_sNumICProbes);
 	LOAD_STRING(previousProbeStructure);
@@ -2379,4 +2384,180 @@ void App::computeSampleSetValuesFromIndividualProbe()
 	int numCoeffs = std::atoi(optimizationSHBand.c_str());
 	//sampleSet->generateRGBValuesFromProbes(numSamples, numCoeffs);
 	sampleSet->generateInterpolatedCoefficientsFromProbes(numSamples, numCoeffs);
+}
+
+void App::renderCubeMap()
+{
+	bool bRenderDirectBackup = bRenderDirect;
+	bool bRenderIndirectBackup = bRenderIndirect;
+	bool bShowAllProbesBackup = showAllProbes;
+
+	bRenderDirect = true;
+	bRenderIndirect = false;
+	showAllProbes = false;
+
+	Array<shared_ptr<Texture> > output;
+	const shared_ptr<Camera> camera = activeCamera();
+	const shared_ptr<Texture> depthMap = nullptr;
+	int resolution = 256;
+	RenderDevice* rd = renderDevice;
+
+	App* app = App::instance;
+	Array<shared_ptr<Surface> > surface;
+	{
+		Array<shared_ptr<Surface2D> > ignore;
+		app->onPose(surface, ignore);
+	}
+	const int oldFramebufferWidth = app->window()->width();
+	const int oldFramebufferHeight = m_osWindowHDRFramebuffer->height();
+	const Vector2int16  oldColorGuard = m_settings.hdrFramebuffer.colorGuardBandThickness;
+	const Vector2int16  oldDepthGuard = m_settings.hdrFramebuffer.depthGuardBandThickness;
+	const shared_ptr<Camera>& oldCamera = activeCamera();
+
+	m_settings.hdrFramebuffer.colorGuardBandThickness = Vector2int16(0, 0);
+	m_settings.hdrFramebuffer.depthGuardBandThickness = Vector2int16(0, 0);
+	const int fullWidth = resolution + (2 * m_settings.hdrFramebuffer.depthGuardBandThickness.x);
+	m_osWindowHDRFramebuffer->resize(fullWidth, fullWidth);
+
+	shared_ptr<Camera> newCamera = Camera::create("Cubemap Camera");
+	newCamera->copyParametersFrom(camera);
+	newCamera->depthOfFieldSettings().setEnabled(false);
+	newCamera->motionBlurSettings().setEnabled(false);
+	newCamera->setFieldOfView(2.0f * ::atan(1.0f + 2.0f*(float(m_settings.hdrFramebuffer.depthGuardBandThickness.x) / float(resolution))), FOVDirection::HORIZONTAL);
+
+	const ImageFormat* imageFormat = ImageFormat::RGBA32F();
+	if ((output.size() == 0) || isNull(output[0])) {
+		// allocate cube maps
+		output.resize(6);
+		for (int face = 0; face < 6; ++face) {
+			output[face] = Texture::createEmpty(CubeFace(face).toString(), resolution, resolution, imageFormat, Texture::DIM_2D, false);
+		}
+	}
+
+	// Configure the base camera
+	CFrame cframe = newCamera->frame();
+	cframe.translation = m_probeStructure->getProbe(0)->getPosition();
+
+	setActiveCamera(newCamera);
+	shared_ptr<Texture> cubeMap = Texture::createEmpty("cube", 256, 256, imageFormat, Texture::DIM_CUBE_MAP, false, 1, 1);
+	for (int face = 0; face < 6; ++face) {
+		Texture::getCubeMapRotation(CubeFace(face), cframe.rotation);
+		newCamera->setFrame(cframe);
+
+		rd->setProjectionAndCameraMatrix(activeCamera()->projection(), activeCamera()->frame());
+
+		// Render every face twice to let the screen space reflection/refraction texture to stabilize
+		onGraphics3D(rd, surface);
+		onGraphics3D(rd, surface);
+
+		Texture::copy(m_osWindowHDRFramebuffer->texture(0), cubeMap, 0, 0, 1,
+			Vector2int16((m_osWindowHDRFramebuffer->texture(0)->vector2Bounds() - output[face]->vector2Bounds()) / 2.0f),
+			CubeFace::POS_X, (CubeFace)face, nullptr, false);
+		//m_film->exposeAndRender(rd, activeCamera()->filmSettings(), m_osWindowHDRFramebuffer->texture(0), settings().hdrFramebuffer.colorGuardBandThickness.x + settings().hdrFramebuffer.depthGuardBandThickness.x, settings().hdrFramebuffer.depthGuardBandThickness.x, output[face]);
+	
+
+	}
+	Args args;
+	glMemoryBarrier(GL_SHADER_IMAGE_ACCESS_BARRIER_BIT);
+	Sampler s(WrapMode::CLAMP, InterpolateMode::BILINEAR_NO_MIPMAP);
+	args.setMacro("DISPATCH_SIZE", DispatchSize);
+	args.setImageUniform("img_output", cubeMap);
+	args.computeGridDim = G3D::Vector3int32(1, 1, 1);
+	args.hasComputeGrid();
+
+
+	// Generate the SSBO holding probe information
+
+	const int numElements = 4 * DispatchSize * DispatchSize;
+	SComputeData vals;
+	memset(&vals, 0, sizeof(SComputeData));
+
+	GLuint valuesSSBO = 0;
+	glGenBuffers(1, &valuesSSBO);
+	glBindBuffer(GL_SHADER_STORAGE_BUFFER, valuesSSBO);
+	glBufferData(GL_SHADER_STORAGE_BUFFER, sizeof(SComputeData), &vals, GL_DYNAMIC_DRAW);
+	glBindBufferBase(GL_SHADER_STORAGE_BUFFER, 1, valuesSSBO);
+	glBindBuffer(GL_SHADER_STORAGE_BUFFER, 0);
+
+	LAUNCH_SHADER("../data-files/Shaders/compute.*", args);
+
+	// ...The same code as above
+
+	glMemoryBarrier(GL_SHADER_STORAGE_BARRIER_BIT);
+	glBindBufferBase(GL_SHADER_STORAGE_BUFFER, 0, 0);
+
+	glBindBuffer(GL_SHADER_STORAGE_BUFFER, valuesSSBO);
+
+	GLfloat *ptr;
+	ptr = (GLfloat *)glMapBuffer(GL_SHADER_STORAGE_BUFFER, GL_WRITE_ONLY);
+	
+	memcpy(&vals, ptr, sizeof(SComputeData));
+	glUnmapBuffer(GL_SHADER_STORAGE_BUFFER);
+
+	//String path = m_probeStructure->getProbe(0)->buildPath(EResource::Probes);
+	String path = "c:/temp/log.txt";
+	std::fstream outputFile(path.c_str(), std::fstream::out);
+
+	for (int i = 0; i < 4 * 9 * DispatchSize * DispatchSize; ++i)
+	{
+		outputFile << format("%f", vals.data[i]). c_str() << "\n";
+	}
+	outputFile.close();
+
+	path = m_probeStructure->getProbe(0)->buildPath(EResource::Coefficients);
+	std::fstream outputFile2(path.c_str(), std::fstream::out);
+	
+
+	tempimg = Image::create(DispatchSize, DispatchSize, G3D::ImageFormat::RGB8());
+	int w = 0;
+	for (int k = 0; k < 9; ++k)
+	{
+		int h = 0;
+		Vector3 accum;;
+		for (int i = 0; i < DispatchSize * DispatchSize; ++i)
+		{
+			Vector3 accumValue =Vector3(vals.data[i * 9 * 4 + (k * 4) + 0],
+						 				vals.data[i * 9 * 4 + (k * 4) + 1],
+								 		vals.data[i * 9 * 4 + (k * 4) + 2]);
+			accum += accumValue;
+			if (k == 0)
+			{
+				if (h == DispatchSize)
+				{
+					h = 0;
+					w++;
+
+					if (w == DispatchSize) break;
+				}
+				tempimg->set(Point2int32(w, h), Color3(accumValue.x, accumValue.y, accumValue.z));
+				h++;
+			}
+
+		}
+		accum *= 4 * M_PI / (DispatchSize * DispatchSize);
+		Vector3& coeffs = m_probeStructure->getProbe(0)->coeffs[k];
+		outputFile2 << format("%f\n%f\n%f\n", accum.x, accum.y, accum.z).c_str();
+		coeffs = accum;
+	}
+	outputFile2.close();
+	tempimg->save("C:/temp/img.png");
+	//for (int i = 0; i < 4 * 16 * 16; ++i)
+	//{
+	//	outputFile << "\n";
+	//}
+
+	setActiveCamera(oldCamera);
+	m_osWindowHDRFramebuffer->resize(oldFramebufferWidth, oldFramebufferHeight);
+	m_settings.hdrFramebuffer.colorGuardBandThickness = oldColorGuard;
+	m_settings.hdrFramebuffer.depthGuardBandThickness = oldDepthGuard;
+	m_probeStructure->saveCoefficients();
+	m_probeStructure->uploadToGPU();
+
+	//auto imgcube = cubeMap->toImage(ImageFormat::RGB8());
+	//imgcube->save("C:/temp/img2.png");
+
+	bRenderDirect = bRenderDirectBackup;
+	bRenderIndirect = bRenderIndirectBackup;
+	showAllProbes = bShowAllProbesBackup;
+	m_probeStructure->getProbe(0)->bNeedsUpdate = false;
 }

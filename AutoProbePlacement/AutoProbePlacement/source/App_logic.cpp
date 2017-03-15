@@ -144,7 +144,7 @@ float App::computeError(bool outputToLog)
 
 void App::createTempProbeStructure(G3D::Array<G3D::Vector3>& probePositions)
 {
-	ProbeStructure tempStructure = ProbeStructure(m_scene->m_name, "temp", probePositions.size(), EProbeStructureType::WeightedNearestNeighbour);
+	ProbeStructure tempStructure = ProbeStructure(m_scene->m_name, "temp", probePositions.size(), EInterpolationMethod::WeightedNearestNeighbour);
 
 	for (int i = 0; i < probePositions.size(); ++i)
 	{
@@ -162,6 +162,7 @@ bool App::displacementCrossesSurface(G3D::Vector3 startPoint, G3D::Vector3 displ
 
 	int score = 0;
 	int counter = 0;
+	if (!m_triTree.size()) return true;
 	if (m_triTree.intersectRay(ray, hit, TriTree::DO_NOT_CULL_BACKFACES))
 	{
 		return (hit.distance <= displacement.length());

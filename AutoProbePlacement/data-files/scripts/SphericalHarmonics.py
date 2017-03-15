@@ -1,5 +1,5 @@
 import math
-import numpy
+# import numpy
 pi = 3.141592654
 
 def computeSHGradients(dir):
@@ -152,7 +152,7 @@ def computedYdz( dir ):
 
 
 #Get values for the first 9 SH bands (from PP Sloan)
-def SH((L, M),x,y,z):
+def SH(L, M, x, y, z):
 	invpi = 1 / math.sqrt(math.pi);
 	if (L == 0):
 		return invpi/(2);
@@ -235,7 +235,7 @@ def SHBetterLookup_small(i,j,coeff):
 	# print "coeff "+repr(coeff)
 	return shArray[coeff][i][j];
 
-def SHxyz((L,M), x,y,z):
+def SHxyz(L,M, x,y,z):
 	if (M == 0):
 		return K(L,M) * legendreP(L,M,z);
 	elif (M < 0):
@@ -251,7 +251,7 @@ def SHxyz((L,M), x,y,z):
 	# else:
 		# return math.sqrt(2) * K(L,M) * C(M, x,z) * legendreP(L,M, y);
 
-def SHxyz_yup((L,M), normal):
+def SHxyz_yup(L,M, normal):
 	x = normal[0];
 	y = normal[1];
 	z = normal[2];
@@ -311,7 +311,7 @@ def legendreP(l_,m_,z):
 
 
 
-def SHRam((L, M),x,y,z):
+def SHRam(L, M, x,y,z):
 	invpi = 1 / math.sqrt(math.pi);
 	if (L == 0):
 		return 0.282095;

@@ -132,6 +132,13 @@ enum EFilmType
 	NUM_FILM_TYPES = LDR + 1
 };
 
+const int DispatchSize = 32;
+struct SComputeData
+{
+	
+	float data[4 * 9 * DispatchSize * DispatchSize];
+	float ReconstructionCoeffs[4 * 9];
+};
 
 
 class App : public GApp {
@@ -141,7 +148,7 @@ private:
 	*
 	* Main app
 	*/
-  
+	std::shared_ptr<Image> tempimg;
 	void drawModel(RenderDevice* rd, String shaderName, shared_ptr<ArticulatedModel> model, CFrame frame,Args args);
 
 	virtual void makeGui();
@@ -410,7 +417,7 @@ public:
 	bool pointInsideEntity(G3D::Vector3 point, TriTree::Hit& hit);
 	bool displacementCrossesSurface(G3D::Vector3 startPoint, G3D::Vector3 displacement, TriTree::Hit& hit);
 	bool displacementCrossesSurface(G3D::Vector3 startPoint, G3D::Vector3 displacement);
-
+	void renderCubeMap();
 
 	float shadingMultiplier;
 	ProbeStructure *m_probeStructure;
@@ -424,6 +431,7 @@ public:
 	bool bFlipShadingNormals;
 	bool bPreventOOBDisplacement;
 	bool bScreenShot;
+	bool bUseProbeRef;
 
 	static App* instance;
 	App(const GApp::Settings& settings = GApp::Settings());

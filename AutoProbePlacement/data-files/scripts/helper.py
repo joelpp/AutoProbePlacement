@@ -5,20 +5,20 @@
 #|		USEFUL FUNCTIONS	  |	  	
 #------------------------------
 import math
-import cPickle
-import numpy
+# import cPickle
+# import numpy
 from SphericalHarmonics import *
 # from sympy.mpmath import *
 
-from scipy import special
-from scipy import misc
+# from scipy import special
+# from scipy import misc
 
 
 # shArray = cPickle.load(open('/Users/joelpp/Documents/Maitrise/Code/IrradianceMapping/SHvalues/values.p', 'rb'));
 print("Loaded SH Array!");
 # shImageArray = numpy.zeros((120));
 shArray = [];
-for i in xrange(120):
+for i in range(120):
 	shArray.append(None);
 	
 # for i in xrange(120):
@@ -295,7 +295,7 @@ def sRGBToRGB(srgbColor):
 
 def writeVector(file, vector): 
 	toWrite = "";
-	for i in xrange(len(vector)):
+	for i in range(len(vector)):
 		toWrite += str(vector[i]);
 		toWrite += " ";
 	toWrite += "\n";

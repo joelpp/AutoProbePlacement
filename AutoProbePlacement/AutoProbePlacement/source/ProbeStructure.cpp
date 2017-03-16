@@ -1709,13 +1709,22 @@ void ProbeStructure::saveCoefficients()
 		probeList[i]->saveCoefficients();
 	}
 }
-
-void ProbeStructure::updateAll(bool showOutput)
+#define IterateOverProbes(x) for (int i = 0; i < probeList.size(); ++i) { x(i); }
+void ProbeStructure::updateAll(bool bUseManipulator, bool showOutput)
 {
 	saveInfoFile();
 	savePositions(false);
-	generateProbes("all", false, true, showOutput);
-	extractSHCoeffs(true, true);
+
+	if (m_UsesCubemap)
+	{
+		IterateOverProbes( App::instance->renderCubeMapForProbe );
+	}
+	else
+	{
+		generateProbes("all", false, true, showOutput);
+		extractSHCoeffs(true, true);
+	}
+
 }
 
 void ProbeStructure::deleteAllProbes()

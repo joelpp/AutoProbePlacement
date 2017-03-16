@@ -927,7 +927,7 @@ void App::handleProbeFinder()
 							m_probeStructure->addProbe(v);
 
 						}
-						m_probeStructure->updateAll(bShowOptimizationOutput);
+						m_probeStructure->updateAll(false, (bShowOptimizationOutput));
 
 #ifdef AUTO_OPTIMIZE
 						numPassesLeft = std::stof(tbNumPassesLeft.c_str());
@@ -1755,9 +1755,7 @@ void App::updateProbeStructurePane()
 			m_probeStructure->m_firstProbePosition[2] = manipulatorPos.z;
 
 		}
-		m_probeStructure->savePositions(true);
-		m_probeStructure->generateProbes("all", false, true, bShowOptimizationOutput);
-		m_probeStructure->extractSHCoeffs(true, true);
+		m_probeStructure->updateAll(true, bShowOptimizationOutput);
 
 		popNotification("Job finished", "Probe structure update complete", 15);
 	}
@@ -1781,6 +1779,7 @@ void App::updateProbeStructurePane()
 
 	probeStructurePane->addCheckBox("Show output", &bShowProbeGenerationOutput);
 	probeStructurePane->addCheckBox("Use gradients", &useSHGradients);
+	probeStructurePane->addCheckBox("Use cubemap", &(m_probeStructure->m_UsesCubemap));
 	probeStructurePane->endRow();
 
 	probeStructurePane->beginRow();
@@ -2025,7 +2024,7 @@ void App::onUserInput(UserInput* userInput)
 		//const G3D::String name("dm");
 		//Texture dm(name, 999, G3D::Texture::Dimension::DIM_2D, Texture::Encoding::writeMultiplyFirst, false, AlphaFilter::BINARY, 1);
 		//renderCubeMap(renderDevice, output, activeCamera(), shared_ptr<Texture>(), 512);
-		renderCubeMap();
+		renderCubeMapForProbe(0);
 
 		int i = 0;
 		for (const shared_ptr<Texture>& tex : output)
@@ -2386,8 +2385,10 @@ void App::computeSampleSetValuesFromIndividualProbe()
 	sampleSet->generateInterpolatedCoefficientsFromProbes(numSamples, numCoeffs);
 }
 
-void App::renderCubeMap()
+void App::renderCubeMapForProbe(int probeID)
 {
+	Probe* probe = m_probeStructure->getProbe(probeID);
+
 	bool bRenderDirectBackup = bRenderDirect;
 	bool bRenderIndirectBackup = bRenderIndirect;
 	bool bShowAllProbesBackup = showAllProbes;
@@ -2436,10 +2437,14 @@ void App::renderCubeMap()
 
 	// Configure the base camera
 	CFrame cframe = newCamera->frame();
-	cframe.translation = m_probeStructure->getProbe(0)->getPosition();
+	cframe.translation = probe->getPosition();
 
 	setActiveCamera(newCamera);
-	shared_ptr<Texture> cubeMap = Texture::createEmpty("cube", 256, 256, imageFormat, Texture::DIM_CUBE_MAP, false, 1, 1);
+	if (m_CubeMap == nullptr)
+	{
+		m_CubeMap = Texture::createEmpty("cube", 256, 256, imageFormat, Texture::DIM_CUBE_MAP, false, 1, 1);
+	}
+
 	for (int face = 0; face < 6; ++face) {
 		Texture::getCubeMapRotation(CubeFace(face), cframe.rotation);
 		newCamera->setFrame(cframe);
@@ -2450,7 +2455,7 @@ void App::renderCubeMap()
 		onGraphics3D(rd, surface);
 		onGraphics3D(rd, surface);
 
-		Texture::copy(m_osWindowHDRFramebuffer->texture(0), cubeMap, 0, 0, 1,
+		Texture::copy(m_osWindowHDRFramebuffer->texture(0), m_CubeMap, 0, 0, 1,
 			Vector2int16((m_osWindowHDRFramebuffer->texture(0)->vector2Bounds() - output[face]->vector2Bounds()) / 2.0f),
 			CubeFace::POS_X, (CubeFace)face, nullptr, false);
 		//m_film->exposeAndRender(rd, activeCamera()->filmSettings(), m_osWindowHDRFramebuffer->texture(0), settings().hdrFramebuffer.colorGuardBandThickness.x + settings().hdrFramebuffer.depthGuardBandThickness.x, settings().hdrFramebuffer.depthGuardBandThickness.x, output[face]);
@@ -2461,7 +2466,7 @@ void App::renderCubeMap()
 	glMemoryBarrier(GL_SHADER_IMAGE_ACCESS_BARRIER_BIT);
 	Sampler s(WrapMode::CLAMP, InterpolateMode::BILINEAR_NO_MIPMAP);
 	args.setMacro("DISPATCH_SIZE", DispatchSize);
-	args.setImageUniform("img_output", cubeMap);
+	args.setImageUniform("img_output", m_CubeMap);
 	args.computeGridDim = G3D::Vector3int32(1, 1, 1);
 	args.hasComputeGrid();
 
@@ -2504,7 +2509,7 @@ void App::renderCubeMap()
 	}
 	outputFile.close();
 
-	path = m_probeStructure->getProbe(0)->buildPath(EResource::Coefficients);
+	path = probe->buildPath(EResource::Coefficients);
 	std::fstream outputFile2(path.c_str(), std::fstream::out);
 	
 
@@ -2535,7 +2540,7 @@ void App::renderCubeMap()
 
 		}
 		accum *= 4 * M_PI / (DispatchSize * DispatchSize);
-		Vector3& coeffs = m_probeStructure->getProbe(0)->coeffs[k];
+		Vector3& coeffs = probe->coeffs[k];
 		outputFile2 << format("%f\n%f\n%f\n", accum.x, accum.y, accum.z).c_str();
 		coeffs = accum;
 	}
@@ -2559,5 +2564,5 @@ void App::renderCubeMap()
 	bRenderDirect = bRenderDirectBackup;
 	bRenderIndirect = bRenderIndirectBackup;
 	showAllProbes = bShowAllProbesBackup;
-	m_probeStructure->getProbe(0)->bNeedsUpdate = false;
+	probe->bNeedsUpdate = false;
 }

@@ -277,7 +277,7 @@ void App::findBestInitialConditions()
 		{
 			m_probeStructure->addProbe(v);
 		}
-		m_probeStructure->updateAll(bShowOptimizationOutput);
+		m_probeStructure->updateAll(false, bShowOptimizationOutput);
 
 		computeSamplesRGB();
 
@@ -306,7 +306,7 @@ void App::findBestInitialConditions()
 		m_probeStructure->addProbe(v);
 
 	}
-	m_probeStructure->updateAll(bShowOptimizationOutput);
+	m_probeStructure->updateAll(false, bShowOptimizationOutput);
 
 }
 

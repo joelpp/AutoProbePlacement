@@ -180,7 +180,7 @@ public:
 
 	void saveCoefficients();
 
-	void updateAll(bool showOutput);
+	void updateAll(bool bUseManipulator, bool showOutput);
 
 	void deleteAllProbes();
 
@@ -207,7 +207,8 @@ public:
     int m_height;
     int m_NumSamples;
 
-
+	bool m_UsesCubemap;
+	void SetUsesCubemap(bool val) { m_UsesCubemap = val; }
 };
 
 #endif

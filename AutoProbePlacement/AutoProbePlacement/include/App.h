@@ -417,7 +417,8 @@ public:
 	bool pointInsideEntity(G3D::Vector3 point, TriTree::Hit& hit);
 	bool displacementCrossesSurface(G3D::Vector3 startPoint, G3D::Vector3 displacement, TriTree::Hit& hit);
 	bool displacementCrossesSurface(G3D::Vector3 startPoint, G3D::Vector3 displacement);
-	void renderCubeMap();
+	void renderCubeMapForProbe(int i);
+	shared_ptr<Texture> m_CubeMap;
 
 	float shadingMultiplier;
 	ProbeStructure *m_probeStructure;

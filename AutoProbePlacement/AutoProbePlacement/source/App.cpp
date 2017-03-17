@@ -6,7 +6,7 @@
 #include "ProbeRenderer.h"
 #include "Helpers.h"
 #include "Integrator.h"
-
+#include "Probe.h"
 /*
     Debugging Helpers
 */
@@ -953,79 +953,83 @@ void App::handleMinimizationPass()
 {
 	if (numPassesLeft > 0)
 	{
-
-
-		if (!currentOptimization.bWaitingForRenderingFinished)
+		if (m_probeStructure->m_UsesCubemap)
 		{
-			G3D::StopWatch sw("First phase... ");
-			sw.setEnabled(true);
-			sw.tick();
-			std::vector<float> displacements = tryOptimization();
-			if (displacements.empty())
-			{
-				numPassesLeft = 0;
-				popNotification("Optimization terminated", "Error would've increased OR Solve step failed", 15);
-
-#ifdef AUTO_OPTIMIZE
-				//if (m_probeStructure->probeCount() < 20)
-				{
-					probeFinder.bestError = 9999;
-					probeFinder.numPassesLeft = std::stof(m_sNumICTries.c_str());
-				}
-#endif
-				return;
-			}
-
-			m_probeStructure->displaceProbesWithGradient(displacements, std::stof(maxProbeStepLength.c_str()));
-			//sw.after("Displaced probes");
-			m_probeStructure->savePositions(false);
-			//sw.after("Saved new positions");
-
-			std::string settingsFilePath = "../data-files/scripts/optimizationSettings.txt";
-			std::fstream settingsFile = createEmptyFile(settingsFilePath.c_str());
-			settingsFile << m_probeStructure->name().c_str() << std::endl;
-			settingsFile << "1";
-			settingsFile.close();
-
-			currentOptimization.lastRenderEndTime = getFileLastModifiedTime("../data-files/scripts/optimizationSettings.txt");
-			currentOptimization.bWaitingForRenderingFinished = true;
-			sw.tock();
 		}
 		else
 		{
-
-			FILETIME lastModifTime = getFileLastModifiedTime("../data-files/scripts/optimizationSettings.txt");
-			if (isLaterFileTime(lastModifTime, currentOptimization.lastRenderEndTime))
+			if (!currentOptimization.bWaitingForRenderingFinished)
 			{
-				G3D::StopWatch sw("Second phase... ");
+				G3D::StopWatch sw("First phase... ");
 				sw.setEnabled(true);
 				sw.tick();
-				if (bUpdateProbesOnOptimizationPass)
+				std::vector<float> displacements = tryOptimization();
+				if (displacements.empty())
 				{
-					//m_probeStructure->generateProbes("all", bShowOptimizationOutput);
-					//sw.after("Regenerated probes");
-					m_probeStructure->extractSHCoeffs(true, true);
-					//sw.after("Extracted SH coeffs");
-				}
-				else
-				{
-					m_probeStructure->uploadToGPU();
-				}
+					numPassesLeft = 0;
+					popNotification("Optimization terminated", "Error would've increased OR Solve step failed", 15);
 
-				//sw.after("Finished iteration!");
-
-				numPassesLeft--;
-				currentOptimization.lastRenderEndTime = lastModifTime;
-				currentOptimization.bWaitingForRenderingFinished = false;
-
-				if (numPassesLeft == 0)
-				{
-					popNotification("Optimization complete", "Finished all job!", 15);
 #ifdef AUTO_OPTIMIZE
-					numPassesLeft = std::stof(tbNumPassesLeft.c_str());
+					//if (m_probeStructure->probeCount() < 20)
+					{
+						probeFinder.bestError = 9999;
+						probeFinder.numPassesLeft = std::stof(m_sNumICTries.c_str());
+					}
 #endif
+					return;
 				}
+
+				m_probeStructure->displaceProbesWithGradient(displacements, std::stof(maxProbeStepLength.c_str()));
+				//sw.after("Displaced probes");
+				m_probeStructure->savePositions(false);
+				//sw.after("Saved new positions");
+
+				std::string settingsFilePath = "../data-files/scripts/optimizationSettings.txt";
+				std::fstream settingsFile = createEmptyFile(settingsFilePath.c_str());
+				settingsFile << m_probeStructure->name().c_str() << std::endl;
+				settingsFile << "1";
+				settingsFile.close();
+
+				currentOptimization.lastRenderEndTime = getFileLastModifiedTime("../data-files/scripts/optimizationSettings.txt");
+				currentOptimization.bWaitingForRenderingFinished = true;
 				sw.tock();
+			}
+			else
+			{
+
+				FILETIME lastModifTime = getFileLastModifiedTime("../data-files/scripts/optimizationSettings.txt");
+				if (isLaterFileTime(lastModifTime, currentOptimization.lastRenderEndTime))
+				{
+					G3D::StopWatch sw("Second phase... ");
+					sw.setEnabled(true);
+					sw.tick();
+					if (bUpdateProbesOnOptimizationPass)
+					{
+						//m_probeStructure->generateProbes("all", bShowOptimizationOutput);
+						//sw.after("Regenerated probes");
+						m_probeStructure->extractSHCoeffs(true, true);
+						//sw.after("Extracted SH coeffs");
+					}
+					else
+					{
+						m_probeStructure->uploadToGPU();
+					}
+
+					//sw.after("Finished iteration!");
+
+					numPassesLeft--;
+					currentOptimization.lastRenderEndTime = lastModifTime;
+					currentOptimization.bWaitingForRenderingFinished = false;
+
+					if (numPassesLeft == 0)
+					{
+						popNotification("Optimization complete", "Finished all job!", 15);
+#ifdef AUTO_OPTIMIZE
+						numPassesLeft = std::stof(tbNumPassesLeft.c_str());
+#endif
+					}
+					sw.tock();
+				}
 			}
 		}
 	}
@@ -2385,9 +2389,136 @@ void App::computeSampleSetValuesFromIndividualProbe()
 	sampleSet->generateInterpolatedCoefficientsFromProbes(numSamples, numCoeffs);
 }
 
+TProbeCoefficients App::extractSHCompute()
+{
+	Args args;
+	glMemoryBarrier(GL_SHADER_IMAGE_ACCESS_BARRIER_BIT);
+	Sampler s(WrapMode::CLAMP, InterpolateMode::BILINEAR_NO_MIPMAP);
+	args.setMacro("DISPATCH_SIZE", DispatchSize);
+	args.setImageUniform("img_output", gpuProbe.m_CubeMap);
+	args.computeGridDim = G3D::Vector3int32(1, 1, 1);
+	args.hasComputeGrid();
+
+
+	// Generate the SSBO holding probe information
+
+	const int numElements = 4 * DispatchSize * DispatchSize;
+	
+	if (gpuProbe.shSSBO == 0)
+	{
+		glGenBuffers(1, &gpuProbe.shSSBO);
+	}
+	glBindBuffer(GL_SHADER_STORAGE_BUFFER, gpuProbe.shSSBO);
+	glBufferData(GL_SHADER_STORAGE_BUFFER, sizeof(SComputeData), &gpuProbe.outputSH, GL_DYNAMIC_DRAW);
+	glBindBufferBase(GL_SHADER_STORAGE_BUFFER, 1, gpuProbe.shSSBO);
+	glBindBuffer(GL_SHADER_STORAGE_BUFFER, 0);
+
+	LAUNCH_SHADER("../data-files/Shaders/compute.*", args);
+
+	// ...The same code as above
+
+	glMemoryBarrier(GL_SHADER_STORAGE_BARRIER_BIT);
+	glBindBufferBase(GL_SHADER_STORAGE_BUFFER, 0, 0);
+
+	glBindBuffer(GL_SHADER_STORAGE_BUFFER, gpuProbe.shSSBO);
+
+
+	GLfloat *ptr;
+	ptr = (GLfloat *)glMapBuffer(GL_SHADER_STORAGE_BUFFER, GL_WRITE_ONLY);
+
+	memcpy(&gpuProbe.outputSH, ptr, sizeof(SComputeData));
+	glUnmapBuffer(GL_SHADER_STORAGE_BUFFER);
+
+	//String path = m_probeStructure->getProbe(0)->buildPath(EResource::Probes);
+	//String path = "c:/temp/log.txt";
+	//std::fstream outputFile(path.c_str(), std::fstream::out);
+
+	//for (int i = 0; i < 4 * 9 * DispatchSize * DispatchSize; ++i)
+	//{
+	//	outputFile << format("%f", gpuProbe.outputSH.data[i]).c_str() << "\n";
+	//}
+	//outputFile.close();
+
+	//tempimg = Image::create(DispatchSize, DispatchSize, G3D::ImageFormat::RGB8());
+	TProbeCoefficients output;
+	int w = 0;
+	for (int k = 0; k < 9; ++k)
+	{
+		int h = 0;
+		Vector3 accum;;
+		for (int i = 0; i < DispatchSize * DispatchSize; ++i)
+		{
+			Vector3 accumValue = Vector3(gpuProbe.outputSH.data[i * 9 * 4 + (k * 4) + 0],
+										 gpuProbe.outputSH.data[i * 9 * 4 + (k * 4) + 1],
+										 gpuProbe.outputSH.data[i * 9 * 4 + (k * 4) + 2]);
+			accum += accumValue;
+			//if (k == 0)
+			//{
+			//	if (h == DispatchSize)
+			//	{
+			//		h = 0;
+			//		w++;
+			//		if (w == DispatchSize) break;
+			//	}
+			//	tempimg->set(Point2int32(w, h), Color3(accumValue.x, accumValue.y, accumValue.z));
+			//	h++;
+			//}
+
+		}
+		accum *= 4 * M_PI / (DispatchSize * DispatchSize);
+		output[k] = accum;
+	}
+	//tempimg->save("C:/temp/img.png");
+
+	return output;
+}
+
+Array<Vector3> GetGradientPositions(Probe* p)
+{
+	Array<Vector3> arr;
+	float dp = 0.1f;
+	for (int i = 0; i < 6; ++i)
+	{
+
+		arr.push_back(p->getPosition());
+		if (i < 2)
+		{
+			arr[i].x += dp * ((i % 2) * 2 - 1);
+		}
+		else if (i < 4)
+		{
+			arr[i].y += dp * ((i % 2) * 2 - 1);
+		}
+		else
+		{
+			arr[i].z += dp * ((i % 2) * 2 - 1);
+		}
+	}
+	return arr;
+}
+
 void App::renderCubeMapForProbe(int probeID)
 {
 	Probe* probe = m_probeStructure->getProbe(probeID);
+	renderCubemapAtPosition(probe->getPosition());
+	probe->coeffs = extractSHCompute();
+
+	Array<Vector3> arr = GetGradientPositions(probe);
+	
+	for (int i = 0; i < 6; ++i)
+	{
+		renderCubemapAtPosition(arr[i]);
+		probe->coeffGradients[i] = extractSHCompute();
+	}
+
+	m_probeStructure->saveCoefficients();
+	m_probeStructure->uploadToGPU();
+
+	probe->bNeedsUpdate = false;
+}
+
+void App::renderCubemapAtPosition(G3D::Vector3 position)
+{
 
 	bool bRenderDirectBackup = bRenderDirect;
 	bool bRenderIndirectBackup = bRenderIndirect;
@@ -2437,12 +2568,12 @@ void App::renderCubeMapForProbe(int probeID)
 
 	// Configure the base camera
 	CFrame cframe = newCamera->frame();
-	cframe.translation = probe->getPosition();
+	cframe.translation = position;
 
 	setActiveCamera(newCamera);
-	if (m_CubeMap == nullptr)
+	if (gpuProbe.m_CubeMap == nullptr)
 	{
-		m_CubeMap = Texture::createEmpty("cube", 256, 256, imageFormat, Texture::DIM_CUBE_MAP, false, 1, 1);
+		gpuProbe.m_CubeMap = Texture::createEmpty("cube", 256, 256, imageFormat, Texture::DIM_CUBE_MAP, false, 1, 1);
 	}
 
 	for (int face = 0; face < 6; ++face) {
@@ -2455,97 +2586,19 @@ void App::renderCubeMapForProbe(int probeID)
 		onGraphics3D(rd, surface);
 		onGraphics3D(rd, surface);
 
-		Texture::copy(m_osWindowHDRFramebuffer->texture(0), m_CubeMap, 0, 0, 1,
+		Texture::copy(m_osWindowHDRFramebuffer->texture(0), gpuProbe.m_CubeMap, 0, 0, 1,
 			Vector2int16((m_osWindowHDRFramebuffer->texture(0)->vector2Bounds() - output[face]->vector2Bounds()) / 2.0f),
 			CubeFace::POS_X, (CubeFace)face, nullptr, false);
 		//m_film->exposeAndRender(rd, activeCamera()->filmSettings(), m_osWindowHDRFramebuffer->texture(0), settings().hdrFramebuffer.colorGuardBandThickness.x + settings().hdrFramebuffer.depthGuardBandThickness.x, settings().hdrFramebuffer.depthGuardBandThickness.x, output[face]);
 	
 
 	}
-	Args args;
-	glMemoryBarrier(GL_SHADER_IMAGE_ACCESS_BARRIER_BIT);
-	Sampler s(WrapMode::CLAMP, InterpolateMode::BILINEAR_NO_MIPMAP);
-	args.setMacro("DISPATCH_SIZE", DispatchSize);
-	args.setImageUniform("img_output", m_CubeMap);
-	args.computeGridDim = G3D::Vector3int32(1, 1, 1);
-	args.hasComputeGrid();
 
-
-	// Generate the SSBO holding probe information
-
-	const int numElements = 4 * DispatchSize * DispatchSize;
-	SComputeData vals;
-	memset(&vals, 0, sizeof(SComputeData));
-
-	GLuint valuesSSBO = 0;
-	glGenBuffers(1, &valuesSSBO);
-	glBindBuffer(GL_SHADER_STORAGE_BUFFER, valuesSSBO);
-	glBufferData(GL_SHADER_STORAGE_BUFFER, sizeof(SComputeData), &vals, GL_DYNAMIC_DRAW);
-	glBindBufferBase(GL_SHADER_STORAGE_BUFFER, 1, valuesSSBO);
-	glBindBuffer(GL_SHADER_STORAGE_BUFFER, 0);
-
-	LAUNCH_SHADER("../data-files/Shaders/compute.*", args);
-
-	// ...The same code as above
-
-	glMemoryBarrier(GL_SHADER_STORAGE_BARRIER_BIT);
-	glBindBufferBase(GL_SHADER_STORAGE_BUFFER, 0, 0);
-
-	glBindBuffer(GL_SHADER_STORAGE_BUFFER, valuesSSBO);
-
-	GLfloat *ptr;
-	ptr = (GLfloat *)glMapBuffer(GL_SHADER_STORAGE_BUFFER, GL_WRITE_ONLY);
+	bRenderDirect = bRenderDirectBackup;
+	bRenderIndirect = bRenderIndirectBackup;
+	showAllProbes = bShowAllProbesBackup;
 	
-	memcpy(&vals, ptr, sizeof(SComputeData));
-	glUnmapBuffer(GL_SHADER_STORAGE_BUFFER);
-
-	//String path = m_probeStructure->getProbe(0)->buildPath(EResource::Probes);
-	String path = "c:/temp/log.txt";
-	std::fstream outputFile(path.c_str(), std::fstream::out);
-
-	for (int i = 0; i < 4 * 9 * DispatchSize * DispatchSize; ++i)
-	{
-		outputFile << format("%f", vals.data[i]). c_str() << "\n";
-	}
-	outputFile.close();
-
-	path = probe->buildPath(EResource::Coefficients);
-	std::fstream outputFile2(path.c_str(), std::fstream::out);
 	
-
-	tempimg = Image::create(DispatchSize, DispatchSize, G3D::ImageFormat::RGB8());
-	int w = 0;
-	for (int k = 0; k < 9; ++k)
-	{
-		int h = 0;
-		Vector3 accum;;
-		for (int i = 0; i < DispatchSize * DispatchSize; ++i)
-		{
-			Vector3 accumValue =Vector3(vals.data[i * 9 * 4 + (k * 4) + 0],
-						 				vals.data[i * 9 * 4 + (k * 4) + 1],
-								 		vals.data[i * 9 * 4 + (k * 4) + 2]);
-			accum += accumValue;
-			if (k == 0)
-			{
-				if (h == DispatchSize)
-				{
-					h = 0;
-					w++;
-
-					if (w == DispatchSize) break;
-				}
-				tempimg->set(Point2int32(w, h), Color3(accumValue.x, accumValue.y, accumValue.z));
-				h++;
-			}
-
-		}
-		accum *= 4 * M_PI / (DispatchSize * DispatchSize);
-		Vector3& coeffs = probe->coeffs[k];
-		outputFile2 << format("%f\n%f\n%f\n", accum.x, accum.y, accum.z).c_str();
-		coeffs = accum;
-	}
-	outputFile2.close();
-	tempimg->save("C:/temp/img.png");
 	//for (int i = 0; i < 4 * 16 * 16; ++i)
 	//{
 	//	outputFile << "\n";
@@ -2555,14 +2608,5 @@ void App::renderCubeMapForProbe(int probeID)
 	m_osWindowHDRFramebuffer->resize(oldFramebufferWidth, oldFramebufferHeight);
 	m_settings.hdrFramebuffer.colorGuardBandThickness = oldColorGuard;
 	m_settings.hdrFramebuffer.depthGuardBandThickness = oldDepthGuard;
-	m_probeStructure->saveCoefficients();
-	m_probeStructure->uploadToGPU();
 
-	//auto imgcube = cubeMap->toImage(ImageFormat::RGB8());
-	//imgcube->save("C:/temp/img2.png");
-
-	bRenderDirect = bRenderDirectBackup;
-	bRenderIndirect = bRenderIndirectBackup;
-	showAllProbes = bShowAllProbesBackup;
-	probe->bNeedsUpdate = false;
 }

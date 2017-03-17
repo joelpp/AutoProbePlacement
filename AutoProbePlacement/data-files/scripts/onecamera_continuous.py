@@ -5,12 +5,12 @@ import os, sys, time
 # # Configure the search path for the Python extension module
 # # Ensure that Python will be able to find the Mitsuba core libraries
 
-# Ensure that Python will be able to find the Mitsuba core libraries
+# # Ensure that Python will be able to find the Mitsuba core libraries
 
-# if (os.environ['COMPUTERNAME'] ==):
-sys.path.append('C:/git/mitsuba/dist/python/2.7/')
-# 	# Ensure that Python will be able to find the Mitsuba core libraries
-os.environ['PATH'] = 'C:/git/mitsuba/dist/' + os.pathsep + os.environ['PATH']
+# # if (os.environ['COMPUTERNAME'] ==):
+# sys.path.append('C:/git/mitsuba/dist/python/2.7/')
+# # 	# Ensure that Python will be able to find the Mitsuba core libraries
+# os.environ['PATH'] = 'C:/git/mitsuba/dist/' + os.pathsep + os.environ['PATH']
 # else:
 	# sys.path.append('C:/Users/Joel/Downloads/mitsuba-c7aac473729a/mitsuba-c7aac473729a/dist/python/2.7/')
 # 	os.environ['PATH'] = 'C:/Users/Joel/Downloads/mitsuba-c7aac473729a/mitsuba-c7aac473729a/dist/' + os.pathsep + os.environ['PATH']
@@ -18,12 +18,9 @@ os.environ['PATH'] = 'C:/git/mitsuba/dist/' + os.pathsep + os.environ['PATH']
 # sys.path.append('C:/Users/polardpj.artichaut/Downloads/mitsuba-eaff1cd989f3/mitsuba-eaff1cd989f3/dist/python/2.7/')
 # Ensure that Python will be able to find the Mitsuba core libraries
 # os.environ['PATH'] = 'C:/Users/polardpj.artichaut/Downloads/mitsuba-eaff1cd989f3/mitsuba-eaff1cd989f3/dist/' + os.pathsep + os.environ['PATH']
+from MitsubaImporter import *
 
-
-from mitsuba.core import *
-from mitsuba.render import SceneHandler, RenderQueue, RenderJob, Scene
-
-from string import maketrans
+# from string import maketrans
 import helper
 
 # helper.importMitsuba();
@@ -161,7 +158,7 @@ def makeProbe(x, y, z, probeCount, rootPath, pRenderType):
 	print("made it here! 0");
 	# render the 6 surrounding probes
 	if (renderGradients):
-		for i in xrange(6):
+		for i in range(6):
 			lScene = Scene(scene);
 
 			(a,b,c) = (x,y,z);
@@ -231,7 +228,7 @@ def makeProbeGrid(rootPath, _offset, _step, _numIterations):
 		
 	renderList = [];
 	probeCount = 0;
-	for i in xrange(int(_numIterations)):
+	for i in range(int(_numIterations)):
 		# for j in xrange(_numIterations[1]):
 			# for k in xrange(_numIterations[2]):
 
@@ -331,7 +328,7 @@ while (True):
 
 		rootPath = "../Scenes/" + sceneName + "/ProbeStructures/" + structureName;
 
- 		globalInfo = helper.readSceneAndProbeStructureInfo(sceneName, structureName);
+		globalInfo = helper.readSceneAndProbeStructureInfo(sceneName, structureName);
 		# If we want to render a single probe
 
 		if (len(sys.argv) == 5):

@@ -132,6 +132,7 @@ enum EFilmType
 	NUM_FILM_TYPES = LDR + 1
 };
 
+
 const int DispatchSize = 32;
 struct SComputeData
 {
@@ -140,6 +141,13 @@ struct SComputeData
 	float ReconstructionCoeffs[4 * 9];
 };
 
+struct SGPUProbeExtractor
+{
+	shared_ptr<Texture> m_CubeMap;
+	SComputeData outputSH;
+	GLuint shSSBO;
+
+};
 
 class App : public GApp {
 private:
@@ -417,9 +425,12 @@ public:
 	bool pointInsideEntity(G3D::Vector3 point, TriTree::Hit& hit);
 	bool displacementCrossesSurface(G3D::Vector3 startPoint, G3D::Vector3 displacement, TriTree::Hit& hit);
 	bool displacementCrossesSurface(G3D::Vector3 startPoint, G3D::Vector3 displacement);
-	void renderCubeMapForProbe(int i);
-	shared_ptr<Texture> m_CubeMap;
 
+	TProbeCoefficients extractSHCompute();
+		void renderCubemapAtPosition(G3D::Vector3 position);
+	void renderCubeMapForProbe(int probeID);
+
+	SGPUProbeExtractor gpuProbe;
 	float shadingMultiplier;
 	ProbeStructure *m_probeStructure;
 

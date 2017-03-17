@@ -11,7 +11,7 @@ JScene::JScene(G3D::String sceneName)
 
 	load();
 
-	if ((m_minBound == G3D::Vector3::zero()) || (m_maxBound == G3D::Vector3::zero()))
+	if ((m_minBound == G3D::Vector3::zero()) && (m_maxBound == G3D::Vector3::zero()))
 	{
 		setBounds();
 	}

@@ -24,6 +24,7 @@ enum EResource
 	CoefficientGradients,
 
 };
+
 class Probe {
 protected:
 
@@ -60,6 +61,7 @@ public:
 
 
 	bool bNeedsUpdate;
+	static void initProbeCoefficients(TProbeCoefficients& coeffs);
 };
 class ProbeManipulator : public ThirdPersonManipulator
 {

@@ -143,10 +143,14 @@ struct SComputeData
 
 struct SGPUProbeExtractor
 {
+	shared_ptr<Framebuffer> m_TempFace;
+	shared_ptr<Texture> m_CubeMapDepth;
 	shared_ptr<Texture> m_CubeMap;
 	SComputeData outputSH;
 	GLuint shSSBO;
-
+	shared_ptr<Camera> camera;
+	Vector2int16 colorGuardBandThickness;
+	Vector2int16 depthGuardBandThickness;
 };
 
 class App : public GApp {

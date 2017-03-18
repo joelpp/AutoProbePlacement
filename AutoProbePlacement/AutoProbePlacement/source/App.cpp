@@ -526,53 +526,53 @@ void App::onGraphics3D(RenderDevice* rd, Array<shared_ptr<Surface> >& surface3D)
 	//rd->clear();
     m_film->exposeAndRender(rd, activeCamera()->filmSettings(), m_framebuffer->texture(0), 0, 0);
 
-    if (optimizing || ((numPassesLeft > 0) && !currentOptimization.bWaitingForRenderingFinished))
-    {
-    	const shared_ptr<Image> screen(rd->screenshotPic());
+    //if (optimizing || ((numPassesLeft > 0) && !currentOptimization.bWaitingForRenderingFinished))
+    //{
+    //	const shared_ptr<Image> screen(rd->screenshotPic());
 
-    	FileSystem::ListSettings ls;
-    	ls.includeParentPath = false;
-    	ls.recursive = false;
-    	G3D::Array<G3D::String> screenshotList;
-    	FileSystem::list(currentOptimizationFolderPath() + "/screens/*", screenshotList, ls);
-    	int num = screenshotList.size();
+    //	FileSystem::ListSettings ls;
+    //	ls.includeParentPath = false;
+    //	ls.recursive = false;
+    //	G3D::Array<G3D::String> screenshotList;
+    //	FileSystem::list(currentOptimizationFolderPath() + "/screens/*", screenshotList, ls);
+    //	int num = screenshotList.size();
 
-    	String filename = currentOptimizationFolderPath() + "/screens/" + String(std::to_string(num).c_str()) + ".jpg";
-    	debugPrintf("%s\n", filename.c_str());
-    	screen->save(filename);
+    //	String filename = currentOptimizationFolderPath() + "/screens/" + String(std::to_string(num).c_str()) + ".jpg";
+    //	debugPrintf("%s\n", filename.c_str());
+    //	screen->save(filename);
 
-    	debugPrintf("%d optimization passes left \n", numPassesLeft);
-    }
+    //	debugPrintf("%d optimization passes left \n", numPassesLeft);
+    //}
 
-    if (bTakeRefScreenshot)
-    {
-        String filename = currentOptimizationFolderPath() + "/ref_probes.jpg";
+ //   if (bTakeRefScreenshot)
+ //   {
+ //       String filename = currentOptimizationFolderPath() + "/ref_probes.jpg";
 
-        const shared_ptr<Image> screen(rd->screenshotPic());
-        screen->save(filename);
+ //       const shared_ptr<Image> screen(rd->screenshotPic());
+ //       screen->save(filename);
 
-        bTakeRefScreenshot = false;
-    }
+ //       bTakeRefScreenshot = false;
+ //   }
 
-	if (bScreenShot)
-	{
-		const shared_ptr<Image> screen(rd->screenshotPic());
+	//if (bScreenShot)
+	//{
+	//	const shared_ptr<Image> screen(rd->screenshotPic());
 
-		FileSystem::ListSettings ls;
-		ls.includeParentPath = false;
-		ls.recursive = false;
-		G3D::Array<G3D::String> screenshotList;
-		String rootPath = "C:/temp/";
-		FileSystem::list(rootPath + "*", screenshotList, ls);
-		int num = screenshotList.size();
+	//	FileSystem::ListSettings ls;
+	//	ls.includeParentPath = false;
+	//	ls.recursive = false;
+	//	G3D::Array<G3D::String> screenshotList;
+	//	String rootPath = "C:/temp/";
+	//	FileSystem::list(rootPath + "*", screenshotList, ls);
+	//	int num = screenshotList.size();
 
-		String filename = rootPath + "screenshot_" + String(std::to_string(num).c_str()) + ".jpg";
-		screen->save(filename);
+	//	String filename = rootPath + "screenshot_" + String(std::to_string(num).c_str()) + ".jpg";
+	//	screen->save(filename);
 
-		debugPrintf("Screenshot saved to %s\n", filename);
+	//	debugPrintf("Screenshot saved to %s\n", filename);
 
-		bScreenShot = false;
-	}
+	//	bScreenShot = false;
+	//}
 }
 
 void App::drawModel(RenderDevice* rd, String shaderName, shared_ptr<ArticulatedModel> model, CFrame frame, Args args){
@@ -955,8 +955,80 @@ void App::handleMinimizationPass()
 	{
 		if (m_probeStructure->m_UsesCubemap)
 		{
+			//if (!currentOptimization.bWaitingForRenderingFinished)
+			{
+				G3D::StopWatch sw("First phase... ");
+				sw.setEnabled(true);
+				sw.tick();
+				std::vector<float> displacements = tryOptimization();
+				if (displacements.empty())
+				{
+					numPassesLeft = 0;
+					popNotification("Optimization terminated", "Error would've increased OR Solve step failed", 15);
+
+#ifdef AUTO_OPTIMIZE
+					//if (m_probeStructure->probeCount() < 20)
+					{
+						probeFinder.bestError = 9999;
+						probeFinder.numPassesLeft = std::stof(m_sNumICTries.c_str());
+					}
+#endif
+					return;
+				}
+
+				m_probeStructure->displaceProbesWithGradient(displacements, std::stof(maxProbeStepLength.c_str()));
+				//sw.after("Displaced probes");
+				m_probeStructure->savePositions(false);
+				//sw.after("Saved new positions");
+
+				/*std::string settingsFilePath = "../data-files/scripts/optimizationSettings.txt";
+				std::fstream settingsFile = createEmptyFile(settingsFilePath.c_str());
+				settingsFile << m_probeStructure->name().c_str() << std::endl;
+				settingsFile << "1";
+				settingsFile.close();
+
+				currentOptimization.lastRenderEndTime = getFileLastModifiedTime("../data-files/scripts/optimizationSettings.txt");
+				currentOptimization.bWaitingForRenderingFinished = true;*/
+				sw.tock();
+				/*}
+				else
+				{*/
+
+				/*FILETIME lastModifTime = getFileLastModifiedTime("../data-files/scripts/optimizationSettings.txt");
+				if (isLaterFileTime(lastModifTime, currentOptimization.lastRenderEndTime))
+				{*/
+					sw.tick();
+					if (bUpdateProbesOnOptimizationPass)
+					{
+					//	//m_probeStructure->generateProbes("all", bShowOptimizationOutput);
+					//	//sw.after("Regenerated probes");
+					//	m_probeStructure->extractSHCoeffs(true, true);
+					//	//sw.after("Extracted SH coeffs");
+					//}
+					//else
+					//{
+					//	m_probeStructure->uploadToGPU();
+						m_probeStructure->updateAll(false, bShowProbeGenerationOutput);
+					}
+
+					//sw.after("Finished iteration!");
+
+					numPassesLeft--;
+					//currentOptimization.lastRenderEndTime = lastModifTime;
+					//currentOptimization.bWaitingForRenderingFinished = false;
+
+					if (numPassesLeft == 0)
+					{
+						popNotification("Optimization complete", "Finished all job!", 15);
+#ifdef AUTO_OPTIMIZE
+						numPassesLeft = std::stof(tbNumPassesLeft.c_str());
+#endif
+					}
+					sw.tock();
+				//}
+			}
 		}
-		else
+		else // old code path, mitsuba optimization
 		{
 			if (!currentOptimization.bWaitingForRenderingFinished)
 			{
@@ -2441,6 +2513,7 @@ TProbeCoefficients App::extractSHCompute()
 
 	//tempimg = Image::create(DispatchSize, DispatchSize, G3D::ImageFormat::RGB8());
 	TProbeCoefficients output;
+	Probe::initProbeCoefficients(output);
 	int w = 0;
 	for (int k = 0; k < 9; ++k)
 	{
@@ -2540,31 +2613,49 @@ void App::renderCubemapAtPosition(G3D::Vector3 position)
 		Array<shared_ptr<Surface2D> > ignore;
 		app->onPose(surface, ignore);
 	}
-	const int oldFramebufferWidth = app->window()->width();
-	const int oldFramebufferHeight = m_osWindowHDRFramebuffer->height();
-	const Vector2int16  oldColorGuard = m_settings.hdrFramebuffer.colorGuardBandThickness;
-	const Vector2int16  oldDepthGuard = m_settings.hdrFramebuffer.depthGuardBandThickness;
-	const shared_ptr<Camera>& oldCamera = activeCamera();
 
-	m_settings.hdrFramebuffer.colorGuardBandThickness = Vector2int16(0, 0);
-	m_settings.hdrFramebuffer.depthGuardBandThickness = Vector2int16(0, 0);
-	const int fullWidth = resolution + (2 * m_settings.hdrFramebuffer.depthGuardBandThickness.x);
-	m_osWindowHDRFramebuffer->resize(fullWidth, fullWidth);
+	//std::shared_ptr<Framebuffer> frameBuffer = m_osWindowHDRFramebuffer;
+	std::shared_ptr<Framebuffer> frameBuffer = gpuProbe.m_TempFace;
 
-	shared_ptr<Camera> newCamera = Camera::create("Cubemap Camera");
-	newCamera->copyParametersFrom(camera);
-	newCamera->depthOfFieldSettings().setEnabled(false);
-	newCamera->motionBlurSettings().setEnabled(false);
-	newCamera->setFieldOfView(2.0f * ::atan(1.0f + 2.0f*(float(m_settings.hdrFramebuffer.depthGuardBandThickness.x) / float(resolution))), FOVDirection::HORIZONTAL);
+	const int fullWidth = resolution + (2 * gpuProbe.depthGuardBandThickness.x);
+	if (frameBuffer == nullptr)
+	{
+		frameBuffer = Framebuffer::create("tempCubeFace");
 
-	const ImageFormat* imageFormat = ImageFormat::RGBA32F();
-	if ((output.size() == 0) || isNull(output[0])) {
-		// allocate cube maps
-		output.resize(6);
-		for (int face = 0; face < 6; ++face) {
-			output[face] = Texture::createEmpty(CubeFace(face).toString(), resolution, resolution, imageFormat, Texture::DIM_2D, false);
+		frameBuffer->clear();
+
+		const ImageFormat* colorFormat = GLCaps::firstSupportedTexture(m_settings.hdrFramebuffer.preferredColorFormats);
+		const ImageFormat* depthFormat = GLCaps::firstSupportedTexture(m_settings.hdrFramebuffer.preferredDepthFormats);
+		const bool generateMipMaps = false;
+		frameBuffer->set(Framebuffer::COLOR0, Texture::createEmpty("G3D::GApp::frameBuffer/color", fullWidth, fullWidth, colorFormat, Texture::DIM_2D, generateMipMaps, 1));
+
+		if (notNull(depthFormat)) 
+		{
+			// Prefer creating a texture if we can
+
+			const Framebuffer::AttachmentPoint p = (depthFormat->stencilBits > 0) ? Framebuffer::DEPTH_AND_STENCIL : Framebuffer::DEPTH;
+			alwaysAssertM(GLCaps::supportsTexture(depthFormat), "");
+
+			// Most applications will reset this to be bound to the GBuffer's depth buffer
+			frameBuffer->set(p, Texture::createEmpty("G3D::GApp::frameBuffer/depth", fullWidth, fullWidth, depthFormat, Texture::DIM_2D, generateMipMaps, 1));
 		}
 	}
+	rd->setFramebuffer(frameBuffer);
+
+	const shared_ptr<Camera>& oldCamera = activeCamera();
+
+	shared_ptr<Camera> newCamera = gpuProbe.camera;
+	
+	if (newCamera == nullptr)
+	{
+		newCamera = Camera::create("Cubemap Camera");
+		newCamera->copyParametersFrom(camera);
+		newCamera->depthOfFieldSettings().setEnabled(false);
+		newCamera->motionBlurSettings().setEnabled(false);
+		newCamera->setFieldOfView(2.0f * ::atan(1.0f + 2.0f*(float(gpuProbe.depthGuardBandThickness.x) / float(resolution))), FOVDirection::HORIZONTAL);
+	}
+
+	const ImageFormat* imageFormat = ImageFormat::RGBA32F();
 
 	// Configure the base camera
 	CFrame cframe = newCamera->frame();
@@ -2586,10 +2677,10 @@ void App::renderCubemapAtPosition(G3D::Vector3 position)
 		onGraphics3D(rd, surface);
 		onGraphics3D(rd, surface);
 
-		Texture::copy(m_osWindowHDRFramebuffer->texture(0), gpuProbe.m_CubeMap, 0, 0, 1,
-			Vector2int16((m_osWindowHDRFramebuffer->texture(0)->vector2Bounds() - output[face]->vector2Bounds()) / 2.0f),
+		Texture::copy(frameBuffer->texture(0), gpuProbe.m_CubeMap, 0, 0, 1,
+			Vector2int16((frameBuffer->texture(0)->vector2Bounds() - gpuProbe.m_CubeMap->vector2Bounds()) / 2.0f),
 			CubeFace::POS_X, (CubeFace)face, nullptr, false);
-		//m_film->exposeAndRender(rd, activeCamera()->filmSettings(), m_osWindowHDRFramebuffer->texture(0), settings().hdrFramebuffer.colorGuardBandThickness.x + settings().hdrFramebuffer.depthGuardBandThickness.x, settings().hdrFramebuffer.depthGuardBandThickness.x, output[face]);
+		//m_film->exposeAndRender(rd, activeCamera()->filmSettings(), frameBuffer->texture(0), settings().hdrFramebuffer.colorGuardBandThickness.x + settings().hdrFramebuffer.depthGuardBandThickness.x, settings().hdrFramebuffer.depthGuardBandThickness.x, output[face]);
 	
 
 	}
@@ -2597,16 +2688,7 @@ void App::renderCubemapAtPosition(G3D::Vector3 position)
 	bRenderDirect = bRenderDirectBackup;
 	bRenderIndirect = bRenderIndirectBackup;
 	showAllProbes = bShowAllProbesBackup;
-	
-	
-	//for (int i = 0; i < 4 * 16 * 16; ++i)
-	//{
-	//	outputFile << "\n";
-	//}
 
+	rd->setFramebuffer(m_osWindowDeviceFramebuffer);
 	setActiveCamera(oldCamera);
-	m_osWindowHDRFramebuffer->resize(oldFramebufferWidth, oldFramebufferHeight);
-	m_settings.hdrFramebuffer.colorGuardBandThickness = oldColorGuard;
-	m_settings.hdrFramebuffer.depthGuardBandThickness = oldDepthGuard;
-
 }

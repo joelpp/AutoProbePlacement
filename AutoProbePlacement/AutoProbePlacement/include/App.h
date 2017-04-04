@@ -383,6 +383,8 @@ private:
 	bool bUpdateProbesOnOptimizationPass;
 	bool bWaitingForRenderFinished;
 	bool bFindingNewProbeLocation;
+	bool bKeepOptimizing;
+	String sMaxStructureCreationSize;
 	int probeLocationPassesLeft;
 
 	FILETIME lastRenderEndTime;

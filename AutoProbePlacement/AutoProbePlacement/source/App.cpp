@@ -929,9 +929,10 @@ void App::handleProbeFinder()
 						}
 						m_probeStructure->updateAll(false, (bShowOptimizationOutput));
 
-#ifdef AUTO_OPTIMIZE
-						numPassesLeft = std::stof(tbNumPassesLeft.c_str());
-#endif
+						if (bKeepOptimizing)
+						{
+							numPassesLeft = std::stof(tbNumPassesLeft.c_str());
+						}
 					}
 					else
 					{
@@ -966,13 +967,11 @@ void App::handleMinimizationPass()
 					numPassesLeft = 0;
 					popNotification("Optimization terminated", "Error would've increased OR Solve step failed", 15);
 
-#ifdef AUTO_OPTIMIZE
-					//if (m_probeStructure->probeCount() < 20)
+					if (bKeepOptimizing && m_probeStructure->probeCount() < std::stoi(sMaxStructureCreationSize.c_str()))
 					{
 						probeFinder.bestError = 9999;
 						probeFinder.numPassesLeft = std::stof(m_sNumICTries.c_str());
 					}
-#endif
 					return;
 				}
 
@@ -1020,9 +1019,11 @@ void App::handleMinimizationPass()
 					if (numPassesLeft == 0)
 					{
 						popNotification("Optimization complete", "Finished all job!", 15);
-#ifdef AUTO_OPTIMIZE
-						numPassesLeft = std::stof(tbNumPassesLeft.c_str());
-#endif
+
+						if (bKeepOptimizing)
+						{
+							numPassesLeft = std::stof(tbNumPassesLeft.c_str());
+						}
 					}
 					sw.tock();
 				//}
@@ -1041,13 +1042,11 @@ void App::handleMinimizationPass()
 					numPassesLeft = 0;
 					popNotification("Optimization terminated", "Error would've increased OR Solve step failed", 15);
 
-#ifdef AUTO_OPTIMIZE
-					//if (m_probeStructure->probeCount() < 20)
+					if ( bKeepOptimizing && (m_probeStructure->probeCount() < std::stoi(sMaxStructureCreationSize.c_str())) );
 					{
 						probeFinder.bestError = 9999;
 						probeFinder.numPassesLeft = std::stof(m_sNumICTries.c_str());
 					}
-#endif
 					return;
 				}
 
@@ -1661,6 +1660,9 @@ void App::makeGui() {
 		m_probeStructure->generateProbes("all", false, true, bShowOptimizationOutput);
 		m_probeStructure->extractSHCoeffs(true, true);
 	});
+
+	tab->addCheckBox("Keep optimizing", &(bKeepOptimizing));
+	tab->addTextBox("Max # probes", &sMaxStructureCreationSize);
 
 	tab->endRow();
 
@@ -2464,7 +2466,7 @@ void App::computeSampleSetValuesFromIndividualProbe()
 TProbeCoefficients App::extractSHCompute()
 {
 	Args args;
-	glMemoryBarrier(GL_SHADER_IMAGE_ACCESS_BARRIER_BIT);
+	glMemoryBarrier(GL_ALL_BARRIER_BITS);
 	Sampler s(WrapMode::CLAMP, InterpolateMode::BILINEAR_NO_MIPMAP);
 	args.setMacro("DISPATCH_SIZE", DispatchSize);
 	args.setImageUniform("img_output", gpuProbe.m_CubeMap);
@@ -2489,7 +2491,7 @@ TProbeCoefficients App::extractSHCompute()
 
 	// ...The same code as above
 
-	glMemoryBarrier(GL_SHADER_STORAGE_BARRIER_BIT);
+	glMemoryBarrier(GL_ALL_BARRIER_BITS);
 	glBindBufferBase(GL_SHADER_STORAGE_BUFFER, 0, 0);
 
 	glBindBuffer(GL_SHADER_STORAGE_BUFFER, gpuProbe.shSSBO);
@@ -2572,8 +2574,11 @@ Array<Vector3> GetGradientPositions(Probe* p)
 
 void App::renderCubeMapForProbe(int probeID)
 {
+	glMemoryBarrier(GL_ALL_BARRIER_BITS);
+
 	Probe* probe = m_probeStructure->getProbe(probeID);
 	renderCubemapAtPosition(probe->getPosition());
+	glMemoryBarrier(GL_ALL_BARRIER_BITS);
 	probe->coeffs = extractSHCompute();
 
 	Array<Vector3> arr = GetGradientPositions(probe);
@@ -2581,8 +2586,10 @@ void App::renderCubeMapForProbe(int probeID)
 	for (int i = 0; i < 6; ++i)
 	{
 		renderCubemapAtPosition(arr[i]);
+		glMemoryBarrier(GL_ALL_BARRIER_BITS);
 		probe->coeffGradients[i] = extractSHCompute();
 	}
+	glMemoryBarrier(GL_ALL_BARRIER_BITS);
 
 	m_probeStructure->saveCoefficients();
 	m_probeStructure->uploadToGPU();

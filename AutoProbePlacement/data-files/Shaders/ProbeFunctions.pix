@@ -24,6 +24,9 @@
 
 uniform int singleBandShading;
 
+
+
+
 struct ProbeInterpolationRecord
 {
 #if WEIGHTS_WNN

@@ -157,7 +157,7 @@ def makeProbe(x, y, z, probeCount, rootPath, pRenderType):
 	queue.join()
 	print("made it here! 0");
 	# render the 6 surrounding probes
-	if (renderGradients):
+	if (True):
 		for i in range(6):
 			lScene = Scene(scene);
 

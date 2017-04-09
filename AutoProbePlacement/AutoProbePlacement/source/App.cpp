@@ -124,7 +124,8 @@ void App::onInit() {
 	bWaitingForRenderFinished =		  false;
 	bPreventOOBDisplacement =		  false;
 	bScreenShot =					  false;
-	bFindingNewProbeLocation =		  false;
+	bFindingNewProbeLocation = false;
+	bShowTrajectory =		  false;
 
     //Decide how many bands we want to use for the interpolation
     numBands =					2;
@@ -201,6 +202,43 @@ void App::loadScene(String sceneName)
 	createTriTree();
 	sw.after("Created Tritree");
 	bSceneLoaded = true;
+
+	loadTrajectory();
+}
+
+template<class TContainer>
+bool begins_with(const TContainer& input, const TContainer& match)
+{
+	return input.size() >= match.size()
+		&& equal(match.begin(), match.end(), input.begin());
+}
+
+void App::loadTrajectory()
+{
+	String path = "C:\\Users\\polardpj.artichaut\\Documents\\candidates\\251\\infoprobe0.txt";
+
+	std::fstream file(path.c_str(), std::ios::in);
+
+	std::string line;
+	std::string seek = "Probe 0 : ";
+	while (std::getline(file, line))
+	{
+		if (begins_with(line, seek))
+		{
+
+			std::string sV3 = line.substr(seek.length());
+			sV3.erase(std::remove(sV3.begin(), sV3.end(), '('), sV3.end());
+			sV3.erase(std::remove(sV3.begin(), sV3.end(), ')'), sV3.end());
+			sV3.erase(std::remove(sV3.begin(), sV3.end(), ','), sV3.end());
+			G3D::Vector3 p = StringToVector3(String(sV3));
+
+
+			trajectoryPoints.append(p);
+			trajectoryColors.append(Color3(1,1,1));
+		}
+	}
+
+	file.close();
 }
 
 void App::loadCurrentOptimization()
@@ -445,6 +483,18 @@ void App::drawSurfaceSamples(RenderDevice* rd)
 	}
 }
 
+
+void App::drawTrajectory(RenderDevice* rd)
+{
+	Draw::points(trajectoryPoints, rd, trajectoryColors, sampleMultiplier);
+
+	for (int i = 0; i < trajectoryPoints.size() - 1; ++i)
+	{
+		G3D::LineSegment line = LineSegment::fromTwoPoints(trajectoryPoints[i], trajectoryPoints[i + 1]);
+		Draw::lineSegment(line, rd, Color3(1, 1, 1));
+	}
+}
+
 void App::drawScene(RenderDevice* rd)
 {
     Args args;
@@ -507,6 +557,11 @@ void App::onGraphics3D(RenderDevice* rd, Array<shared_ptr<Surface> >& surface3D)
  //   //Set the framebuffer for drawing
     rd->pushState(m_framebuffer);
 	//rd->clear();
+
+	if (bShowTrajectory)
+	{
+		drawTrajectory(rd);
+	}
 
 	if (showSamples)
 	{
@@ -573,6 +628,7 @@ void App::onGraphics3D(RenderDevice* rd, Array<shared_ptr<Surface> >& surface3D)
 
 		bScreenShot = false;
 	}
+
 }
 
 void App::drawModel(RenderDevice* rd, String shaderName, shared_ptr<ArticulatedModel> model, CFrame frame, Args args){
@@ -1583,6 +1639,7 @@ void App::makeGui() {
 	tab->addCheckBox("Show", &showSamples);
 	tab->addCheckBox("Show normals", &showSampleNormals);
 	tab->addCheckBox("Show dark samples", &showDarkSamples);
+	tab->addCheckBox("Show trajectory", &bShowTrajectory);
 	tab->addSlider("F", &sampleMultiplier, 1.0f, 50.f);
 
 	tab->addButton(GuiText("Save camera"), [this]()

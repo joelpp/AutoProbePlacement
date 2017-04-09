@@ -400,6 +400,7 @@ private:
 	bool bPreventErrorIncrease;
 	bool bShowOptimizationOutput;
 	bool bShowProbeGenerationOutput;
+	bool bShowTrajectory;
 	bool bGenerateVolumeSamples;
 
 	TriTree triTree;
@@ -509,6 +510,11 @@ public:
 	void computeSampleSetValuesFromIndividualProbe();
 
 	G3D::Vector3 debug_RefPoint;
+	void App::loadTrajectory();
+	void App::drawTrajectory(RenderDevice* rd);
+	G3D::Array<G3D::Color3> trajectoryColors;
+	G3D::Array<G3D::Vector3> trajectoryPoints;
+
 };
 
 #endif

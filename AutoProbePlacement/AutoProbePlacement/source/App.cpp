@@ -125,7 +125,7 @@ void App::onInit() {
 	bPreventOOBDisplacement =		  false;
 	bScreenShot =					  false;
 	bFindingNewProbeLocation =		  false;
-
+	bRandomGradient =				  false;
     //Decide how many bands we want to use for the interpolation
     numBands =					2;
     maxDrawBand =				8;
@@ -986,7 +986,7 @@ void App::onAI()
 
 				if (probeFinder.numPassesLeft == 1)
 				{
-					if ( (currentOptimization.errors.size() == 0) || (probeFinder.bestError < currentOptimization.errors.back()))
+					if ( true/*(currentOptimization.errors.size() == 0) || (probeFinder.bestError < currentOptimization.errors.back())*/)
 					{
 						for (G3D::Vector3& v : probeFinder.bestPositions)
 						{
@@ -1557,6 +1557,27 @@ void App::makeGui() {
 		m_probeStructure->extractSHCoeffs(true, true);
 	});
 
+
+	tab->addButton("DisplacementError", [this]()
+	{
+		int numinner = 10;
+
+		for (int i = 1; i <= 20; ++i)
+		{
+			float accum = 0;
+			for (int j = 1; j <= numinner; ++j)
+			{
+				float val = testProbeDisplacementError(std::stof(maxProbeStepLength.c_str()) * i);
+				debugPrintf("%f ", val);
+				accum += val;
+			}
+			float mean = accum / (float)numinner;
+			debugPrintf(" ; mean = %f ", mean);
+			debugPrintf("\n");
+		}
+	});
+
+	tab->addCheckBox("randomgrad", &(bRandomGradient));
 	tab->endRow();
 
 	tab = tabPane->addTab("Display");
@@ -2293,6 +2314,34 @@ bool App::probeStructureExists(String sceneName, String structureName)
 	return FileSystem::exists("../data-files/Scenes/" + sceneName + "/ProbeStructures/" + structureName);
 }
 
+ProbeStructure* App::getTempProbeStructure(Array<Vector3>& probes)
+{
+	String structureName = "__TEMP";
+	if (!probeStructureExists(m_scene->m_name, structureName))
+	{
+		createNewProbeStructure(m_scene->m_name, structureName);
+	}
+
+	ProbeStructure* ps = new ProbeStructure(m_scene->m_name, structureName);
+	ps->setType("closest");
+	ps->setIntegrator("direct");
+	ps->deleteAllProbes();
+
+	int numSamples = std::stoi((*samplesToSave).c_str());
+
+	for (int i = 0; i < probes.size(); ++i)
+	{
+		ps->addProbe(probes[i]);
+	}
+
+	ps->saveInfoFile();
+	ps->savePositions(false);
+	ps->generateProbes("all", true, false, true);
+	ps->extractSHCoeffs(false, false);
+
+	return ps;
+}
+
 void App::computeSampleSetValuesFromIndividualProbe()
 {
 	String structureName = "__SAMPLESET";
@@ -2326,4 +2375,95 @@ void App::computeSampleSetValuesFromIndividualProbe()
 	int numCoeffs = std::atoi(optimizationSHBand.c_str());
 	//sampleSet->generateRGBValuesFromProbes(numSamples, numCoeffs);
 	sampleSet->generateInterpolatedCoefficientsFromProbes(numSamples, numCoeffs);
+}
+
+void scaleVec3(Vector3& vec, float maxLength)
+{
+	float length = vec.length();
+	if (length > maxLength)
+	{
+		vec /= length;
+		vec *= maxLength;
+	}
+}
+
+float App::testProbeDisplacementError(float maxStepLength)
+{
+	Probe* probe = m_probeStructure->getProbe(0);
+	G3D::Vector3& probePos = probe->getPosition();
+
+	CoeffGradients gradient = probe->coeffGradients;
+
+	if (bRandomGradient)
+	{
+		for (int k = 0; k < gradient.size(); ++k)
+		{
+			for (int c = 0; c < gradient[k].size(); ++c)
+			{
+
+				Vector3 newVal = Vector3::random();
+				scaleVec3(newVal, gradient[k][c].length());
+				gradient[k][c] = newVal;
+			}
+		}
+	}
+
+	Array<Vector3> displacements;
+
+	int NumTests = 100;
+
+	Array<Vector3> positions;;
+	for (int i = 0; i < NumTests; ++i)
+	{
+		Vector3 displacement = Vector3::random();
+
+		float length = displacement.length();
+		if (length > maxStepLength)
+		{
+			displacement /= length;
+			displacement *= maxStepLength;
+		}
+
+		displacements.append(displacement);
+		positions.append(probePos + displacement);
+	}
+
+
+	ProbeStructure* ps = getTempProbeStructure(positions);
+	float sum = 0;
+	for (int i = 0; i < NumTests; ++i)
+	{
+		Vector3 displacement = displacements[i];
+		
+		Probe* tempProbe = ps->getProbe(i);
+		TProbeCoefficients& realCoefficients = tempProbe->coeffs;
+		TProbeCoefficients estimatedCoefficients = probe->coeffs;
+
+		TProbeCoefficients difference;
+		Probe::initProbeCoefficients(difference);
+
+		// Now use the displacement to compute the new coefficients
+		for (int k = 0; k < estimatedCoefficients.size(); ++k)
+		{
+			G3D::Vector3& estimatedCoeffs = estimatedCoefficients[k];
+
+			for (int color = 0; color < 3; ++color)
+			{
+				G3D::Vector3 grad = gradient[k][color];
+
+				estimatedCoeffs[color] += grad.dot(displacement);
+			}
+			G3D::Vector3& realCoeffs = realCoefficients[k];
+
+			difference[k] = estimatedCoeffs - realCoeffs;
+			sum += difference[k].length();
+		}
+
+		tempProbe->coeffs = difference;
+
+	}
+
+	//ps->saveCoefficients();
+	delete(ps);
+	return sum;
 }

@@ -11,7 +11,7 @@
 #define AXIS_Z 2
 
 
-void initProbeCoefficients(TProbeCoefficients& coeffs)
+void Probe::initProbeCoefficients(TProbeCoefficients& coeffs)
 {
 	int NumCoeffs = 9;
 	for (int i = 0; i < NumCoeffs; ++i)
@@ -223,7 +223,7 @@ void Probe::computeCoefficients(std::shared_ptr<G3D::Image> probeTexture, TProbe
 TProbeCoefficients subtractAndDivide(TProbeCoefficients& c0, TProbeCoefficients& c1, float divider)
 {
 	TProbeCoefficients diff;
-	initProbeCoefficients(diff);
+	Probe::initProbeCoefficients(diff);
 
 	for (int i = 0; i < diff.size(); ++i)
 	{

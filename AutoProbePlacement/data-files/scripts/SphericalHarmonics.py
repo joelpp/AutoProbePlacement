@@ -1,5 +1,5 @@
 import math
-import numpy
+# import numpy
 pi = 3.141592654
 
 def computeSHGradients(dir):

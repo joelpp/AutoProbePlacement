@@ -7,8 +7,8 @@
 #include "Helpers.h"
 #include "SH.h"
 
-//#define HOME_PC
-#define LIGUM_PC
+#define HOME_PC
+//#define LIGUM_PC
 
 String generateFolderNameBaseAnySuffix(const String& prefix) 
 {
@@ -95,7 +95,7 @@ bool runPythonScriptFromDataFiles(std::string scriptName, std::string args, bool
 	std::stringstream ss;
 
 #if defined(HOME_PC)
-	ss << "cmd /c \"cd C:\\git\\AutoProbePlacement\\AutoProbePlacement\\data-files\\scripts && C:\\Users\\Joel\\Anaconda2\\python.exe ";
+	ss << "cmd /c \"cd C:\\git\\AutoProbePlacement\\AutoProbePlacement\\data-files\\scripts && C:\\Python27\\python.exe ";
 #elif defined(LIGUM_PC)
 	ss << "cmd /c \"cd C:\\git\\AutoProbePlacement\\AutoProbePlacement\\data-files\\scripts && python ";
 #endif

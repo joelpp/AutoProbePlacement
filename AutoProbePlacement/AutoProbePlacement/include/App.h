@@ -404,6 +404,8 @@ private:
 
 	TriTree triTree;
 	//Index* trisIndex;
+	ProbeStructure* getTempProbeStructure(Array<Vector3>& probes);
+	float testProbeDisplacementError(float maxStepLength);
 
 public:
 	bool pointInsideEntity(G3D::Vector3 point);
@@ -424,7 +426,7 @@ public:
 	bool bFlipShadingNormals;
 	bool bPreventOOBDisplacement;
 	bool bScreenShot;
-
+	bool bRandomGradient;
 	static App* instance;
 	App(const GApp::Settings& settings = GApp::Settings());
 	virtual void onAI() override;

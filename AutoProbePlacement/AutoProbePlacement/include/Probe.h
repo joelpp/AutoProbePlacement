@@ -29,6 +29,7 @@ protected:
 
 
 public:
+	static void initProbeCoefficients(TProbeCoefficients& coeffs);
 	static shared_ptr<ArticulatedModel> model;
 
 	Probe();

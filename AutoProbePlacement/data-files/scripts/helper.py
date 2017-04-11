@@ -6,12 +6,12 @@
 #------------------------------
 import math
 import cPickle
-import numpy
+# import numpy
 from SphericalHarmonics import *
 # from sympy.mpmath import *
 
-from scipy import special
-from scipy import misc
+# from scipy import special
+# from scipy import misc
 
 
 # shArray = cPickle.load(open('/Users/joelpp/Documents/Maitrise/Code/IrradianceMapping/SHvalues/values.p', 'rb'));

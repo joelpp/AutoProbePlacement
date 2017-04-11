@@ -14,12 +14,13 @@
     "bShowOptimizationOutput": true,
     "bShowProbeGenerationOutput": true,
     "bUpdateProbesOnOptimizationPass": true,
-    "cameraPitch": -10.0924320220947,
+
+    "cameraPitch": -0.0,
     "cameraRoll": 0.0,
-    "cameraX": 1.61037874221802,
-    "cameraY": 5.71145582199097,
-    "cameraYaw": 176.607833862305,
-    "cameraZ": -6.81695365905762,
+    "cameraX": 3,
+    "cameraY": 3,
+    "cameraYaw": 179.999984741211,
+    "cameraZ": -9,
     "m_sNumICProbes": "1",
     "m_sNumICTries": "20",
     "numOptimizationSamples": "100",
@@ -30,11 +31,11 @@
     "offlineRenderingOptions.numSamples": "512",
     "offlineRenderingOptions.width": "1024",
     "optimizationSHBand": "9",
-    "previousProbeStructure": "temp",
+    "previousProbeStructure": "THRILL",
     "probeStructureName": "temp",
     "sampleMultiplier": 4,
     "sampleSetName": "Volumetrix_direct",
     "sceneName": "zcbox",
     "showAllProbes": true,
-    "tbNumPassesLeft": "15"
+    "tbNumPassesLeft": "20"
 }

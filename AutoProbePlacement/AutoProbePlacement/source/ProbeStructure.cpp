@@ -680,6 +680,11 @@ Probe* ProbeStructure::getProbe(int i)
 }
 
 int ProbeStructure::probeCount(){
+
+	if (m_type == EProbeStructureType::Trilinear)
+	{
+		return m_dimensions[0] * m_dimensions[1] * m_dimensions[2];
+	}
 	return probeList.size();
 }
 
@@ -836,7 +841,11 @@ int findProbeIndex(G3D::Vector3& probePosition, G3D::Vector3& startingPosition, 
 
     return index;
 }
-
+G3D::Vector3 findProbeOffset(const G3D::Vector3& wsPos, const G3D::Vector3& probe000Pos, const G3D::Vector3 firstProbePosition, float step)
+{
+	G3D::Vector3 fprobeSpaceCoords = (probe000Pos - firstProbePosition) / step;
+	return fprobeSpaceCoords;
+}
 ProbeInterpolationRecord ProbeStructure::getInterpolationProbeIndicesAndWeights(const G3D::Vector3& position)
 {
 	// TODO FIX THIS
@@ -844,19 +853,21 @@ ProbeInterpolationRecord ProbeStructure::getInterpolationProbeIndicesAndWeights(
 	if (m_type == EProbeStructureType::Trilinear)
 	{
 
-        G3D::Vector3 firstProbePosition = G3D::Vector3(m_firstProbePosition);
-        G3D::Vector3 probe000Pos = findNode000(position, firstProbePosition, m_step);
-        G3D::Vector3 dimensions = G3D::Vector3(m_dimensions[0], m_dimensions[1], m_dimensions[2]);
-        int index000 = findProbeIndex(probe000Pos, firstProbePosition, dimensions, m_step);
-        G3D::Vector3 offsets = G3D::Vector3(m_dimensions[2] * m_dimensions[1], m_dimensions[2], 1);
+		G3D::Vector3 firstProbePosition = G3D::Vector3(m_firstProbePosition);
+		G3D::Vector3 probe000Pos = findNode000(position, firstProbePosition, m_step);
+		G3D::Vector3 dimensions = G3D::Vector3(m_dimensions[0], m_dimensions[1], m_dimensions[2]);
+		int index000 = findProbeIndex(probe000Pos, firstProbePosition, dimensions, m_step);
+		G3D::Vector3 probeSpaceOffset = findProbeOffset(position, probe000Pos, firstProbePosition, m_step);
+		roundVector3(probeSpaceOffset);
+		G3D::Vector3 offsets = G3D::Vector3(m_dimensions[2] * m_dimensions[1], m_dimensions[2], 1);
 		Vector3 lastProbePosition = firstProbePosition + m_step * (dimensions - Vector3(1, 1, 1));
 
-        G3D::Vector3 w000 = G3D::Vector3(1.0f, 1.0f, 1.0f) - (position - probe000Pos) / m_step;
+		G3D::Vector3 w000 = G3D::Vector3(1.0f, 1.0f, 1.0f) - (position - probe000Pos) / m_step;
 
 		record.weights.push_back(w000.x * w000.y * w000.z);
 		record.weights.push_back(w000.x * w000.y * (1.0f - w000.z));
 		record.weights.push_back(w000.x * (1.0f - w000.y) * w000.z);
-		record.weights.push_back(w000.x *		(1.0f - w000.y) * (1.0f - w000.z));
+		record.weights.push_back(w000.x * (1.0f - w000.y) * (1.0f - w000.z));
 		record.weights.push_back((1.0f - w000.x) * w000.y * w000.z);
 		record.weights.push_back((1.0f - w000.x) * w000.y * (1.0f - w000.z));
 		record.weights.push_back((1.0f - w000.x) * (1.0f - w000.y) * w000.z);
@@ -871,16 +882,22 @@ ProbeInterpolationRecord ProbeStructure::getInterpolationProbeIndicesAndWeights(
 
 			Vector3 possiblePos = probe000Pos + Vector3(x * m_step, y * m_step, z * m_step);
 
+			Vector3 thisProbeSpaceCoords = probeSpaceOffset + Vector3(x, y, z);
+			index = (int)dot(thisProbeSpaceCoords, offsets);
+
 			z = (z + 1) % (2);
 			y = (z == 0) ? (y + 1) % (2) : y;
 			x = ((y == 0) && (z == 0)) ? x + 1 : x;
 
-			if ((possiblePos.x > lastProbePosition.x)		 ||
-				(possiblePos.y > lastProbePosition.y)		 ||
-				(possiblePos.z > lastProbePosition.z)		 ||
+			if ((possiblePos.x > lastProbePosition.x) ||
+				(possiblePos.y > lastProbePosition.y) ||
+				(possiblePos.z > lastProbePosition.z) ||
 				(possiblePos.x + 0.1 < firstProbePosition.x) ||
 				(possiblePos.y + 0.1 < firstProbePosition.y) ||
-				(possiblePos.z + 0.1 < firstProbePosition.z))
+				(possiblePos.z + 0.1 < firstProbePosition.z) ||
+				(thisProbeSpaceCoords.x < 0) ||
+				(thisProbeSpaceCoords.y < 0) ||
+				(thisProbeSpaceCoords.z < 0))
 			{
 				record.weights[i] = 0;
 				shouldNormalize = true;
@@ -898,7 +915,7 @@ ProbeInterpolationRecord ProbeStructure::getInterpolationProbeIndicesAndWeights(
 			}
 			for (int i = 0; i < 8; ++i)
 			{
-                record.weights[i] /= weightSum;
+				record.weights[i] /= weightSum;
 			}
 		}
 	}
@@ -1261,7 +1278,7 @@ TProbeCoefficients ProbeStructure::interpolatedCoefficients(const G3D::Vector3& 
 			int index = record.probeIndices[p];
 			float weight = record.weights[p];
 
-			if (weight == 0)
+			if ((weight == 0) || std::isnan(weight))
 			{
 				continue;
 			}
@@ -1275,7 +1292,7 @@ TProbeCoefficients ProbeStructure::interpolatedCoefficients(const G3D::Vector3& 
 			interpolatedCoeffs[c].z += weight * coeffs.z;
 		}
 	}
-	
+
 
 	return interpolatedCoeffs;
 }
@@ -1467,7 +1484,7 @@ void ProbeStructure::generateProbes(std::string type, bool allProbes, bool gener
 
 void ProbeStructure::extractSHCoeffs(bool generateGradients, bool bUploadToGPU)
 {
-    for (int i = 0; i < probeList.size(); ++i)
+    for (int i = 0; i < probeCount(); ++i)
     {
         Probe* p = probeList[i];
 

@@ -70,3 +70,5 @@ void writeValuesToFlatFile(const char* fileName, std::vector<float>& values);
 FILETIME getFileLastModifiedTime(const char* fileName);
 
 bool isLaterFileTime(FILETIME tested, FILETIME reference);
+
+void roundVector3(G3D::Vector3 v);

@@ -355,3 +355,10 @@ bool isLaterFileTime(FILETIME tested, FILETIME reference)
 
 	return (result == 1);
 }
+
+void roundVector3(G3D::Vector3 v)
+{
+	v.x = roundf(v.x);
+	v.y = roundf(v.y);
+	v.z = roundf(v.z);
+}

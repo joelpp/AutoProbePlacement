@@ -344,7 +344,7 @@ std::vector<float> App::tryOptimization()
 	G3D::String sceneName = scenePane.selectedSceneList->selectedValue();
 	G3D::String probeStructureName = scenePane.probeStructureList->selectedValue();
 
-	int numSamples = std::atoi(numOptimizationSamples.c_str());
+	int numSamples = getNumOptimizationSamples();
 	int numCoeffs = std::atoi(optimizationSHBand.c_str());
 	std::stringstream ss;
 	std::vector<float> displacements;
@@ -379,7 +379,7 @@ std::vector<float> App::tryOptimization()
 		}
 	}
 	
-	if (bPreventErrorIncrease && currentOptimization.consecutiveFailures >= 1)
+	if (bPreventErrorIncrease && currentOptimization.consecutiveFailures >= 3)
 	{
 		return displacements;
 	}
@@ -396,7 +396,7 @@ std::vector<float> App::tryOptimization()
 
 void App::computeSamplesRGB()
 {
-	int numSamples = std::atoi(numOptimizationSamples.c_str());
+	int numSamples = getNumOptimizationSamples();
     int numCoeffs = std::atoi(optimizationSHBand.c_str());
     String outputFile = currentOptimizationFolderPath() + "/values.txt";
 	sampleSet->oneRowPerSHBand = bOneRowPerSHBand;
@@ -418,7 +418,7 @@ void App::computeSamplesRGBRef()
 		return;
 	}
 
-	int numSamples = std::atoi(numOptimizationSamples.c_str());
+	int numSamples = getNumOptimizationSamples();
 	int numCoeffs = std::atoi(optimizationSHBand.c_str());
 	String outputFile = currentOptimizationFolderPath() + "/ref_values.txt";
 	sampleSet->oneRowPerSHBand = bOneRowPerSHBand;
@@ -456,9 +456,9 @@ void App::computeSamplesRGBRef()
 
 void App::computeTriplets()
 {
-	int numSamples = std::atoi(numOptimizationSamples.c_str());
+	int numSamples = getNumOptimizationSamples();
     int numCoeffs = std::atoi(optimizationSHBand.c_str());
-    sampleSet->generateTriplets(numSamples, numCoeffs, currentOptimizationFolderPath() + "triplets.txt", 0, false);
+    sampleSet->generateTriplets(numSamples, numCoeffs, currentOptimizationFolderPath() + "/triplets.txt", 0, false);
 }
 
 void App::addOneActor()

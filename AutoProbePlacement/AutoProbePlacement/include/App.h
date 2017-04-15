@@ -25,7 +25,8 @@ classes and use G3D::Sky to handle the skybox.
 #include <fstream>
 
 class SceneSampleSet;
-
+typedef Array<Vector3> Trajectory;
+typedef Array<Color3> Color3Array;
 
 struct SProbeOptimization
 {
@@ -132,6 +133,23 @@ enum EFilmType
 	NUM_FILM_TYPES = LDR + 1
 };
 
+struct SAutoOptimizer
+{
+	std::vector<int> numSamples = { 10, 25, 50, 100, 200, 500 };
+	int it = -2;
+	int MaxNumProbes = 15;
+
+	bool active()
+	{
+		return it != -2;
+	}
+
+	void setActive(bool val)
+	{
+		it = val == false ? -2 : -1;
+	}
+};
+
 
 
 class App : public GApp {
@@ -144,6 +162,9 @@ private:
   
 	void drawModel(RenderDevice* rd, String shaderName, shared_ptr<ArticulatedModel> model, CFrame frame,Args args);
 
+	void startProbeFinder();
+	void finalizeProbeFinder();
+	void finalizeOptimization();
 	virtual void makeGui();
     void createRenameOptimizationWindow();
     void createNewProbeWindow();
@@ -402,6 +423,7 @@ private:
 	bool bShowProbeGenerationOutput;
 	bool bShowTrajectory;
 	bool bGenerateVolumeSamples;
+	bool bAutoOptimize;
 
 	TriTree triTree;
 	//Index* trisIndex;
@@ -508,7 +530,12 @@ public:
 
 	bool bSceneLoaded;
 
+	void startPythonRenderingEngine();
 	void stopPythonRenderingEngine();
+	
+	int getNumOptimizationSamples();
+	void computeRefValues();
+
 	void computeSampleSetValuesFromIndividualProbe();
 
 	G3D::Vector3 debug_RefPoint;
@@ -516,6 +543,11 @@ public:
 	void App::drawTrajectory(RenderDevice* rd);
 	G3D::Array<G3D::Color3> trajectoryColors;
 	G3D::Array<G3D::Vector3> trajectoryPoints;
+	Array<Trajectory> trajectories;
+	Array<G3D::Array<G3D::Color3> > trajectoriesColors;
+
+	void handleAutoOptimizer();
+	SAutoOptimizer m_AutoOptimizer;
 
 };
 

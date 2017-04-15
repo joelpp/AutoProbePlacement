@@ -216,18 +216,32 @@ bool begins_with(const TContainer& input, const TContainer& match)
 
 void App::loadTrajectory()
 {
-	String path = "C:\\Users\\polardpj.artichaut\\Documents\\candidates\\251\\infoprobe0.txt";
+	//String path = "C:\\Users\\polardpj.artichaut\\Documents\\candidates\\251\\infoprobe0.txt";
+	//String path = "C:\\Users\\Joel\\Documents\\Maitrise\\candidates\\251\\infos.txt";
+	String path = "C:\\git\\AutoProbePlacement\\AutoProbePlacement\\data-files\\Scenes\\zcbox\\Optimizations\\80\\infos.txt";
 
 	std::fstream file(path.c_str(), std::ios::in);
 
 	std::string line;
-	std::string seek = "Probe 0 : ";
+	std::string seek = "Probe ";
+
 	while (std::getline(file, line))
 	{
 		if (begins_with(line, seek))
 		{
-
 			std::string sV3 = line.substr(seek.length());
+			Array<String> split = stringSplit(String(sV3), ':');
+
+			int id = std::stoi(split[0].c_str());
+
+			if (id > trajectories.size()-1)
+			{
+				trajectories.append(Trajectory());
+				trajectoriesColors.append(Color3Array());
+			}
+
+			sV3 = std::string(split[1].c_str());
+			sV3.erase(0, 1);
 			sV3.erase(std::remove(sV3.begin(), sV3.end(), '('), sV3.end());
 			sV3.erase(std::remove(sV3.begin(), sV3.end(), ')'), sV3.end());
 			sV3.erase(std::remove(sV3.begin(), sV3.end(), ','), sV3.end());
@@ -236,6 +250,10 @@ void App::loadTrajectory()
 
 			trajectoryPoints.append(p);
 			trajectoryColors.append(Color3(1,1,1));
+
+			trajectories[id].append(p);
+			float col = id / 10.f;
+			trajectoriesColors[id].append(Color3(col, col, col));
 		}
 	}
 
@@ -487,13 +505,21 @@ void App::drawSurfaceSamples(RenderDevice* rd)
 
 void App::drawTrajectory(RenderDevice* rd)
 {
-	Draw::points(trajectoryPoints, rd, trajectoryColors, sampleMultiplier);
-
-	for (int i = 0; i < trajectoryPoints.size() - 1; ++i)
+	for (int t = 0; t < trajectories.size(); ++t)
 	{
-		G3D::LineSegment line = LineSegment::fromTwoPoints(trajectoryPoints[i], trajectoryPoints[i + 1]);
-		Draw::lineSegment(line, rd, Color3(1, 1, 1));
+		Trajectory& trajectoryPoints = trajectories[t];
+		Color3Array& colorArray = trajectoriesColors[t];
+
+		Draw::points(trajectoryPoints, rd, colorArray, sampleMultiplier);
+
+		for (int i = 0; i < trajectoryPoints.size() - 1; ++i)
+		{
+			G3D::LineSegment line = LineSegment::fromTwoPoints(trajectoryPoints[i], trajectoryPoints[i + 1]);
+			float col = i / 10.f;
+			Draw::lineSegment(line, rd, Color3(col,col,col));
+		}
 	}
+
 }
 
 void App::drawScene(RenderDevice* rd)
@@ -887,6 +913,76 @@ void App::updateSampleSet()
 	}
 }
 
+void App::finalizeProbeFinder()
+{
+	for (G3D::Vector3& v : probeFinder.bestPositions)
+	{
+		debugPrintf("v: %s \n", v.toString().c_str());
+		m_probeStructure->addProbe(v);
+
+	}
+	m_probeStructure->updateAll(bShowOptimizationOutput);
+
+	if (bAutoOptimize)
+	{
+		currentOptimization.consecutiveFailures = 0;
+		currentOptimization.bWaitingForRenderingFinished = false;
+		numPassesLeft = std::atoi(tbNumPassesLeft.c_str());
+	}
+}
+
+void App::startProbeFinder()
+{
+	probeFinder.bestError = 99999999;
+	probeFinder.numPassesLeft = std::atoi(m_sNumICTries.c_str());
+}
+
+void App::finalizeOptimization()
+{
+	if (bAutoOptimize)
+	{
+		startProbeFinder();
+
+	}
+}
+
+void App::handleAutoOptimizer()
+{
+	if (!m_probeStructure)
+	{
+		return;
+	}
+
+	if (m_AutoOptimizer.active())
+	{
+		int numProbes = m_probeStructure->probeCount();
+
+		if ((numProbes >= m_AutoOptimizer.MaxNumProbes) || (m_AutoOptimizer.it == -1))
+		{
+			// reset
+			numPassesLeft = 0;
+			probeFinder.numPassesLeft = 0;
+
+			m_AutoOptimizer.it++;
+
+			if (m_AutoOptimizer.it >= m_AutoOptimizer.numSamples.size())
+			{
+				m_AutoOptimizer.setActive(false);
+				stopPythonRenderingEngine();
+				exit(0);
+			}
+
+			createNewOptimizationSettings();
+			numOptimizationSamples = format("%d", m_AutoOptimizer.numSamples[m_AutoOptimizer.it]);
+			computeRefValues();
+			m_probeStructure->deleteAllProbes();
+			probeFinder.bWaitingForRenderingFinished = false;
+
+			startProbeFinder();
+		}
+	}
+}
+
 void App::onAI()
 {
     GApp::onAI();
@@ -902,6 +998,8 @@ void App::onAI()
 		screenPrintf("Actor pos: %s", actors[0].getPosition().toString().c_str());
 	}
 
+	handleAutoOptimizer();
+
 	if (numPassesLeft > 0)
 	{
 		if (!currentOptimization.bWaitingForRenderingFinished)
@@ -911,6 +1009,7 @@ void App::onAI()
 			{
 				numPassesLeft = 0;
 				popNotification("Optimization terminated", "Solve step failed", 15);
+				finalizeOptimization();
 				return;
 			}
 
@@ -954,6 +1053,8 @@ void App::onAI()
 				if (numPassesLeft == 0)
 				{
 					popNotification("Optimization complete", "Finished all job!", 15);
+
+					finalizeOptimization();
 				}
 			}
 		}
@@ -980,7 +1081,9 @@ void App::onAI()
 
 			std::string settingsFilePath = "../data-files/scripts/optimizationSettings.txt";
 			std::fstream settingsFile = createEmptyFile(settingsFilePath.c_str());
-			settingsFile << m_probeStructure->name().c_str();
+			settingsFile << m_probeStructure->name().c_str() << "\n";
+			settingsFile << "0" << "\n";
+			settingsFile << m_probeStructure->probeCount() - 1;
 
 			probeFinder.lastRenderEndTime = getFileLastModifiedTime("../data-files/scripts/optimizationSettings.txt");
 			settingsFile.close();
@@ -1045,13 +1148,7 @@ void App::onAI()
 				{
 					if ( true/*(currentOptimization.errors.size() == 0) || (probeFinder.bestError < currentOptimization.errors.back())*/)
 					{
-						for (G3D::Vector3& v : probeFinder.bestPositions)
-						{
-							debugPrintf("v: %s \n", v.toString().c_str());
-							m_probeStructure->addProbe(v);
-
-						}
-						m_probeStructure->updateAll(bShowOptimizationOutput);
+						finalizeProbeFinder();
 					}
 					else
 					{
@@ -1408,6 +1505,35 @@ void App::createNewOptimizationSettings()
 
 #define ALONE_ON_ROW(tab, b) tab->beginRow(); b; tab->endRow();
 
+void App::computeRefValues()
+{
+	if (bOptimizeForCoeffs)
+	{
+		// copy samples interpolated coefficients
+
+		std::fstream coeffsFile = sampleSet->openFile(ESSFile::Coeffs, true);
+
+		int numSamples = getNumOptimizationSamples();
+		int numCoeffs = std::atoi(optimizationSHBand.c_str());
+		String outputPath = currentOptimizationFolderPath() + "/ref_values.txt";
+		std::fstream outputFile(outputPath.c_str(), std::fstream::out);
+
+		int numLines = 3 * numSamples * numCoeffs;
+		std::string line;
+		for (int i = 0; i < numLines; ++i)
+		{
+			std::getline(coeffsFile, line);
+			outputFile << line << std::endl;
+		}
+		outputFile.close();
+		coeffsFile.close();
+	}
+	else
+	{
+		computeSamplesRGBRef();
+	}
+}
+
 void App::makeGui() {
 	shared_ptr<GuiWindow> gui = GuiWindow::create("Parameters");
 	GuiPane* pane = gui->pane();
@@ -1450,31 +1576,7 @@ void App::makeGui() {
 
 	tab->addButton("Compute ref values", [this]() 
     {
-		if (bOptimizeForCoeffs)
-		{
-			// copy samples interpolated coefficients
-
-			std::fstream coeffsFile = sampleSet->openFile(ESSFile::Coeffs, true);
-
-			int numSamples = std::atoi(numOptimizationSamples.c_str());
-			int numCoeffs = std::atoi(optimizationSHBand.c_str());
-			String outputPath = currentOptimizationFolderPath() + "/ref_values.txt";
-			std::fstream outputFile(outputPath.c_str(), std::fstream::out);
-
-			int numLines = 3 * numSamples * numCoeffs;
-			std::string line;
-			for (int i = 0; i < numLines; ++i)
-			{
-				std::getline(coeffsFile, line);
-				outputFile << line << std::endl;
-			}
-			outputFile.close();
-			coeffsFile.close();
-		}
-		else
-		{
-			computeSamplesRGBRef();
-		}
+		computeRefValues();
     }
     ,GuiTheme::TOOL_BUTTON_STYLE);
 
@@ -1482,7 +1584,7 @@ void App::makeGui() {
 
     tab->addButton("A", [this]() 
 	{
-		int numSamples = std::atoi(numOptimizationSamples.c_str());
+		int numSamples = getNumOptimizationSamples();
         int numCoeffs = std::atoi(optimizationSHBand.c_str());
         sampleSet->outputWeightsMatrixToFile(numSamples, numCoeffs, currentOptimizationFolderPath());
     }
@@ -1490,7 +1592,7 @@ void App::makeGui() {
 
     tab->addButton("b", [this]() 
 	{
-		int numSamples = std::atoi(numOptimizationSamples.c_str());
+		int numSamples = getNumOptimizationSamples();
         int numCoeffs = std::atoi(optimizationSHBand.c_str());
         sampleSet->outputBVectorToFile(numSamples, numCoeffs, currentOptimizationFolderPath());
     }
@@ -1498,7 +1600,7 @@ void App::makeGui() {
 
 	tab->addButton("A*x", [this]()
 	{
-		int numSamples = std::atoi(numOptimizationSamples.c_str());
+		int numSamples = getNumOptimizationSamples();
         int numCoeffs = std::atoi(optimizationSHBand.c_str());
 
 		WeightMatrixType A = sampleSet->generateWeightsMatrix(numSamples, numCoeffs);
@@ -1538,9 +1640,7 @@ void App::makeGui() {
 	tab->addCheckBox("Show output", &bShowOptimizationOutput);
 	tab->addButton("Start engine", [this]() 
 	{
-		std::stringstream ss;
-		ss << m_scene->m_name.c_str() << " dummy";
-		runPythonScriptFromDataFiles("onecamera_continuous.py", ss.str(), true, false);
+		startPythonRenderingEngine();
 	});
 
 	tab->addButton("Stop", [this]()
@@ -1634,7 +1734,17 @@ void App::makeGui() {
 		}
 	});
 
+	tab->addButton("Program", [this]()
+	{
+		if (bAutoOptimize)
+		{
+			m_AutoOptimizer.setActive(true);
+		}
+	});
+
 	tab->addCheckBox("randomgrad", &(bRandomGradient));
+	tab->addCheckBox("bAutoOptimize", &(bAutoOptimize));
+	
 	tab->endRow();
 
 	tab = tabPane->addTab("Display");
@@ -1778,11 +1888,11 @@ void App::updateProbeStructurePane()
 			Probe* p = m_probeStructure->getProbe(0);
 			Vector3 manipulatorPos = p->getManipulator()->frame().translation;
 
-			for (int i = m_probeStructure->probeCount() - 1; i > 0; ++i)
+			for (int i = 0; i < m_probeStructure->probeCount(); ++i)
 			{
 				try
 				{
-					m_probeStructure->removeProbe(i);
+					m_probeStructure->getProbe(i)->bNeedsUpdate = true;;
 
 				}
 				catch(std::exception e)
@@ -2292,6 +2402,8 @@ void App::loadOptions()
 		{
 			sampleSet->probeStructure = m_probeStructure;
 		}
+		sampleSet->coeffReference = bOptimizeForCoeffs;
+
 	}
 	//catch (std::exception e)
 	//{
@@ -2367,6 +2479,14 @@ void App::stopPythonRenderingEngine()
 	file.close();
 }
 
+void App::startPythonRenderingEngine()
+{
+	std::stringstream ss;
+	ss << m_scene->m_name.c_str() << " dummy";
+	runPythonScriptFromDataFiles("onecamera_continuous.py", ss.str(), true, false);
+}
+
+
 bool App::probeStructureExists(String sceneName, String structureName)
 {
 	return FileSystem::exists("../data-files/Scenes/" + sceneName + "/ProbeStructures/" + structureName);
@@ -2410,7 +2530,9 @@ void App::computeSampleSetValuesFromIndividualProbe()
 
 	ProbeStructure* ps = new ProbeStructure(m_scene->m_name, structureName);
 	ps->setType("closest");
-	ps->setIntegrator("direct");
+	//ps->setIntegrator("direct");
+	ps->setIntegrator("path");
+	ps->setNumSamples(128);
 	ps->deleteAllProbes();
 
 	int numSamples = std::stoi((*samplesToSave).c_str());
@@ -2433,6 +2555,8 @@ void App::computeSampleSetValuesFromIndividualProbe()
 	int numCoeffs = std::atoi(optimizationSHBand.c_str());
 	//sampleSet->generateRGBValuesFromProbes(numSamples, numCoeffs);
 	sampleSet->generateInterpolatedCoefficientsFromProbes(numSamples, numCoeffs);
+
+	exit(0);
 }
 
 void scaleVec3(Vector3& vec, float maxLength)
@@ -2524,4 +2648,10 @@ float App::testProbeDisplacementError(float maxStepLength)
 	//ps->saveCoefficients();
 	delete(ps);
 	return sum;
+}
+
+
+int App::getNumOptimizationSamples()
+{
+	return std::atoi(numOptimizationSamples.c_str());
 }

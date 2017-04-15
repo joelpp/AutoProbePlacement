@@ -41,6 +41,7 @@ fileResolver.appendPath(path);
 
 
 renderType = "all";
+probesToRender = [];
 
 
 scene = SceneHandler.loadScene("../Scenes/" + sceneName + "/MitsubaScene.xml", paramMap)
@@ -264,6 +265,11 @@ def makeProbeList(rootPath):
 
 			(x, y, z) = (float(x) for x in splitLine);
 			print((x,y,z));
+
+			if not (len(probesToRender) == 0):
+				if probeCount not in probesToRender:
+					probeCount += 1;
+					continue;
 			
 			if (renderType == "all"):
 				makeProbe(x,y,z,probeCount, rootPath, "Probes");
@@ -305,13 +311,24 @@ while (True):
 		time.sleep(0.1);
 		settingsFile = open(settingsPath, 'r');
 
-		structureName = settingsFile.readline();
+		structureName = settingsFile.readline().replace("\n", "");
 		print(structureName)
 		if (structureName == "__STOP"):
 			break;
 		if (structureName == ""):
 			settingsFile.close();
 			continue;
+
+		renderGradientsString = settingsFile.readline().replace("\n", "");
+		if (renderGradientsString == "0"):
+			renderGradients = False;
+
+		probesToRenderString = settingsFile.readline();
+		if (probesToRenderString != ""):
+			probesToRender = [int(x) for x in probesToRenderString.split(' ')]
+		else:
+			probesToRender = []
+
 
 		rootPath = "../Scenes/" + sceneName + "/ProbeStructures/" + structureName;
 

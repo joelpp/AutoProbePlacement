@@ -926,6 +926,7 @@ void App::finalizeProbeFinder()
 	if (bAutoOptimize)
 	{
 		currentOptimization.consecutiveFailures = 0;
+		currentOptimization.consecutiveIterations = 0;
 		currentOptimization.bWaitingForRenderingFinished = false;
 		numPassesLeft = std::atoi(tbNumPassesLeft.c_str());
 	}
@@ -937,12 +938,18 @@ void App::startProbeFinder()
 	probeFinder.numPassesLeft = std::atoi(m_sNumICTries.c_str());
 }
 
-void App::finalizeOptimization()
+void App::finalizeOptimization(bool restart)
 {
 	if (bAutoOptimize)
 	{
-		startProbeFinder();
-
+		if (restart)
+		{
+			startOptimizationPasses();
+		}
+		else
+		{
+			startProbeFinder();
+		}
 	}
 }
 
@@ -1009,7 +1016,7 @@ void App::onAI()
 			{
 				numPassesLeft = 0;
 				popNotification("Optimization terminated", "Solve step failed", 15);
-				finalizeOptimization();
+				finalizeOptimization(false);
 				return;
 			}
 
@@ -1054,7 +1061,7 @@ void App::onAI()
 				{
 					popNotification("Optimization complete", "Finished all job!", 15);
 
-					finalizeOptimization();
+					finalizeOptimization(true);
 				}
 			}
 		}
@@ -1500,6 +1507,7 @@ void App::createNewOptimizationSettings()
     createEmptyFile((folderName + "/triplets.txt").c_str());
 	createEmptyFile((folderName + "/log.txt").c_str());
 	createEmptyFile((folderName + "/infos.txt").c_str());
+	createEmptyFile((folderName + "/variance.txt").c_str());
 	
 }
 
@@ -2111,6 +2119,7 @@ void App::addSampleSetPane(GuiTabPane* tabPane)
 		G3D::Vector3 pos = activeCamera()->frame().translation;
 		sampleSet->addSample(SceneSample(pos, Vector3(0, 0, 0)));
 	}, GuiTheme::TOOL_BUTTON_STYLE);
+	tab->addCheckBox("fast triplets", &(sampleSet->m_FastTriplets));
 
 }
 
@@ -2281,6 +2290,8 @@ void App::saveOptions()
 	SAVE_BOOL(bRenderIndirectG3D);
 	SAVE_BOOL(bRenderShadowMaps);
 	SAVE_BOOL(bRenderMultiplyIndirectByBRDF);
+	SAVE_BOOL(bAutoOptimize);
+	SAVE_BOOL(sampleSet->m_FastTriplets);
 
 	SAVE_FLOAT(sampleMultiplier);
 
@@ -2370,6 +2381,7 @@ void App::loadOptions()
 	LOAD_BOOL(bRenderIndirectG3D);
 	LOAD_BOOL(bRenderShadowMaps);
 	LOAD_BOOL(bRenderMultiplyIndirectByBRDF);
+	LOAD_BOOL(bAutoOptimize);
 
 	LOAD_STRING(m_sNumICTries); 
 	LOAD_STRING(m_sNumICProbes);
@@ -2407,6 +2419,7 @@ void App::loadOptions()
 	}
 	//catch (std::exception e)
 	//{
+	LOAD_BOOL(sampleSet->m_FastTriplets);
 
 	//}
 

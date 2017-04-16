@@ -377,13 +377,34 @@ std::vector<float> App::tryOptimization()
 		{
 			currentOptimization.consecutiveFailures = 0;
 		}
+
+		if (currentOptimization.consecutiveIterations > 20)
+		{
+			float bestInLastBeforeLast10 = 99999;
+
+			for (int i = currentOptimization.errors.size() - 20 ; i < currentOptimization.errors.size() - 10; ++i)
+			{
+				float val = currentOptimization.errors[i];
+				if (val < bestInLastBeforeLast10)
+				{
+					bestInLastBeforeLast10 = val;
+				}
+			}
+
+			if (error > bestInLastBeforeLast10)
+			{
+				currentOptimization.consecutiveFailures = 3; //auto-fail
+			}
+		}
+
 	}
 	
 	if (bPreventErrorIncrease && currentOptimization.consecutiveFailures >= 3)
 	{
 		return displacements;
 	}
-	computeError(true);
+	computeError(true); 
+	currentOptimization.consecutiveIterations++;
 
 	currentOptimization.errors.push_back(error);
 

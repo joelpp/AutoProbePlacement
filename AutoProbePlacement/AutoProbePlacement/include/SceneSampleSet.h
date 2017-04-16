@@ -73,5 +73,5 @@ public:
 	bool outputToLog;
 	bool coeffReference; //as opposed to RGB reference
 	bool oneRowPerSHBand; //as opposed to RGB reference
-
+	bool m_FastTriplets;
 };

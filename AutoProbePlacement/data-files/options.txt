@@ -1,4 +1,5 @@
 {
+    "bAutoOptimize": true,
     "bFlipShadingNormals": false,
     "bGenerateVolumeSamples": true,
     "bManipulateProbesEnabled": false,
@@ -14,15 +15,15 @@
     "bShowOptimizationOutput": true,
     "bShowProbeGenerationOutput": true,
     "bUpdateProbesOnOptimizationPass": true,
-    "cameraPitch": 6.39493274688721,
+    "cameraPitch": 18.9999961853027,
     "cameraRoll": 0.0,
     "cameraX": -10,
     "cameraY": 1.70000004768372,
-    "cameraYaw": -105.697448730469,
+    "cameraYaw": -111.999992370605,
     "cameraZ": -2.40000009536743,
     "m_sNumICProbes": "1",
     "m_sNumICTries": "50",
-    "numOptimizationSamples": "10",
+    "numOptimizationSamples": "100",
     "offlineRenderingOptions.filmTypeIndex": 1,
     "offlineRenderingOptions.gamma": "2.2",
     "offlineRenderingOptions.height": "512",
@@ -33,8 +34,9 @@
     "previousProbeStructure": "temp",
     "probeStructureName": "temp",
     "sampleMultiplier": 4,
-    "sampleSetName": "Volumetrix_direct_final",
-    "sceneName": "zcbox",
+    "sampleSet->m_FastTriplets": true,
+    "sampleSetName": "Final_direct",
+    "sceneName": "sponza",
     "showAllProbes": true,
-    "tbNumPassesLeft": "1"
+    "tbNumPassesLeft": "10"
 }

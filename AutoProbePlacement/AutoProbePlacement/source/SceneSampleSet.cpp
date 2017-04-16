@@ -424,7 +424,7 @@ void SceneSampleSet::generateTriplets(int NumberOfSamples,
 	bool output = !(outputPath.empty());
 	if (output)
 	{
-		outputFile.open(outputPath.c_str(), std::fstream::out);
+		//outputFile.open(outputPath.c_str(), std::fstream::out);
 	}
 
 	int NumberOfProbes = probeStructure->probeCount();
@@ -449,27 +449,34 @@ void SceneSampleSet::generateTriplets(int NumberOfSamples,
 		//float weightDenum = C(SamplePosition);
 
 		// from here on "squared" really means "raised to alphath power"
-		int alpha = 4;
+		int alpha = 2;
 
-#ifdef NEW_TABLES
+		float inverseSumOf1OverSquaredProbeDistances = 0;
+		float squaredInverseSumOf1OverSquaredProbeDistances = 0;
 		std::vector<Vector3> sampleToProbeVectors(NumberOfProbes);
 		std::vector<float> probeDistances(NumberOfProbes);
 		std::vector<float> squaredProbeDistances(NumberOfProbes);
 		std::vector<float> inverseSquaredProbeDistances(NumberOfProbes);
-		float sumOfInverseSquaredProbeDistances = 0;
-		for (int p = 0; p < NumberOfProbes; ++p)
+
+		if (m_FastTriplets)
 		{
-			sampleToProbeVectors[p] = SamplePosition - probeStructure->getProbe(p)->getPosition();
-			probeDistances[p] = sampleToProbeVectors[p].length();
-			squaredProbeDistances[p] = powf(probeDistances[p], alpha);
-			inverseSquaredProbeDistances[p] = 1.f / squaredProbeDistances[p];
-			sumOfInverseSquaredProbeDistances += inverseSquaredProbeDistances[p];
+			float sumOfInverseSquaredProbeDistances = 0;
+			for (int p = 0; p < NumberOfProbes; ++p)
+			{
+				sampleToProbeVectors[p] = SamplePosition - probeStructure->getProbe(p)->getPosition();
+				probeDistances[p] = sampleToProbeVectors[p].length();
+				squaredProbeDistances[p] = powf(probeDistances[p], alpha);
+				inverseSquaredProbeDistances[p] = 1.f / squaredProbeDistances[p];
+				sumOfInverseSquaredProbeDistances += inverseSquaredProbeDistances[p];
+			}
+			inverseSumOf1OverSquaredProbeDistances = 1.f / sumOfInverseSquaredProbeDistances;
+			squaredInverseSumOf1OverSquaredProbeDistances = powf(inverseSumOf1OverSquaredProbeDistances, 2);
 		}
-		float inverseSumOf1OverSquaredProbeDistances = 1.f / sumOfInverseSquaredProbeDistances;
-		float squaredInverseSumOf1OverSquaredProbeDistances = powf(inverseSumOf1OverSquaredProbeDistances, 2);
-#else
-		float inverseSumOf1OverSquaredProbeDistances = InverseSumOf1OverSquaredProbeDistances(SamplePosition);
-#endif
+		else
+		{
+			inverseSumOf1OverSquaredProbeDistances = InverseSumOf1OverSquaredProbeDistances(SamplePosition);
+
+		}
 		// 9 coeffs, 3 colors, 3 axis, 
 
 		for (int coeff = 0; coeff < rowsOuter; ++coeff)
@@ -489,21 +496,23 @@ void SceneSampleSet::generateTriplets(int NumberOfSamples,
 
 					for (int axis = 0; axis <= AXIS_Z; ++axis)
 					{
+						float WvalTerm0 = 0;
+						float WvalTerm1 = 0;
+						if (m_FastTriplets)
+						{
+							WvalTerm0 = -1 * squaredInverseSumOf1OverSquaredProbeDistances * alpha * powf(probeDistances[pn], -(alpha + 2)) * sampleToProbeVectors[pn][axis];
 
-#ifdef NEW_TABLES
-						float WvalTerm0 = -1 * squaredInverseSumOf1OverSquaredProbeDistances * alpha * powf(probeDistances[pn], -(alpha + 2)) * sampleToProbeVectors[pn][axis];
 
+							WvalTerm1 =
 
-						float WvalTerm1 =
+								//InverseSumOf1OverSquaredProbeDistances(position) 
+								inverseSumOf1OverSquaredProbeDistances
 
-							//InverseSumOf1OverSquaredProbeDistances(position) 
-							inverseSumOf1OverSquaredProbeDistances
-
-							//* dInverseDistanceSquaredMdProbeN(position, normal, m, n, axis, color);
-							//if (m == n) 
-							//return 2 * powf(posMinusPosProbeN.length(), -4) * (position[axis] - posn[axis]);
-							* alpha * powf(probeDistances[pn], -(alpha + 2)) * sampleToProbeVectors[pn][axis];
-#endif;
+								//* dInverseDistanceSquaredMdProbeN(position, normal, m, n, axis, color);
+								//if (m == n) 
+								//return 2 * powf(posMinusPosProbeN.length(), -4) * (position[axis] - posn[axis]);
+								* alpha * powf(probeDistances[pn], -(alpha + 2)) * sampleToProbeVectors[pn][axis];
+						}
 
 						int probeIndex = iRec.probeIndices[pn];
 						float weight = iRec.weights[pn];
@@ -516,8 +525,9 @@ void SceneSampleSet::generateTriplets(int NumberOfSamples,
 							Probe* m = probeStructure->getProbe(pm);
 
 
-#ifdef NEW_TABLES
-							//return dInverseSquaredSumdProbeN(position, normal, m, n, axis, color) *
+							if (m_FastTriplets)
+							{
+								//return dInverseSquaredSumdProbeN(position, normal, m, n, axis, color) *
 							//return -1 * squaredInverseSumOf1OverSquaredProbeDistances * 2 * powf(inverseSquaredMagnitude[n], -2) * sampleToProbeVectors[n][axis]
 							//* dInverseDistanceSquaredMdProbeN(position, normal, n, n, axis, color);
 							// 2 * powf(posMinusPosProbeN.length(), -4) * (position[axis] - posn[axis]); //OLD
@@ -528,42 +538,41 @@ void SceneSampleSet::generateTriplets(int NumberOfSamples,
 
 
 
-							float Wval = WvalTerm0 * inverseSquaredProbeDistances[pm];;
+								float Wval = WvalTerm0 * inverseSquaredProbeDistances[pm];;
 
-							if (m == n)
-							{
-								Wval += WvalTerm1;
+								if (m == n)
+								{
+									Wval += WvalTerm1;
+								}
+								float Rval = m->coeffs[coeff][color];
+
+								float Bval = 0;
+								if (m == n)
+								{
+									Bval = m->coeffGradients[coeff][color][axis];
+								}
+								float computedWeights = inverseSumOf1OverSquaredProbeDistances * powf(distanceToProbe(SamplePosition, pm), -2);
+								dRGB_color_axis += Wval * Rval + computedWeights * Bval;
 							}
-							float Rval = m->coeffs[coeff][color];
-
-							float Bval = 0;
-							if (m == n)
+							else
 							{
-								Bval = m->coeffGradients[coeff][color][axis];
+								float Wval = dWeightMdProbeN(SamplePosition, SampleNormal, pm, pn, axis, color);
+
+
+								int coeffsToPass = oneRowPerSHBand ? coeff : NumberOfCoeffs;
+
+
+								float Rval = R(SamplePosition, SampleNormal, coeffsToPass, pm, axis, color);
+
+								float Bval = B(SamplePosition, SampleNormal, coeffsToPass, pm, pn, axis, color);
+
+
+								float computedWeights = inverseSumOf1OverSquaredProbeDistances * powf(distanceToProbe(SamplePosition, pm), -2);
+								//float computedWeights = inverseSumOf1OverSquaredProbeDistances * inverseSquaredProbeDistances[pm];
+								dRGB_color_axis += Wval * Rval + computedWeights * Bval;
 							}
-							dRGB_color_axis += Wval * Rval + iRec.weights[pm] * Bval;
-#else
-							float Wval = dWeightMdProbeN(SamplePosition, SampleNormal, pm, pn, axis, color);
-
-
-							int coeffsToPass = oneRowPerSHBand ? coeff : NumberOfCoeffs;
-
-
-							float Rval = R(SamplePosition, SampleNormal, coeffsToPass, pm, axis, color);
-
-							float Bval = B(SamplePosition, SampleNormal, coeffsToPass, pm, pn, axis, color);
-
-
-							float computedWeights = inverseSumOf1OverSquaredProbeDistances * powf(distanceToProbe(SamplePosition, pm), -2);
-							//float computedWeights = inverseSumOf1OverSquaredProbeDistances * inverseSquaredProbeDistances[pm];
-							dRGB_color_axis += Wval * Rval + computedWeights * Bval;
-#endif;
-
-
-
 
 							//if m = n for probe m return coeffs[coeff][color]
-
 
 						}
 
@@ -573,7 +582,7 @@ void SceneSampleSet::generateTriplets(int NumberOfSamples,
 						}
 						if (output)
 						{
-							outputFile << format("row: %5d, col:%5d, val:%f", row, col, dRGB_color_axis).c_str() << std::endl;
+							//outputFile << format("row: %5d, col:%5d, val:%f", row, col, dRGB_color_axis).c_str() << std::endl;
 						}
 
 						col++;
@@ -582,11 +591,10 @@ void SceneSampleSet::generateTriplets(int NumberOfSamples,
 				row++;
 			}
 		}
-
 	}
 	if (output)
 	{
-		outputFile.close();
+		//outputFile.close();
 	}
 
 }

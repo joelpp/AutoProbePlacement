@@ -50,6 +50,7 @@ struct SProbeOptimization
     std::vector<float> errors;
     std::vector<float> dp;
 	int consecutiveFailures;
+	int consecutiveIterations;
 	int iteration;
 	FILETIME lastRenderEndTime;
 	bool bWaitingForRenderingFinished;
@@ -135,7 +136,7 @@ enum EFilmType
 
 struct SAutoOptimizer
 {
-	std::vector<int> numSamples = { 10, 25, 50, 100, 200, 500 };
+	std::vector<int> numSamples = { 10, 25, 50, 100, 200, 500, 1000 };
 	int it = -2;
 	int MaxNumProbes = 15;
 
@@ -164,7 +165,7 @@ private:
 
 	void startProbeFinder();
 	void finalizeProbeFinder();
-	void finalizeOptimization();
+	void finalizeOptimization(bool restart);
 	virtual void makeGui();
     void createRenameOptimizationWindow();
     void createNewProbeWindow();
@@ -386,6 +387,7 @@ private:
 	bool bWaitingForRenderFinished;
 	bool bFindingNewProbeLocation;
 	int probeLocationPassesLeft;
+	bool bComputeErrorStats;
 
 	FILETIME lastRenderEndTime;
 

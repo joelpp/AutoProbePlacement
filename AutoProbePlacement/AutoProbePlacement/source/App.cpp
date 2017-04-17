@@ -78,7 +78,7 @@ void App::onInit() {
 	// this should be some kind of dict or sane management system
     spec.filename = System::findDataFile("../data-files/objs/sphere.obj");
     spec.stripMaterials = false;
-    spec.scale          = 0.1f;
+    spec.scale          = 0.2f;
     sphereModel = ArticulatedModel::create(spec);
 	spec.filename = System::findDataFile("../data-files/objs/square.obj");
 	squareModel = ArticulatedModel::create(spec);
@@ -169,11 +169,14 @@ void App::onInit() {
 
 	addOneActor();
 
-	findAddedProbeEvent();
+	//findAddedProbeEvent();
 	loadOptions();
 	makeGui();
 	stopPythonRenderingEngine();
+
+	loadPotentialProbes();
 }//end of onInit 
+
 
 void App::loadScene(String sceneName)
 {
@@ -214,6 +217,40 @@ bool begins_with(const TContainer& input, const TContainer& match)
 {
 	return input.size() >= match.size()
 		&& equal(match.begin(), match.end(), input.begin());
+}
+
+
+void App::loadPotentialProbes()
+{
+	std::string scene = "sponza";
+	std::string ss = "test";
+
+	iNumPotentialProbes = 1000;
+	SceneSampleSet* tempSS = new SceneSampleSet(scene, ss, 1, iNumPotentialProbes);
+	PotentialProbeCache = std::vector<Probe>();
+
+	for (int i = 0; i < iNumPotentialProbes; ++i)
+	{
+		Probe p;
+		SceneSample& sample = tempSS->m_samples[i];
+		p.frame = CFrame::fromXYZYPRDegrees(sample.position.x, sample.position.y, sample.position.z, 0, 0, 0);
+		p.m_sphere = Sphere(sample.position, 0.1f);
+
+		p.setPosition(sample.position);
+
+		TProbeCoefficients coeffs;
+		for (int j = 0; j < 9; ++j)
+		{
+			int num = 3 * j;
+			coeffs.append(Vector3(sample.values[num + 0], sample.values[num + 1], sample.values[num + 2]));
+		}
+
+		p.setCoeffs(coeffs);
+
+		PotentialProbeCache.push_back(p);
+	}
+
+	delete(tempSS);
 }
 
 void App::findAddedProbeEvent()
@@ -292,7 +329,6 @@ void App::loadTrajectory()
 	}
 
 	file.close();
-	exit(0);
 }
 
 void App::loadCurrentOptimization()
@@ -1104,106 +1140,186 @@ void App::onAI()
 
 	if (probeFinder.numPassesLeft > 0)
 	{
-		if (!probeFinder.bWaitingForRenderingFinished)
+		if (bUseProbeCache)
 		{
+			// choose random probe
+			int index = Random::common().uniform(0, iNumPotentialProbes - 1);
+
+			Probe& p = (PotentialProbeCache[index]);
+
+			Probe* newProbe = new Probe();
+			newProbe->setPosition(p.getPosition());
+			newProbe->setCoeffs(p.getCoeffs());
+			m_probeStructure->addProbe(newProbe);
+
+
 			int NumberOfProbes = std::atoi(m_sNumICProbes.c_str());
 
-			probeFinder.currentPositions = generateRandomPositions(NumberOfProbes);
+			computeSamplesRGB();
 
+			float error = computeError(false);
 
-			for (G3D::Vector3& v : probeFinder.currentPositions)
+			bool isDark = true;
+
+			for (int i = 0; i < m_probeStructure->getProbe(m_probeStructure->probeCount() - 1)->getCoeffs().size(); ++i)
 			{
-				m_probeStructure->addProbe(v);
+				G3D::Vector3& val = m_probeStructure->getProbe(m_probeStructure->probeCount() - 1)->getCoeffs()[i];
+
+				if (val != G3D::Vector3::zero())
+				{
+					isDark = false;
+					break;
+				}
 			}
-			
-			m_probeStructure->saveInfoFile();
-			m_probeStructure->savePositions(false);
-			//sw.after("Saved new positions");
-			std::this_thread::sleep_for(std::chrono::milliseconds(200));
 
-			std::string settingsFilePath = "../data-files/scripts/optimizationSettings.txt";
-			std::fstream settingsFile = createEmptyFile(settingsFilePath.c_str());
-			settingsFile << m_probeStructure->name().c_str() << "\n";
-			settingsFile << "0" << "\n";
-			settingsFile << m_probeStructure->probeCount() - 1;
-
-			probeFinder.lastRenderEndTime = getFileLastModifiedTime("../data-files/scripts/optimizationSettings.txt");
-			settingsFile.close();
-
-			probeFinder.bWaitingForRenderingFinished = true;
-		}
-		else
-		{
-			FILETIME lastModifTime = getFileLastModifiedTime("../data-files/scripts/optimizationSettings.txt");
-			if (isLaterFileTime(lastModifTime, probeFinder.lastRenderEndTime))
+			if (isDark)
 			{
-				int NumberOfProbes = std::atoi(m_sNumICProbes.c_str());
-				
-				m_probeStructure->extractSHCoeffs(true, true);
-
-				computeSamplesRGB();
-
-				float error = computeError(false);
-				
-				bool isDark = true;
-
-				for (int i = 0; i < m_probeStructure->getProbe(m_probeStructure->probeCount() - 1)->getCoeffs().size(); ++i)
-				{
-					G3D::Vector3& val = m_probeStructure->getProbe(m_probeStructure->probeCount() - 1)->getCoeffs()[i];
-
-					if (val != G3D::Vector3::zero())
-					{
-						isDark = false;
-						break;
-					}
-				}
-
-				if (isDark)
-				{
-					debugPrintf("Placed probe in fully dark spot, trying again... \n");
-
-					for (int i = 0; i < NumberOfProbes; ++i)
-					{
-						m_probeStructure->removeProbe(m_probeStructure->probeCount() - 1);
-					}
-
-					probeFinder.bWaitingForRenderingFinished = false;
-					return;
-				}
-				debugPrintf("- Attempt: error : %f, passesLeft : %d", error, probeFinder.numPassesLeft - 1);
-
-				if (error < probeFinder.bestError)
-				{
-					debugPrintf(" (best yet!)");
-					probeFinder.bestError = error;
-					probeFinder.bestPositions = probeFinder.currentPositions;
-				}
-				debugPrintf("\n");
+				debugPrintf("Placed probe in fully dark spot, trying again... \n");
 
 				for (int i = 0; i < NumberOfProbes; ++i)
 				{
 					m_probeStructure->removeProbe(m_probeStructure->probeCount() - 1);
 				}
+
 				probeFinder.bWaitingForRenderingFinished = false;
+				return;
+			}
+			debugPrintf("- Attempt: error : %f, passesLeft : %d", error, probeFinder.numPassesLeft - 1);
 
-				if (probeFinder.numPassesLeft == 1)
+			G3D::Array<Vector3> pos = { newProbe->getPosition() };
+			if (error < probeFinder.bestError)
+			{
+				debugPrintf(" (best yet!)");
+				probeFinder.bestError = error;
+				probeFinder.bestPositions = pos;
+			}
+			debugPrintf("\n");
+
+			for (int i = 0; i < NumberOfProbes; ++i)
+			{
+				m_probeStructure->removeProbe(m_probeStructure->probeCount() - 1);
+			}
+			probeFinder.bWaitingForRenderingFinished = false;
+
+			if (probeFinder.numPassesLeft == 1)
+			{
+				if (true/*(currentOptimization.errors.size() == 0) || (probeFinder.bestError < currentOptimization.errors.back())*/)
 				{
-					if ( true/*(currentOptimization.errors.size() == 0) || (probeFinder.bestError < currentOptimization.errors.back())*/)
-					{
-						finalizeProbeFinder();
-					}
-					else
-					{
-						debugPrintf("Finished, but best error at %f is no better than previous best at %f. Not adding new probe.\n", probeFinder.bestError, currentOptimization.errors.back());
-					}
-
+					finalizeProbeFinder();
 				}
-
-				probeFinder.numPassesLeft--;
+				else
+				{
+					debugPrintf("Finished, but best error at %f is no better than previous best at %f. Not adding new probe.\n", probeFinder.bestError, currentOptimization.errors.back());
+				}
 
 			}
 
+			probeFinder.numPassesLeft--;
 		}
+		else
+		{
+			if (!probeFinder.bWaitingForRenderingFinished)
+			{
+				int NumberOfProbes = std::atoi(m_sNumICProbes.c_str());
+
+				probeFinder.currentPositions = generateRandomPositions(NumberOfProbes);
+
+
+				for (G3D::Vector3& v : probeFinder.currentPositions)
+				{
+					m_probeStructure->addProbe(v);
+				}
+
+				m_probeStructure->saveInfoFile();
+				m_probeStructure->savePositions(false);
+				//sw.after("Saved new positions");
+				std::this_thread::sleep_for(std::chrono::milliseconds(200));
+
+				std::string settingsFilePath = "../data-files/scripts/optimizationSettings.txt";
+				std::fstream settingsFile = createEmptyFile(settingsFilePath.c_str());
+				settingsFile << m_probeStructure->name().c_str() << "\n";
+				settingsFile << "0" << "\n";
+				settingsFile << m_probeStructure->probeCount() - 1;
+
+				probeFinder.lastRenderEndTime = getFileLastModifiedTime("../data-files/scripts/optimizationSettings.txt");
+				settingsFile.close();
+
+				probeFinder.bWaitingForRenderingFinished = true;
+			}
+			else
+			{
+				FILETIME lastModifTime = getFileLastModifiedTime("../data-files/scripts/optimizationSettings.txt");
+				if (isLaterFileTime(lastModifTime, probeFinder.lastRenderEndTime))
+				{
+					int NumberOfProbes = std::atoi(m_sNumICProbes.c_str());
+
+					m_probeStructure->extractSHCoeffs(true, true);
+
+					computeSamplesRGB();
+
+					float error = computeError(false);
+
+					bool isDark = true;
+
+					for (int i = 0; i < m_probeStructure->getProbe(m_probeStructure->probeCount() - 1)->getCoeffs().size(); ++i)
+					{
+						G3D::Vector3& val = m_probeStructure->getProbe(m_probeStructure->probeCount() - 1)->getCoeffs()[i];
+
+						if (val != G3D::Vector3::zero())
+						{
+							isDark = false;
+							break;
+						}
+					}
+
+					if (isDark)
+					{
+						debugPrintf("Placed probe in fully dark spot, trying again... \n");
+
+						for (int i = 0; i < NumberOfProbes; ++i)
+						{
+							m_probeStructure->removeProbe(m_probeStructure->probeCount() - 1);
+						}
+
+						probeFinder.bWaitingForRenderingFinished = false;
+						return;
+					}
+					debugPrintf("- Attempt: error : %f, passesLeft : %d", error, probeFinder.numPassesLeft - 1);
+
+					if (error < probeFinder.bestError)
+					{
+						debugPrintf(" (best yet!)");
+						probeFinder.bestError = error;
+						probeFinder.bestPositions = probeFinder.currentPositions;
+					}
+					debugPrintf("\n");
+
+					for (int i = 0; i < NumberOfProbes; ++i)
+					{
+						m_probeStructure->removeProbe(m_probeStructure->probeCount() - 1);
+					}
+					probeFinder.bWaitingForRenderingFinished = false;
+
+					if (probeFinder.numPassesLeft == 1)
+					{
+						if (true/*(currentOptimization.errors.size() == 0) || (probeFinder.bestError < currentOptimization.errors.back())*/)
+						{
+							finalizeProbeFinder();
+						}
+						else
+						{
+							debugPrintf("Finished, but best error at %f is no better than previous best at %f. Not adding new probe.\n", probeFinder.bestError, currentOptimization.errors.back());
+						}
+
+					}
+
+					probeFinder.numPassesLeft--;
+
+				}
+
+			}
+		}
+		
 
 	}
 
@@ -1787,6 +1903,7 @@ void App::makeGui() {
 
 	tab->addCheckBox("randomgrad", &(bRandomGradient));
 	tab->addCheckBox("bAutoOptimize", &(bAutoOptimize));
+	tab->addCheckBox("bUseProbeCache", &(bUseProbeCache));
 	
 	tab->endRow();
 
@@ -2577,34 +2694,34 @@ void App::computeSampleSetValuesFromIndividualProbe()
 	}
 
 	ProbeStructure* ps = new ProbeStructure(m_scene->m_name, structureName);
-	ps->setType("closest");
-	ps->setIntegrator("direct");
-	//ps->setIntegrator("path");
-	ps->setNumSamples(4);
-	ps->deleteAllProbes();
+	//ps->setType("closest");
+	//ps->setIntegrator("direct");
+	////ps->setIntegrator("path");
+	//ps->setNumSamples(4);
+	//ps->deleteAllProbes();
 
 	int numSamples = std::stoi((*samplesToSave).c_str());
 
-	for (int i = 0; i < numSamples; ++i)
-	{
-		SceneSample& ss = sampleSet->m_samples[i];
-		G3D::Vector3& SamplePos = ss.position;
-		G3D::Vector3& SampleNormal = ss.normal;
+	//for (int i = 0; i < numSamples; ++i)
+	//{
+	//	SceneSample& ss = sampleSet->m_samples[i];
+	//	G3D::Vector3& SamplePos = ss.position;
+	//	G3D::Vector3& SampleNormal = ss.normal;
 
-		ps->addProbe(SamplePos + 0.05 * SampleNormal);
-	}
+	//	ps->addProbe(SamplePos + 0.05 * SampleNormal);
+	//}
 
-	ps->saveInfoFile();
-	ps->savePositions(false);
-	ps->generateProbes("all", true, false, true);
-	ps->extractSHCoeffs(false, false);
+	//ps->saveInfoFile();
+	//ps->savePositions(false);
+	//ps->generateProbes("all", true, false, true);
+	//ps->extractSHCoeffs(false, false);
 
 	sampleSet->probeStructure = ps;
 	int numCoeffs = std::atoi(optimizationSHBand.c_str());
 	//sampleSet->generateRGBValuesFromProbes(numSamples, numCoeffs);
 	sampleSet->generateInterpolatedCoefficientsFromProbes(numSamples, numCoeffs);
 
-	exit(0);
+	//exit(0);
 }
 
 void scaleVec3(Vector3& vec, float maxLength)

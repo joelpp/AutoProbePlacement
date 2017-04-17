@@ -1727,6 +1727,10 @@ void ProbeStructure::addProbe(const G3D::Vector3& position)
 	probeList.push_back(probe);
 }
 
+void ProbeStructure::addProbe(Probe* probe)
+{
+	probeList.push_back(probe);
+}
 
 bool ProbeStructure::hasProbes()
 {

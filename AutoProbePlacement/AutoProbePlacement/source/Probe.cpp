@@ -54,6 +54,11 @@ Probe::Probe(int index, String probeStructurePath)
 	initProbeCoefficients(this->coeffs);
 	this->coeffGradients = CreateCoeffGradients(9);
 }
+Probe::Probe(const Probe& p)
+{
+	this->setPosition(p.getPosition());
+	this->setCoeffs(p.getCoeffs());
+}
 
 String Probe::buildPath(EResource res)
 {
@@ -130,7 +135,7 @@ shared_ptr<ProbeManipulator> Probe::getManipulator()
 }
 
 
-Point3 Probe::getPosition()
+Point3 Probe::getPosition() const
 {
 	return this->frame.translation;
 }
@@ -380,7 +385,7 @@ void Probe::setCoeffs(TProbeCoefficients pCoeffs)
 	checkDarkness();
 }
 
-TProbeCoefficients Probe::getCoeffs()
+TProbeCoefficients Probe::getCoeffs() const
 {
 	return coeffs;
 }

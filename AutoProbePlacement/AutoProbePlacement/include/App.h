@@ -565,6 +565,10 @@ public:
 	void handleAutoOptimizer();
 	SAutoOptimizer m_AutoOptimizer;
 
+	void loadPotentialProbes();
+	bool bUseProbeCache;
+	int iNumPotentialProbes = 9300;
+	std::vector<Probe> PotentialProbeCache;
 };
 
 #endif

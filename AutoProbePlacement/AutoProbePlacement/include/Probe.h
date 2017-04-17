@@ -34,6 +34,7 @@ public:
 
 	Probe();
 	Probe(int i, String probeStructurePath);
+	Probe(const Probe& p);
 	shared_ptr<Texture> getTexture(int texID);
 	void reconstructSH(const G3D::Vector3& normal);
 	void computeCoefficientsFromTexture(bool alsoSet, bool computeGradients, float gradientDisplacement);
@@ -44,7 +45,7 @@ public:
 
 	void checkDarkness();
 	void setCoeffs(TProbeCoefficients pCoeffs);
-	TProbeCoefficients getCoeffs();
+	TProbeCoefficients getCoeffs() const;
 
 	shared_ptr<Texture>		texture;
 	shared_ptr<Texture>		irr_texture;
@@ -57,7 +58,7 @@ public:
 	int index;
 	shared_ptr<ProbeManipulator> manipulator;
 	shared_ptr<ProbeManipulator> getManipulator();
-	Point3 getPosition();
+	Point3 getPosition() const;
     void setPosition(G3D::Vector3& pos);
     CFrame frame;
 	bool bIsDark;

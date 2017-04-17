@@ -551,7 +551,7 @@ void App::displaceProbes()
         m_probeStructure->savePositions(false);
 		//computeSamplesRGB();
 		//computeError("C:/temp/errorlog.txt");
-		optimCoeffs = m_probeStructure->getProbe(0)->coeffs;
+		optimCoeffs = m_probeStructure->getProbe(0)->getCoeffs();
 
 		//m_probeStructure->updateProbes(true);
 		//updateProbeStructure();
@@ -559,7 +559,7 @@ void App::displaceProbes()
         m_probeStructure->extractSHCoeffs(true, true);
 		//computeSamplesRGB();
 		//computeError("C:/temp/errorlog2.txt");
-		renderedCoeffs = m_probeStructure->getProbe(0)->coeffs;
+		renderedCoeffs = m_probeStructure->getProbe(0)->getCoeffs();
 
 		float err = 0;
 		for (int j = 0; j < optimCoeffs.size(); ++j)

@@ -169,6 +169,7 @@ void App::onInit() {
 
 	addOneActor();
 
+	findAddedProbeEvent();
 	loadOptions();
 	makeGui();
 	stopPythonRenderingEngine();
@@ -205,6 +206,7 @@ void App::loadScene(String sceneName)
 	bSceneLoaded = true;
 
 	loadTrajectory();
+
 }
 
 template<class TContainer>
@@ -212,6 +214,38 @@ bool begins_with(const TContainer& input, const TContainer& match)
 {
 	return input.size() >= match.size()
 		&& equal(match.begin(), match.end(), input.begin());
+}
+
+void App::findAddedProbeEvent()
+{
+	String scene = "sponza";
+	String optim = "88";
+	String path = "C:\\git\\AutoProbePlacement\\AutoProbePlacement\\data-files\\Scenes\\" + scene + "\\Optimizations\\" + optim + "\\infos.txt";
+
+	std::fstream file(path.c_str(), std::ios::in);
+
+	std::string line;
+	int counter = 0;
+	int iteration;
+	std::string iterationSeek = "iteration";
+	std::string addProbeSeek = std::string(format("Probe %d", counter).c_str());
+
+	while (std::getline(file, line))
+	{
+		if (begins_with(line, iterationSeek))
+		{
+			Array<String> split = stringSplit(String(line.c_str()), ' ');
+			assert(split.size() == 2);
+			iteration = std::stoi(split[1].c_str());
+		}
+		else if (begins_with(line, addProbeSeek))
+		{
+			debugPrintf("%d\n", iteration);
+			addProbeSeek = std::string(format("Probe %d", ++counter).c_str());
+		}
+	}
+
+	file.close();
 }
 
 void App::loadTrajectory()
@@ -258,6 +292,7 @@ void App::loadTrajectory()
 	}
 
 	file.close();
+	exit(0);
 }
 
 void App::loadCurrentOptimization()
@@ -323,16 +358,16 @@ void App::initializeProbeStructure(String sceneName, String probeStructureName)
 		delete(m_probeStructure);
 	}
 
-	try
-	{
+	//try
+	//{
 		m_probeStructure = new ProbeStructure(sceneName, probeStructureName);
 		m_probeStructure->uploadToGPU();
 		sw.after("Loaded ProbeStructure");
-	}
-	catch (std::exception e)
+	//}
+	/*catch (std::exception e)
 	{
 		throw e;
-	}
+	}*/
 
 	if (sampleSet)
 	{
@@ -425,7 +460,7 @@ void App::drawProbes(RenderDevice* rd)
 		args.setUniform("uSampler", whiteTexture, sampler);
 
 		Probe* p = m_probeStructure->getProbe(0);
-		setProbeCoeffUniforms(args, p->coeffs);
+		setProbeCoeffUniforms(args, p->getCoeffs());
 
 		//drawModel(rd, "SH_shader3.*", sphereModel, p->getPosition(), args);
 		drawModel(rd, "texture.*", sphereModel, p->getPosition(), args);
@@ -458,7 +493,7 @@ void App::drawProbes(RenderDevice* rd)
 		{
 
 
-			setProbeCoeffUniforms(args, probe->coeffs);
+			setProbeCoeffUniforms(args, probe->getCoeffs());
 
 			//Accumulate the renders
 			drawModel(rd, "SH_shader3.*", sphereModel, probe->getPosition(), args);
@@ -964,7 +999,7 @@ void App::handleAutoOptimizer()
 	{
 		int numProbes = m_probeStructure->probeCount();
 
-		if ((numProbes >= m_AutoOptimizer.MaxNumProbes) || (m_AutoOptimizer.it == -1))
+		if ((numProbes >= m_AutoOptimizer.getMaxNumProbes()) || (m_AutoOptimizer.it == -1))
 		{
 			// reset
 			numPassesLeft = 0;
@@ -1112,9 +1147,9 @@ void App::onAI()
 				
 				bool isDark = true;
 
-				for (int i = 0; i < m_probeStructure->getProbe(m_probeStructure->probeCount() - 1)->coeffs.size(); ++i)
+				for (int i = 0; i < m_probeStructure->getProbe(m_probeStructure->probeCount() - 1)->getCoeffs().size(); ++i)
 				{
-					G3D::Vector3& val = m_probeStructure->getProbe(m_probeStructure->probeCount() - 1)->coeffs[i];
+					G3D::Vector3& val = m_probeStructure->getProbe(m_probeStructure->probeCount() - 1)->getCoeffs()[i];
 
 					if (val != G3D::Vector3::zero())
 					{
@@ -1991,10 +2026,10 @@ void App::updateProbeStructurePane()
 			for (int i = 0; i < m_probeStructure->probeList.size(); ++i)
 			{
 				debugPrintf("Probe %d: \n", i);
-				for (int c = 0; c < m_probeStructure->probeList[i]->coeffs.size(); ++c)
+				for (int c = 0; c < m_probeStructure->probeList[i]->getCoeffs().size(); ++c)
 				{
-					debugPrintf("	coeffs #%d: %s\n", c, m_probeStructure->probeList[i]->coeffs[c].toString());
-					sum += m_probeStructure->probeList[i]->coeffs[c];
+					debugPrintf("	coeffs #%d: %s\n", c, m_probeStructure->probeList[i]->getCoeffs()[c].toString());
+					sum += m_probeStructure->probeList[i]->getCoeffs()[c];
 				}
 			}
 			debugPrintf("	sum %s\n", sum.toString());
@@ -2543,9 +2578,9 @@ void App::computeSampleSetValuesFromIndividualProbe()
 
 	ProbeStructure* ps = new ProbeStructure(m_scene->m_name, structureName);
 	ps->setType("closest");
-	//ps->setIntegrator("direct");
-	ps->setIntegrator("path");
-	ps->setNumSamples(128);
+	ps->setIntegrator("direct");
+	//ps->setIntegrator("path");
+	ps->setNumSamples(4);
 	ps->deleteAllProbes();
 
 	int numSamples = std::stoi((*samplesToSave).c_str());
@@ -2631,8 +2666,8 @@ float App::testProbeDisplacementError(float maxStepLength)
 		Vector3 displacement = displacements[i];
 		
 		Probe* tempProbe = ps->getProbe(i);
-		TProbeCoefficients& realCoefficients = tempProbe->coeffs;
-		TProbeCoefficients estimatedCoefficients = probe->coeffs;
+		TProbeCoefficients& realCoefficients = tempProbe->getCoeffs();
+		TProbeCoefficients estimatedCoefficients = probe->getCoeffs();
 
 		TProbeCoefficients difference;
 		Probe::initProbeCoefficients(difference);
@@ -2654,7 +2689,7 @@ float App::testProbeDisplacementError(float maxStepLength)
 			sum += difference[k].length();
 		}
 
-		tempProbe->coeffs = difference;
+		tempProbe->setCoeffs(difference);
 
 	}
 

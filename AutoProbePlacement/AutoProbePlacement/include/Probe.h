@@ -42,25 +42,30 @@ public:
 	void computeCoefficients(std::shared_ptr<G3D::Image> probeTexture, TProbeCoefficients& coeffs);
 	CoeffGradients computeProbeCoeffGradients(float gradientDisplacement);
 
+	void checkDarkness();
+	void setCoeffs(TProbeCoefficients pCoeffs);
+	TProbeCoefficients getCoeffs();
+
 	shared_ptr<Texture>		texture;
 	shared_ptr<Texture>		irr_texture;
 	Point3					position;
-	TProbeCoefficients		coeffs;
 	Array<Array<Vector3> >	coeffGradients;
 	Vector3					gradient;
 	Vector3					normal;
 	Sphere					m_sphere;
 	String probeStructurePath;
 	int index;
-
 	shared_ptr<ProbeManipulator> manipulator;
 	shared_ptr<ProbeManipulator> getManipulator();
 	Point3 getPosition();
     void setPosition(G3D::Vector3& pos);
     CFrame frame;
-
+	bool bIsDark;
 
 	bool bNeedsUpdate;
+
+private:
+	TProbeCoefficients		coeffs;
 };
 class ProbeManipulator : public ThirdPersonManipulator
 {

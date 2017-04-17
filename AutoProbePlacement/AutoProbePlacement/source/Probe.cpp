@@ -307,7 +307,7 @@ void Probe::computeCoefficientsFromTexture(bool alsoSet, bool computeGradients, 
 
 	if (alsoSet)
 	{
-		this->coeffs = tempCoeffs;
+		setCoeffs(tempCoeffs);
 		if (computeGradients)
 		{
 			this->coeffGradients = computeProbeCoeffGradients(gradientDisplacement);
@@ -357,4 +357,30 @@ void Probe::reconstructSH(const G3D::Vector3& normal)
 	{
 
 	}
+}
+
+void Probe::checkDarkness()
+{
+	for (int i = 0; i < coeffs.size(); ++i)
+	{
+		if (coeffs[i] != Vector3::zero())
+		{
+			bIsDark = false;
+			return;
+		}
+	}
+
+	bIsDark = true;
+	return;
+}
+
+void Probe::setCoeffs(TProbeCoefficients pCoeffs)
+{
+	coeffs = pCoeffs;
+	checkDarkness();
+}
+
+TProbeCoefficients Probe::getCoeffs()
+{
+	return coeffs;
 }

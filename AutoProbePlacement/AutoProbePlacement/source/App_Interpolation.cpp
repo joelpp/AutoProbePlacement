@@ -61,7 +61,7 @@ Array<Vector3> App::getInterpolatedCoeffs(ProbeInterpolationRecord iRec, int max
 		Probe* p = m_probeStructure->getProbe(iRec.probeIndices[i]);
 		for (int j = 0; j <= maxBand; ++j)
 		{
-			interpolatedCoeffs[j] += p->coeffs[j] * iRec.weights[i];
+			interpolatedCoeffs[j] += p->getCoeffs()[j] * iRec.weights[i];
 		}
     }
 

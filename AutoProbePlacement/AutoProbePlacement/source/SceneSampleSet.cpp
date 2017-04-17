@@ -348,7 +348,7 @@ float SceneSampleSet::R(const G3D::Vector3& position,  const G3D::Vector3& norma
 	float value = 0;
 	if (oneRowPerSHBand)
 	{
-		float coeffval = probeStructure->getProbe(m)->coeffs[NumberOfCoeffs][color];
+		float coeffval = probeStructure->getProbe(m)->getCoeffs()[NumberOfCoeffs][color];
 
 		std::pair<int, int> lm = SH::kToLM(NumberOfCoeffs);
 		float phong = phongCoeffs(lm.first, 1.0f);
@@ -367,7 +367,7 @@ float SceneSampleSet::R(const G3D::Vector3& position,  const G3D::Vector3& norma
 	{
 		for (int coeff = 0; coeff < NumberOfCoeffs; ++coeff)
 		{
-			float coeffval = probeStructure->getProbe(m)->coeffs[coeff][color];
+			float coeffval = probeStructure->getProbe(m)->getCoeffs()[coeff][color];
 
 			std::pair<int, int> lm = SH::kToLM(coeff);
 			float phong = phongCoeffs(lm.first, 1.0f);
@@ -544,7 +544,7 @@ void SceneSampleSet::generateTriplets(int NumberOfSamples,
 								{
 									Wval += WvalTerm1;
 								}
-								float Rval = m->coeffs[coeff][color];
+								float Rval = m->getCoeffs()[coeff][color];
 
 								float Bval = 0;
 								if (m == n)

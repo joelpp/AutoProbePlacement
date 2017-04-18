@@ -348,7 +348,7 @@ float SceneSampleSet::R(const G3D::Vector3& position,  const G3D::Vector3& norma
 	float value = 0;
 	if (oneRowPerSHBand)
 	{
-		float coeffval = probeStructure->getProbe(m)->coeffs[NumberOfCoeffs][color];
+		float coeffval = probeStructure->getProbe(m)->getCoeffs()[NumberOfCoeffs][color];
 
 		std::pair<int, int> lm = SH::kToLM(NumberOfCoeffs);
 		float phong = phongCoeffs(lm.first, 1.0f);
@@ -367,7 +367,7 @@ float SceneSampleSet::R(const G3D::Vector3& position,  const G3D::Vector3& norma
 	{
 		for (int coeff = 0; coeff < NumberOfCoeffs; ++coeff)
 		{
-			float coeffval = probeStructure->getProbe(m)->coeffs[coeff][color];
+			float coeffval = probeStructure->getProbe(m)->getCoeffs()[coeff][color];
 
 			std::pair<int, int> lm = SH::kToLM(coeff);
 			float phong = phongCoeffs(lm.first, 1.0f);
@@ -460,17 +460,33 @@ void SceneSampleSet::generateTriplets(int NumberOfSamples,
 
 		if (m_FastTriplets)
 		{
+			bool skipSample = false;
 			float sumOfInverseSquaredProbeDistances = 0;
 			for (int p = 0; p < NumberOfProbes; ++p)
 			{
 				sampleToProbeVectors[p] = SamplePosition - probeStructure->getProbe(p)->getPosition();
 				probeDistances[p] = sampleToProbeVectors[p].length();
+
+				if (probeDistances[p] == 0.f)
+				{
+					skipSample = true;
+					break;
+				}
+
 				squaredProbeDistances[p] = powf(probeDistances[p], alpha);
 				inverseSquaredProbeDistances[p] = 1.f / squaredProbeDistances[p];
 				sumOfInverseSquaredProbeDistances += inverseSquaredProbeDistances[p];
+
+			}
+			if (skipSample)
+			{
+				NumberOfSamples++;
+				continue;
 			}
 			inverseSumOf1OverSquaredProbeDistances = 1.f / sumOfInverseSquaredProbeDistances;
 			squaredInverseSumOf1OverSquaredProbeDistances = powf(inverseSumOf1OverSquaredProbeDistances, 2);
+			
+			
 		}
 		else
 		{
@@ -544,7 +560,7 @@ void SceneSampleSet::generateTriplets(int NumberOfSamples,
 								{
 									Wval += WvalTerm1;
 								}
-								float Rval = m->coeffs[coeff][color];
+								float Rval = m->getCoeffs()[coeff][color];
 
 								float Bval = 0;
 								if (m == n)
@@ -578,6 +594,7 @@ void SceneSampleSet::generateTriplets(int NumberOfSamples,
 
 						if (eigenTriplets)
 						{
+							assert(dRGB_color_axis == dRGB_color_axis);
 							eigenTriplets->push_back(Eigen::Triplet<float>(row, col, dRGB_color_axis));
 						}
 						if (output)
@@ -624,11 +641,16 @@ void SceneSampleSet::generateInterpolatedCoefficientsFromProbes(int NumberOfSamp
 	std::fstream file = openFile(ESSFile::Coeffs, false);
 	for (int i = 0; i < NumberOfSamples; ++i)
 	{
-		const SceneSample& ss = m_samples[i];
+		if (i >= m_samples.size())
+		{
+			m_samples.push_back(SceneSample());
+		}
+		SceneSample& ss = m_samples[i];
 
-		TProbeCoefficients interpolatedCoeffs = probeStructure->interpolatedCoefficients(ss.position, ss.normal, NumberOfCoeffs);
+		TProbeCoefficients interpolatedCoeffs = probeStructure->getProbe(i)->getCoeffs();
 
 		dumpToFile(file, interpolatedCoeffs);
+		ss.position = G3D::Vector3(probeStructure->getProbe(i)->getPosition().x, probeStructure->getProbe(i)->getPosition().y, probeStructure->getProbe(i)->getPosition().z);
 	}
 
 	file.close();
@@ -982,7 +1004,7 @@ bool SceneSampleSet::probeOptimizationPass(WeightMatrixType& A, Eigen::VectorXd&
 
 	Eigen::ConjugateGradient<WeightMatrixType> solver;
 	debugPrintf("Compute step...\n");
-	solver.setTolerance(1e-1);
+	solver.setTolerance(1e-2);
 	solver.setMaxIterations(1e12);
 	solver.compute(AtA);
 

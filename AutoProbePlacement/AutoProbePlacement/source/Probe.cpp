@@ -54,6 +54,11 @@ Probe::Probe(int index, String probeStructurePath)
 	initProbeCoefficients(this->coeffs);
 	this->coeffGradients = CreateCoeffGradients(9);
 }
+Probe::Probe(const Probe& p)
+{
+	this->setPosition(p.getPosition());
+	this->setCoeffs(p.getCoeffs());
+}
 
 String Probe::buildPath(EResource res)
 {
@@ -130,7 +135,7 @@ shared_ptr<ProbeManipulator> Probe::getManipulator()
 }
 
 
-Point3 Probe::getPosition()
+Point3 Probe::getPosition() const
 {
 	return this->frame.translation;
 }
@@ -307,7 +312,7 @@ void Probe::computeCoefficientsFromTexture(bool alsoSet, bool computeGradients, 
 
 	if (alsoSet)
 	{
-		this->coeffs = tempCoeffs;
+		setCoeffs(tempCoeffs);
 		if (computeGradients)
 		{
 			this->coeffGradients = computeProbeCoeffGradients(gradientDisplacement);
@@ -357,4 +362,30 @@ void Probe::reconstructSH(const G3D::Vector3& normal)
 	{
 
 	}
+}
+
+void Probe::checkDarkness()
+{
+	for (int i = 0; i < coeffs.size(); ++i)
+	{
+		if (coeffs[i] != Vector3::zero())
+		{
+			bIsDark = false;
+			return;
+		}
+	}
+
+	bIsDark = true;
+	return;
+}
+
+void Probe::setCoeffs(TProbeCoefficients pCoeffs)
+{
+	coeffs = pCoeffs;
+	checkDarkness();
+}
+
+TProbeCoefficients Probe::getCoeffs() const
+{
+	return coeffs;
 }

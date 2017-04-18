@@ -136,9 +136,10 @@ enum EFilmType
 
 struct SAutoOptimizer
 {
-	std::vector<int> numSamples = { 10, 25, 50, 100, 200, 500, 1000 };
+	//std::vector<int> numSamples = { 10, 25, 50, 100, 200, 500, 1000 };
+	std::vector<int> numSamples = { 10, 50, 100, 1000, 2000 };
+	std::vector<int> maxNumProbes = { 15, 20, 30, 40, 40 };
 	int it = -2;
-	int MaxNumProbes = 15;
 
 	bool active()
 	{
@@ -148,6 +149,18 @@ struct SAutoOptimizer
 	void setActive(bool val)
 	{
 		it = val == false ? -2 : -1;
+	}
+
+	int getMaxNumProbes()
+	{
+		if (it < 0)
+		{
+			return 9999999;
+		}
+		else
+		{
+			return maxNumProbes[it];
+		}
 	}
 };
 
@@ -548,9 +561,14 @@ public:
 	Array<Trajectory> trajectories;
 	Array<G3D::Array<G3D::Color3> > trajectoriesColors;
 
+	void findAddedProbeEvent();
 	void handleAutoOptimizer();
 	SAutoOptimizer m_AutoOptimizer;
 
+	void loadPotentialProbes();
+	bool bUseProbeCache;
+	int iNumPotentialProbes = 9300;
+	std::vector<Probe> PotentialProbeCache;
 };
 
 #endif

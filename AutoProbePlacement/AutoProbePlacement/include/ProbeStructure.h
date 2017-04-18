@@ -147,6 +147,8 @@ public:
 
 	void addProbe(const G3D::Vector3& position);
 
+	void addProbe(Probe* probe);
+
 	void generateProbes(std::string type, bool allProbes, bool generateGradients, bool showOutput);
 
     void extractSHCoeffs(bool generateGradients, bool bUploadToGPU);

@@ -232,7 +232,8 @@ void ProbeStructure::makeProbeList()
         char str[16];
         sprintf(str, "%d", i);
         aTestProbe->position = positions[i];
-                
+         
+		TProbeCoefficients tempCoeffs;
         if (loadCoefficients)
 		{
 			////////////////////////////////////
@@ -248,16 +249,17 @@ void ProbeStructure::makeProbeList()
             std::fstream coeffFile;
             coeffFile.open(filename.c_str(), std::ios::in);
 
-			aTestProbe->coeffs = Array<Vector3>();
+			tempCoeffs = Array<Vector3>();
 
             while ( std::getline(coeffFile,line) )
 			{
                 std::getline(coeffFile, line2);
                 std::getline(coeffFile, line3);
                 Vector3 toAdd = Vector3(std::stof(line.c_str()), std::stof(line2.c_str()), std::stof(line3.c_str()));
-                aTestProbe->coeffs.append(toAdd);
+				tempCoeffs.append(toAdd);
             }
             coeffFile.close();
+			aTestProbe->setCoeffs(tempCoeffs);
 
 			////////////////////////////////////
 			//////// LOAD GRADIENTS ////////////
@@ -294,7 +296,17 @@ void ProbeStructure::makeProbeList()
 
 					std::getline(coeffFile, line2);
 					std::getline(coeffFile, line3);
-					temporaryArray.push_back(Vector3(std::stof(line.c_str()), std::stof(line2.c_str()), std::stof(line3.c_str())));
+
+					if (line == "")
+					{
+						temporaryArray.push_back(Vector3::zero());
+
+					}
+					else
+					{
+						temporaryArray.push_back(Vector3(std::stof(line.c_str()), std::stof(line2.c_str()), std::stof(line3.c_str())));
+
+					}
 					//temporaryArray.push_back(Vector3(Random::common().uniform(-0.15f, 0.15f), Random::common().uniform(-0.15f, 0.15f), Random::common().uniform(-0.15f, 0.15f)));
 
 					if (++counter == 3)
@@ -646,7 +658,8 @@ void ProbeStructure::changeProbePosition(int probeIndex, Vector3 dp){
 void ProbeStructure::changeProbeCoeff(int probeIndex, int coeffIndex, Vector3 amount){
 	Probe *p = probeList[probeIndex];
 
-	p->coeffs[coeffIndex] += amount;
+	TProbeCoefficients& coeffs = p->getCoeffs();
+	coeffs[coeffIndex] += amount;
 }
 
 bool ProbeStructure::writeProbePositionsToFile(){
@@ -889,6 +902,8 @@ ProbeInterpolationRecord ProbeStructure::getInterpolationProbeIndicesAndWeights(
 			y = (z == 0) ? (y + 1) % (2) : y;
 			x = ((y == 0) && (z == 0)) ? x + 1 : x;
 
+
+
 			if ((possiblePos.x > lastProbePosition.x) ||
 				(possiblePos.y > lastProbePosition.y) ||
 				(possiblePos.z > lastProbePosition.z) ||
@@ -897,11 +912,31 @@ ProbeInterpolationRecord ProbeStructure::getInterpolationProbeIndicesAndWeights(
 				(possiblePos.z + 0.1 < firstProbePosition.z) ||
 				(thisProbeSpaceCoords.x < 0) ||
 				(thisProbeSpaceCoords.y < 0) ||
-				(thisProbeSpaceCoords.z < 0))
+				(thisProbeSpaceCoords.z < 0)) 
 			{
 				record.weights[i] = 0;
 				shouldNormalize = true;
 				continue;
+			}
+			else // the probe is fine but it might be dark
+			{
+				assert(!(index > probeList.size()) && !(index = 0));
+				
+				try
+				{
+					Probe* p = probeList[index];
+
+					if (p->bIsDark)
+					{
+						record.weights[i] = 0;
+						shouldNormalize = true;
+						continue;
+					}
+				}
+				catch (std::exception e)
+				{
+					
+				}
 			}
 
 		}
@@ -1247,15 +1282,15 @@ void ProbeStructure::displaceProbesWithGradient(std::vector<float>& displacement
 		probe->bNeedsUpdate = true;
 
 		// Now use the displacement to compute the new coefficients
-		for (int k = 0; k < probe->coeffs.size(); ++k)
+		for (int k = 0; k < probe->getCoeffs().size(); ++k)
 		{
-			G3D::Vector3* coeffs = &(probe->coeffs[k]);
+			G3D::Vector3& coeffs = probe->getCoeffs()[k];
 			
 			for (int color = 0; color < 3; ++color)
 			{
 				G3D::Vector3 grad = probe->coeffGradients[k][color];
 				
-				(*coeffs)[color] += grad.dot(displacement);
+				coeffs[color] += grad.dot(displacement);
 			}
 			
 		}
@@ -1283,7 +1318,7 @@ TProbeCoefficients ProbeStructure::interpolatedCoefficients(const G3D::Vector3& 
 				continue;
 			}
 
-			TProbeCoefficients& probeCoeffs = probeList[index]->coeffs;
+			TProbeCoefficients& probeCoeffs = probeList[index]->getCoeffs();
 
 			Vector3& coeffs = probeCoeffs[c];
 
@@ -1340,7 +1375,7 @@ G3D::Vector3 ProbeStructure::reconstructSH(const G3D::Vector3& position, const G
                 sh;
 			try
 			{
-				Vector3& probeCoeffs = getProbe(probeIndex)->coeffs[coeff];
+				Vector3& probeCoeffs = getProbe(probeIndex)->getCoeffs()[coeff];
 				Vector3 accumulation = factors * probeCoeffs;
 				rgb += accumulation;
 
@@ -1418,7 +1453,7 @@ Array<G3D::Vector3> ProbeStructure::reconstructSHPerBand(const G3D::Vector3& pos
 				sh;
 			try
 			{
-				Vector3& probeCoeffs = getProbe(probeIndex)->coeffs[coeff];
+				Vector3& probeCoeffs = getProbe(probeIndex)->getCoeffs()[coeff];
 				Vector3 accumulation = factors * probeCoeffs;
 				toReturn[coeff] += accumulation;
 
@@ -1459,8 +1494,11 @@ void ProbeStructure::generateProbes(std::string type, bool allProbes, bool gener
 		 << type << " "
 		 << generateGradients << " ";
 
-	if (!allProbes)
+
+
+	if (!allProbes && m_type != EProbeStructureType::Trilinear)
 	{
+
 		for (int i = 0; i < probeCount(); ++i)
 		{
 			Probe* p = probeList[i];
@@ -1577,9 +1615,9 @@ void ProbeStructure::uploadToGPU()
         Probe* cpuProbe = getProbe(i);
         for (int j = 0; j < 9; j += 1)
         {
-            gpuProbe.coefficients[(3 * j)] = cpuProbe->coeffs[j].x;
-            gpuProbe.coefficients[(3 * j) + 1] = cpuProbe->coeffs[j].y;
-            gpuProbe.coefficients[(3 * j) + 2] = cpuProbe->coeffs[j].z;
+            gpuProbe.coefficients[(3 * j)] = cpuProbe->getCoeffs()[j].x;
+            gpuProbe.coefficients[(3 * j) + 1] = cpuProbe->getCoeffs()[j].y;
+            gpuProbe.coefficients[(3 * j) + 2] = cpuProbe->getCoeffs()[j].z;
 
             gpuProbe.gradients[(9 * j) + 0] = cpuProbe->coeffGradients[j][0].x;
             gpuProbe.gradients[(9 * j) + 1] = cpuProbe->coeffGradients[j][0].y;
@@ -1597,7 +1635,7 @@ void ProbeStructure::uploadToGPU()
         gpuProbe.position[0] = cpuProbe->position[0];
         gpuProbe.position[1] = cpuProbe->position[1];
         gpuProbe.position[2] = cpuProbe->position[2];
-        gpuProbe.position[3] = 0.0f;
+        gpuProbe.position[3] = cpuProbe->bIsDark ? 1.0f : 0.0f;
         probeList.probes[i] = gpuProbe;
     }
 
@@ -1689,6 +1727,10 @@ void ProbeStructure::addProbe(const G3D::Vector3& position)
 	probeList.push_back(probe);
 }
 
+void ProbeStructure::addProbe(Probe* probe)
+{
+	probeList.push_back(probe);
+}
 
 bool ProbeStructure::hasProbes()
 {

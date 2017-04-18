@@ -7,10 +7,13 @@ if (len(sys.argv) != 2):
 sceneName = sys.argv[1];
 rootPath = "../Scenes/" + sceneName;
 if not (os.path.exists(rootPath)):
-	
 	os.mkdir(rootPath);
-	os.mkdir(rootPath + "/ProbeStructures");
-	os.mkdir(rootPath + "/SampleSets");
-	os.mkdir(rootPath + "/objs");
-	open(rootPath + "MitsubaScene.xml", 'w')
-	open(rootPath + "SceneInfo.txt", 'w')
+
+os.mkdir(rootPath + "/ProbeStructures");
+os.mkdir(rootPath + "/SampleSets");
+os.mkdir(rootPath + "/objs");
+os.mkdir(rootPath + "/Optimizations");
+
+open(rootPath + "/MitsubaScene.xml", 'w')
+open(rootPath + "/SceneInfo.txt", 'w')
+open(rootPath + "/" + sceneName + ".scene.any", 'w')

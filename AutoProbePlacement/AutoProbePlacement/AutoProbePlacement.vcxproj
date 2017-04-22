@@ -169,6 +169,7 @@
     <ClInclude Include="include\Probe.h" />
     <ClInclude Include="include\ProbeRenderer.h" />
     <ClInclude Include="include\ProbeStructure.h" />
+    <ClInclude Include="include\PythonRenderingEngine.h" />
     <ClInclude Include="include\Scene.h" />
     <ClInclude Include="include\SceneSample.h" />
     <ClInclude Include="include\SceneSampleSet.h" />
@@ -193,6 +194,7 @@
     <ClCompile Include="source\Probe.cpp" />
     <ClCompile Include="source\ProbeRenderer.cpp" />
     <ClCompile Include="source\ProbeStructure.cpp" />
+    <ClCompile Include="source\PythonRenderingEngine.cpp" />
     <ClCompile Include="source\Scene.cpp" />
     <ClCompile Include="source\SceneSample.cpp" />
     <ClCompile Include="source\SceneSampleSet.cpp" />

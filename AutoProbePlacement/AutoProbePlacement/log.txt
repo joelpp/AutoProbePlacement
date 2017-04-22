@@ -1,13 +1,13 @@
 Application Log
-Start: Fri Apr 21 21:23:32 2017
+Start: Sat Apr 22 01:54:16 2017
 
-Initializing System::findDataFile took 0.002294s
+Initializing System::findDataFile took 0.002014s
 WARNING: AudioDevice is not enabled. Set G3DSpecification::audio = true before invoking initGLG3D() to enable audio.
 
 Entering GApp::GApp()
 cwd = C:\git\AutoProbePlacement\AutoProbePlacement\AutoProbePlacement
 System::setAppDataDir("C:\git\AutoProbePlacement\data-files")
-Initializing System::findDataFile took 0.000438s
+Initializing System::findDataFile took 0.000638s
 Setting video mode
 wglSwapIntervalEXT(0);
 Setting initial rendering state.
@@ -575,30 +575,92 @@ lolFound scenes:
   "G3D Sports Car (White)" (C:\git\g3d\data10\research/scene/sportsCarWhite.Scene.Any)
   "G3D Transparency Test" (C:\git\g3d\data10\research/scene/transparencyTest.Scene.Any)
   "G3D Triangle" (C:\git\g3d\data10\research/scene/triangle.Scene.Any)
-%
-"
-
-
-,
-9
-
-
-&
-:
+4
+ÿÿ—
+	
 
+
+ÿÿ
+	
+
+)
+<
+
 
+
 Vertex info
 -----------
 1(42) : warning C7050: "tex0" might be used before being initialized
 
+-
 Vertex info
 -----------
 1(42) : warning C7050: "tex0" might be used before being initialized
 
-3
+ÿÿ
 Fragment info
 -------------
 1(33) : warning C7050: "surfel.shadingNormal" might be used before being initialized
 
-
-0
+
+Fragment info
+-------------
+1(33) : warning C7050: "surfel.shadingNormal" might be used before being initialized
+
+6
+Fragment info
+-------------
+1(33) : warning C7050: "surfel.shadingNormal" might be used before being initialized
+
+Fragment info
+-------------
+1(33) : warning C7050: "surfel.shadingNormal" might be used before being initialized
+
+Fragment info
+-------------
+1(33) : warning C7050: "surfel.shadingNormal" might be used before being initialized
+
+Fragment info
+-------------
+1(33) : warning C7050: "surfel.shadingNormal" might be used before being initialized
+
+Fragment info
+-------------
+1(33) : warning C7050: "surfel.shadingNormal" might be used before being initialized
+
+Fragment info
+-------------
+1(33) : warning C7050: "surfel.shadingNormal" might be used before being initialized
+
+Fragment info
+-------------
+1(33) : warning C7050: "surfel.shadingNormal" might be used before being initialized
+
+Fragment info
+-------------
+1(33) : warning C7050: "surfel.shadingNormal" might be used before being initialized
+
+Fragment info
+-------------
+1(33) : warning C7050: "surfel.shadingNormal" might be used before being initialized
+
+Fragment info
+-------------
+1(33) : warning C7050: "surfel.shadingNormal" might be used before being initialized
+
+Fragment info
+-------------
+1(33) : warning C7050: "surfel.shadingNormal" might be used before being initialized
+
+Fragment info
+-------------
+1(33) : warning C7050: "surfel.shadingNormal" might be used before being initialized
+
+Fragment info
+-------------
+1(33) : warning C7050: "surfel.shadingNormal" might be used before being initialized
+
+Fragment info
+-------------
+1(33) : warning C7050: "surfel.shadingNormal" might be used before being initialized
+

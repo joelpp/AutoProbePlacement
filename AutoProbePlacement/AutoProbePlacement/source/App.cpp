@@ -127,6 +127,7 @@ void App::onInit() {
 	bRandomGradient =				  false;
 	bFindingNewProbeLocation = false;
 	bShowTrajectory =		  false;
+	bWaitingForProbeStructureUpdateToFinish = false;
 
     //Decide how many bands we want to use for the interpolation
     numBands =					2;
@@ -176,12 +177,14 @@ void App::onInit() {
 
 	loadPotentialProbes();
 
-	startPythonRenderingEngine();
+	//startPythonRenderingEngine();
 }//end of onInit 
 
 
 void App::loadScene(String sceneName)
 {
+	stopPythonRenderingEngine();
+
 	G3D::StopWatch sw;
 	sw.setEnabled(true);
 
@@ -199,7 +202,7 @@ void App::loadScene(String sceneName)
 	}
 	catch (std::exception e)
 	{
-		debugPrintf("%s\n", e.what);
+		debugPrintf("%s\n", e.what());
 		throw e;
 	}
     setActiveCamera(m_debugCamera);
@@ -213,6 +216,7 @@ void App::loadScene(String sceneName)
 
 	loadTrajectory();
 
+	startPythonRenderingEngine();
 }
 
 template<class TContainer>
@@ -225,8 +229,8 @@ bool begins_with(const TContainer& input, const TContainer& match)
 
 void App::loadPotentialProbes()
 {
-	std::string scene = "living_room";
-	std::string ss = "blue";
+	std::string scene = "living_room_sun";
+	std::string ss = "sunlight";
 
 	iNumPotentialProbes = 3000;
 	SceneSampleSet* tempSS = new SceneSampleSet(scene, ss, 1, iNumPotentialProbes);
@@ -2343,12 +2347,15 @@ void App::addSampleSetPane(GuiTabPane* tabPane)
 	tab->addTextBox("samplesToSave", samplesToSave);
 	tab->addButton("Generate Positions", GuiControl::Callback(this, &App::generateSampleSetPositions), GuiTheme::TOOL_BUTTON_STYLE);
     tab->addButton("Generate Values (mitsuba)", GuiControl::Callback(this, &App::generateSampleSetValues), GuiTheme::TOOL_BUTTON_STYLE);
-	tab->addButton("Generate Values (probes)", GuiControl::Callback(this, &App::generateSampleSetValuesFromProbes), GuiTheme::TOOL_BUTTON_STYLE);
-	tab->addButton("Generate Values (probes2)", [this]()
+	//tab->addButton("Generate Values (1)", GuiControl::Callback(this, &App::generateSampleSetValuesFromProbes), GuiTheme::TOOL_BUTTON_STYLE);
+	tab->addButton("Generate Values (1)", [this]()
 	{
-		computeSampleSetValuesFromIndividualProbe();
-	}
-	, GuiTheme::TOOL_BUTTON_STYLE);
+		computeSampleSetValuesFromIndividualProbe(true);
+	});
+	tab->addButton("(2)", [this]()
+	{
+		computeSampleSetValuesFromIndividualProbe(false);
+	});
     tab->addCheckBox("write samples", &saveSample);
 	tab->endRow();
 
@@ -2740,6 +2747,7 @@ void App::stopPythonRenderingEngine()
 
 void App::startPythonRenderingEngine()
 {
+	//m_PythonRenderingEngine.start(m_scene->m_name.c_str());
 	std::stringstream ss;
 	ss << m_scene->m_name.c_str() << " dummy";
 	runPythonScriptFromDataFiles("onecamera_continuous.py", ss.str(), true, false);
@@ -2779,7 +2787,7 @@ ProbeStructure* App::getTempProbeStructure(Array<Vector3>& probes)
 	return ps;
 }
 
-void App::computeSampleSetValuesFromIndividualProbe()
+void App::computeSampleSetValuesFromIndividualProbe(bool generate)
 {
 	String structureName = "__SAMPLESET";
 	if (!probeStructureExists(m_scene->m_name, structureName))
@@ -2788,33 +2796,40 @@ void App::computeSampleSetValuesFromIndividualProbe()
 	}
 
 	ProbeStructure* ps = new ProbeStructure(m_scene->m_name, structureName);
-	//ps->setType("closest");
-	//ps->setIntegrator("direct");
-	////ps->setIntegrator("path");
-	//ps->setNumSamples(128);
-	//ps->deleteAllProbes();
-
 	int numSamples = std::stoi((*samplesToSave).c_str());
-
-	//for (int i = 0; i < numSamples; ++i)
-	//{
-	//	SceneSample& ss = sampleSet->m_samples[i];
-	//	G3D::Vector3& SamplePos = ss.position;
-	//	G3D::Vector3& SampleNormal = ss.normal;
-
-	//	ps->addProbe(SamplePos + 0.05 * SampleNormal);
-	//}
-
-	//ps->saveInfoFile();
-	//ps->savePositions(false);
-	//ps->generateProbes("all", true, false, true);
-	ps->extractSHCoeffs(false, false);
-
-	sampleSet->probeStructure = ps;
 	int numCoeffs = std::atoi(optimizationSHBand.c_str());
-	////sampleSet->generateRGBValuesFromProbes(numSamples, numCoeffs);
-	sampleSet->generateInterpolatedCoefficientsFromProbes(numSamples, numCoeffs);
+	if (generate)
+	{
+		ps->setType("closest");
+		ps->setIntegrator("direct");
+		//ps->setIntegrator("path");
+		ps->setNumSamples(128);
+		ps->deleteAllProbes();
 
+		for (int i = 0; i < numSamples; ++i)
+		{
+			SceneSample& ss = sampleSet->m_samples[i];
+			G3D::Vector3& SamplePos = ss.position;
+			G3D::Vector3& SampleNormal = ss.normal;
+
+			ps->addProbe(SamplePos + 0.05 * SampleNormal);
+		}
+
+		ps->saveInfoFile();
+		ps->savePositions(false);
+		ps->generateProbes("all", true, false, true);
+	}
+
+	else
+	{
+		ps->extractSHCoeffs(false, false);
+
+		sampleSet->probeStructure = ps;
+		////sampleSet->generateRGBValuesFromProbes(numSamples, numCoeffs);
+		sampleSet->generateInterpolatedCoefficientsFromProbes(numSamples, numCoeffs);
+	}
+
+	delete ps;
 	//exit(0);
 }
 

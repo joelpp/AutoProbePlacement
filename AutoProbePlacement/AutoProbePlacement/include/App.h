@@ -28,6 +28,8 @@ class SceneSampleSet;
 typedef Array<Vector3> Trajectory;
 typedef Array<Color3> Color3Array;
 
+
+
 struct SProbeOptimization
 {
 	SProbeOptimization()
@@ -138,7 +140,7 @@ struct SAutoOptimizer
 {
 	//std::vector<int> numSamples = { 10, 25, 50, 100, 200, 500, 1000 };
 	std::vector<int> numSamples = { 10, 50, 100, 1000, 2000 };
-	std::vector<int> maxNumProbes = { 15, 20, 30, 40, 40 };
+	std::vector<int> maxNumProbes = { 15, 15, 15, 15, 15 };
 	int it = -2;
 
 	bool active()
@@ -551,7 +553,7 @@ public:
 	int getNumOptimizationSamples();
 	void computeRefValues();
 
-	void computeSampleSetValuesFromIndividualProbe();
+	void computeSampleSetValuesFromIndividualProbe(bool generate);
 
 	G3D::Vector3 debug_RefPoint;
 	void App::loadTrajectory();
@@ -576,6 +578,7 @@ public:
 	void sendProbeStructureUpdateRequest(std::string name, bool gradients, std::vector<int>& indices);
 
 	String optimizationToExtract;
+	//PythonRenderingEngine m_PythonRenderingEngine;
 };
 
 #endif

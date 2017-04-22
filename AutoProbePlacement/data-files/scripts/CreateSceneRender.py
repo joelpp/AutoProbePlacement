@@ -5,22 +5,14 @@ import os, sys
 # # Configure the search path for the Python extension module
 # # Ensure that Python will be able to find the Mitsuba core libraries
 
-# Ensure that Python will be able to find the Mitsuba core libraries
-sys.path.append('C:/Users/polardpj.artichaut/Downloads/mitsuba-eaff1cd989f3/mitsuba-eaff1cd989f3/dist/python/2.7/')
-# Ensure that Python will be able to find the Mitsuba core libraries
-os.environ['PATH'] = 'C:/Users/polardpj.artichaut/Downloads/mitsuba-eaff1cd989f3/mitsuba-eaff1cd989f3/dist/' + os.pathsep + os.environ['PATH']
-
-#if (True):
-#	sys.path.append('C:/git/mitsuba/dist/python/2.7/')
-#	# Ensure that Python will be able to find the Mitsuba core libraries
-#	os.environ['PATH'] = 'C:/git/mitsuba/dist/' + os.pathsep + os.environ['PATH']
-#else:
-#	sys.path.append('C:/Users/Joel/Downloads/mitsuba-c7aac473729a/mitsuba-c7aac473729a/dist/python/2.7/')
-#	os.environ['PATH'] = 'C:/Users/Joel/Downloads/mitsuba-c7aac473729a/mitsuba-c7aac473729a/dist/' + os.pathsep + os.environ['PATH']
+sys.path.append('C:/git/mitsuba/dist/python/2.7/')
+# 	# Ensure that Python will be able to find the Mitsuba core libraries
+os.environ['PATH'] = 'C:/git/mitsuba/dist/' + os.pathsep + os.environ['PATH']
 
 
 from mitsuba.core import *
 from mitsuba.render import SceneHandler, RenderQueue, RenderJob, Scene
+
 
 from string import maketrans
 import helper
@@ -89,7 +81,7 @@ def makeProbe(x, y, z, probeCount, rootPath, pRenderType):
 	divideTwiceByPi = False;
 	#Create integrator
 	integrator = pmgr.create({
-		'type' : integratorOption,
+		'type' : 'direct',
 		'maxDist': 900.0,
 		'samplePosition': Point(0,0,0),
 		'sampleNormal': Normal(0,0,0),

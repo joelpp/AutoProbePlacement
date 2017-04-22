@@ -85,6 +85,8 @@ void App::clearAllActors(){
 
 void App::startOptimizationPasses()
 {
+
+
 	if (!sampleSetLoaded() && !probeStructureLoaded())
 	{
 		return;
@@ -97,6 +99,8 @@ void App::startOptimizationPasses()
 
 	currentOptimization.bWaitingForRenderingFinished = false;
 	currentOptimization.lastRenderEndTime = getFileLastModifiedTime(settingsFilePath.c_str());
+
+	optimizing = true;
 }
 
 float App::computeError(bool outputToLog)
@@ -254,60 +258,60 @@ G3D::Array<G3D::Vector3> App::generateRandomPositions(int NumberOfPositions)
 
 	return toReturn;
 }
-
-
-void App::findBestInitialConditions()
-{
-	debugPrintf("Attempting to find minimalest error...\n");
-
-	int NumberOfProbes = std::atoi(m_sNumICProbes.c_str());
-	int NumberOfTries = std::atoi(m_sNumICTries.c_str());
-
-	float bestError = 99999;
-	G3D::Array<G3D::Vector3> bestPositions;
-	bestPositions.resize(NumberOfProbes);
-
-	for (int tryNumber = 0; tryNumber < NumberOfTries; ++tryNumber)
-	{
-		G3D::Array<G3D::Vector3> positions = generateRandomPositions(NumberOfProbes);
-
-
-		for (G3D::Vector3& v : positions)
-		{
-			m_probeStructure->addProbe(v);
-		}
-		m_probeStructure->updateAll(bShowOptimizationOutput);
-
-		computeSamplesRGB();
-
-		float error = computeError(false);
-		debugPrintf("- Attempt #%d, error : %f", tryNumber, error);
-
-		if (error < bestError)
-		{
-			debugPrintf(" (best yet!)");
-			bestError = error;
-			bestPositions = positions;
-		}
-		debugPrintf("\n");
-
-		for (int i = 0; i < NumberOfProbes; ++i)
-		{
-			m_probeStructure->removeProbe(m_probeStructure->probeCount() - 1);
-		}
-
-	}
-	debugPrintf("error: %f \n", bestError);
-
-	for (G3D::Vector3& v : bestPositions)
-	{
-		debugPrintf("v: %s \n", v.toString().c_str());
-		m_probeStructure->addProbe(v);
-
-	}
-	m_probeStructure->updateAll(bShowOptimizationOutput);
-
-}
+//
+//
+//void App::findBestInitialConditions()
+//{
+//	debugPrintf("Attempting to find minimalest error...\n");
+//
+//	int NumberOfProbes = std::atoi(m_sNumICProbes.c_str());
+//	int NumberOfTries = std::atoi(m_sNumICTries.c_str());
+//
+//	float bestError = 99999;
+//	G3D::Array<G3D::Vector3> bestPositions;
+//	bestPositions.resize(NumberOfProbes);
+//
+//	for (int tryNumber = 0; tryNumber < NumberOfTries; ++tryNumber)
+//	{
+//		G3D::Array<G3D::Vector3> positions = generateRandomPositions(NumberOfProbes);
+//
+//
+//		for (G3D::Vector3& v : positions)
+//		{
+//			m_probeStructure->addProbe(v);
+//		}
+//		m_probeStructure->updateAll(bShowOptimizationOutput);
+//
+//		computeSamplesRGB();
+//
+//		float error = computeError(false);
+//		debugPrintf("- Attempt #%d, error : %f", tryNumber, error);
+//
+//		if (error < bestError)
+//		{
+//			debugPrintf(" (best yet!)");
+//			bestError = error;
+//			bestPositions = positions;
+//		}
+//		debugPrintf("\n");
+//
+//		for (int i = 0; i < NumberOfProbes; ++i)
+//		{
+//			m_probeStructure->removeProbe(m_probeStructure->probeCount() - 1);
+//		}
+//
+//	}
+//	debugPrintf("error: %f \n", bestError);
+//
+//	for (G3D::Vector3& v : bestPositions)
+//	{
+//		debugPrintf("v: %s \n", v.toString().c_str());
+//		m_probeStructure->addProbe(v);
+//
+//	}
+//	m_probeStructure->updateAll(bShowOptimizationOutput);
+//
+//}
 
 void App::logOptimizationIteration(float error)
 {

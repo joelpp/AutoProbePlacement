@@ -569,6 +569,13 @@ public:
 	bool bUseProbeCache;
 	int iNumPotentialProbes = 9300;
 	std::vector<Probe> PotentialProbeCache;
+
+	bool bWaitingForProbeStructureUpdateToFinish;
+	bool bShouldUpdateLastOptimFileTime;
+	FILETIME lastProbeStructureUpdateTime;
+	void sendProbeStructureUpdateRequest(std::string name, bool gradients, std::vector<int>& indices);
+
+	String optimizationToExtract;
 };
 
 #endif

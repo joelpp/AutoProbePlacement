@@ -250,15 +250,21 @@ void ProbeStructure::makeProbeList()
             coeffFile.open(filename.c_str(), std::ios::in);
 
 			tempCoeffs = Array<Vector3>();
+			tempCoeffs.resize(9);
 
-            while ( std::getline(coeffFile,line) )
+			if (coeffFile.is_open())
 			{
-                std::getline(coeffFile, line2);
-                std::getline(coeffFile, line3);
-                Vector3 toAdd = Vector3(std::stof(line.c_str()), std::stof(line2.c_str()), std::stof(line3.c_str()));
-				tempCoeffs.append(toAdd);
-            }
-            coeffFile.close();
+				int i = 0;
+				while (std::getline(coeffFile, line))
+				{
+					std::getline(coeffFile, line2);
+					std::getline(coeffFile, line3);
+					Vector3 toAdd = Vector3(std::stof(line.c_str()), std::stof(line2.c_str()), std::stof(line3.c_str()));
+					tempCoeffs[i++] = toAdd;
+				}
+				coeffFile.close();
+			}
+
 			aTestProbe->setCoeffs(tempCoeffs);
 
 			////////////////////////////////////
@@ -687,7 +693,10 @@ bool ProbeStructure::writeProbePositionsToTetgenFile(){
 
 Probe* ProbeStructure::getProbe(int i)
 {
-
+	if (i > probeList.size())
+	{
+		return nullptr;
+	}
 	return probeList[i];
 
 }
@@ -1488,14 +1497,14 @@ Array<G3D::Vector3> ProbeStructure::reconstructSHPerBand(const G3D::Vector3& pos
 void ProbeStructure::generateProbes(std::string type, bool allProbes, bool generateGradients, bool showOutput)
 {
     // system call to mitsuba
-    std::stringstream args;
-    args << m_sceneName.c_str() << " " 
-		 << m_name.c_str() << " " 
-		 << type << " "
-		 << generateGradients << " ";
+   // std::stringstream args;
+   // args << m_sceneName.c_str() << " " 
+		 //<< m_name.c_str() << " " 
+		 //<< type << " "
+		 //<< generateGradients << " ";
 
 
-
+	std::vector<int> indices;
 	if (!allProbes && m_type != EProbeStructureType::Trilinear)
 	{
 
@@ -1504,19 +1513,17 @@ void ProbeStructure::generateProbes(std::string type, bool allProbes, bool gener
 			Probe* p = probeList[i];
 			if (p->bNeedsUpdate)
 			{
-				args << i << " ";
+				//args << i << " ";
+				indices.push_back(i);
 			}
 		}
 	}
 
+	App::instance->sendProbeStructureUpdateRequest(std::string(m_name.c_str()), generateGradients, indices);
 
-    runPythonScriptFromDataFiles("onecamera.py", args.str(), showOutput, true);
 
-    for (Probe* p : probeList)
-    {
-        p->texture.reset();
-        p->texture = NULL;
-    }
+    //runPythonScriptFromDataFiles("onecamera.py", args.str(), showOutput, true);
+
 
 }
 
@@ -1750,7 +1757,7 @@ void ProbeStructure::updateAll(bool showOutput)
 	saveInfoFile();
 	savePositions(false);
 	generateProbes("all", false, true, showOutput);
-	extractSHCoeffs(true, true);
+	//extractSHCoeffs(true, true);
 }
 
 void ProbeStructure::deleteAllProbes()
@@ -1771,4 +1778,13 @@ void ProbeStructure::removeProbe(int i)
 
 	saveInfoFile();
 	savePositions(false);
+}
+
+void ProbeStructure::resetTextures()
+{
+	for (Probe* p : probeList)
+	{
+		p->texture.reset();
+		p->texture = NULL;
+	}
 }

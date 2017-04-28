@@ -17,3 +17,10 @@ AutoProbePlacement/AutoProbePlacement.VC.db
 AutoProbePlacement/data-files/scripts/textures/
 *.serialized
 AutoProbePlacement/data-files/scripts/textures*
+AutoProbePlacement/AutoProbePlacement/cubemap/blackness/copyright.txt
+AutoProbePlacement/AutoProbePlacement/cubemap/blackness/museum_+x.jpg
+AutoProbePlacement/AutoProbePlacement/cubemap/blackness/museum_+y.jpg
+AutoProbePlacement/AutoProbePlacement/cubemap/blackness/museum_+z.jpg
+AutoProbePlacement/AutoProbePlacement/cubemap/blackness/museum_-x.jpg
+AutoProbePlacement/AutoProbePlacement/cubemap/blackness/museum_-y.jpg
+AutoProbePlacement/AutoProbePlacement/cubemap/blackness/museum_-z.jpg

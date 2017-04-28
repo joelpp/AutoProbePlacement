@@ -229,10 +229,13 @@ bool begins_with(const TContainer& input, const TContainer& match)
 
 void App::loadPotentialProbes()
 {
-	std::string scene = "living_room_sun";
-	std::string ss = "sunlight";
+	/*std::string scene = "zcbox";
+	std::string ss = "volumetrix_direct_final";
+*/
+	std::string scene = "sponza";
+	std::string ss = "final_direct_betterlight";
 
-	iNumPotentialProbes = 3000;
+	iNumPotentialProbes = 1000;
 	SceneSampleSet* tempSS = new SceneSampleSet(scene, ss, 1, iNumPotentialProbes);
 	PotentialProbeCache = std::vector<Probe>();
 
@@ -1883,6 +1886,68 @@ void App::makeGui() {
 					m_AutoOptimizer.setActive(true);
 					optimizing = true;
 				}
+			});
+
+			tab->addTextBox("optim loader", &m_OptimLoaderString)->setWidth(120);
+			tab->addButton("load", [this]()
+			{
+				Array<String> params = stringSplit(m_OptimLoaderString, ' ');
+
+				if (!(params.size() == 2))
+				{
+					return;
+				}
+
+				String scene = m_scene->m_name;
+				String optim = params[0];
+				String iter = params[1];
+				String path = "C:\\git\\AutoProbePlacement\\AutoProbePlacement\\data-files\\Scenes\\" + scene + "\\Optimizations\\" + optim + "\\infos.txt";
+
+				std::fstream file(path.c_str(), std::ios::in);
+
+				std::string line;
+				int counter = 0;
+
+				int iteration = std::stoi(iter.c_str());
+				std::string iterationSeek = std::string(format("iteration %d", iteration).c_str());
+				std::string addProbeSeek = "Probe 0";
+
+				bool found = false;
+				while (std::getline(file, line))
+				{
+					if (begins_with(line, iterationSeek))
+					{
+						found = true;
+						continue;
+					}
+					else if (begins_with(line, std::string("error")))
+					{
+						continue;
+					}
+					if (found)
+					{
+						if (!begins_with(line, std::string("Probe")))
+						{
+							break;
+						}
+
+						std::string sV3 = line.substr(addProbeSeek.length());
+						Array<String> split = stringSplit(String(sV3), ':');
+
+						sV3 = std::string(split[1].c_str());
+						sV3.erase(0, 1);
+						sV3.erase(std::remove(sV3.begin(), sV3.end(), '('), sV3.end());
+						sV3.erase(std::remove(sV3.begin(), sV3.end(), ')'), sV3.end());
+						sV3.erase(std::remove(sV3.begin(), sV3.end(), ','), sV3.end());
+						G3D::Vector3 p = StringToVector3(String(sV3));
+
+						m_probeStructure->addProbe(p);
+
+						counter++;
+					}
+				}
+
+				file.close();
 			});
 
 		}

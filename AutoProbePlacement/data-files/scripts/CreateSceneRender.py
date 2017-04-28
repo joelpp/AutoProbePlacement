@@ -81,7 +81,7 @@ def makeProbe(x, y, z, probeCount, rootPath, pRenderType):
 	divideTwiceByPi = False;
 	#Create integrator
 	integrator = pmgr.create({
-		'type' : 'direct',
+		'type' : integratorOption,
 		'maxDist': 900.0,
 		'samplePosition': Point(0,0,0),
 		'sampleNormal': Normal(0,0,0),

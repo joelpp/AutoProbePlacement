@@ -139,8 +139,8 @@ enum EFilmType
 struct SAutoOptimizer
 {
 	//std::vector<int> numSamples = { 10, 25, 50, 100, 200, 500, 1000 };
-	std::vector<int> numSamples = { 10, 50, 100, 1000, 2000 };
-	std::vector<int> maxNumProbes = { 15, 15, 15, 15, 15 };
+	std::vector<int> numSamples = { 25, 500 };
+	std::vector<int> maxNumProbes = { 40, 40 };
 	int it = -2;
 
 	bool active()
@@ -579,6 +579,7 @@ public:
 
 	String optimizationToExtract;
 	//PythonRenderingEngine m_PythonRenderingEngine;
+	String m_OptimLoaderString;
 };
 
 #endif

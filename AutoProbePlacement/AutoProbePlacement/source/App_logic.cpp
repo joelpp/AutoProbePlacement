@@ -113,7 +113,7 @@ float App::computeError(bool outputToLog)
     logFile.open(       errorLogPath.c_str(),                                          std::fstream::out | std::fstream::app);
 
 	float error = 0;
-
+	
     std::string currentLine, referenceLine;
     while (std::getline(currentFile, currentLine))
 	{
